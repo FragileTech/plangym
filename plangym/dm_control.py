@@ -278,7 +278,7 @@ class ExternalDMControl(ExternalProcess):
         try:
             name, wrappers, n_repeat_action, args, kwargs = data
 
-            env = DMControlEnv(name, n_repeat_action=n_repeat_action, *args,  **kwargs)
+            env = DMControlEnv(name, n_repeat_action=n_repeat_action, *args, **kwargs)
             # dom_name, task_name = name.split("-")
             # custom_death = CustomDeath(domain_name=dom_name,
             #                             task_name=task_name)
@@ -306,7 +306,7 @@ class ExternalDMControl(ExternalProcess):
                     break
                 raise KeyError("Received message of unknown type {}".format(message))
         except Exception:  # pylint: disable=broad-except
-            #import tensorflow as tf
+            # import tensorflow as tf
             # TODO: use logging to report exceptions.
             stacktrace = "".join(traceback.format_exception(*sys.exc_info()))
             print("Error in environment process: {}".format(stacktrace))
@@ -407,6 +407,7 @@ class ParallelDMControl(Environment):
             match the state of the internal :class: DMControlEnv.
         Args:
             return_state: If true return a also the initial state of the env.
+            blocking: If False, reset the environments asynchronously.
 
         Returns:
             Observation of the environment if `return_state` is False. Otherwise
