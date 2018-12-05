@@ -208,7 +208,10 @@ class DMControlEnv(Environment):
             n_repeat_action: int or array containing the frameskips that will be applied.
 
         Returns:
-
+            if states is None:
+                (observs, rewards, ends, infos)
+            else:
+                (new_states, observs, rewards, ends, infos)
         """
         n_repeat_action = n_repeat_action if n_repeat_action is not None else self.n_repeat_action
         n_repeat_action = (
@@ -249,12 +252,10 @@ class ExternalDMControl(ExternalProcess):
     """I cannot find a way to pass a function that creates a DMControl env, so I have to create
      it manually inside the thread."""
 
-    def __init__(self, name, wrappers=None, n_repeat_action: int = 1, **kwargs):
+    def __init__(self, name, wrappers=None, n_repeat_action: int = 1, *args, **kwargs):
         """Step environment in a separate process for lock free paralellism.
         The environment will be created in the external process by calling the
-        specified callable. This can be an environment class, or a function
-        creating the environment and potentially wrapping it. The returned
-        environment should not access global variables.
+        specified callable.
         Args:
           constructor: Callable that creates and returns an OpenAI gym environment.
         Attributes:
@@ -263,7 +264,7 @@ class ExternalDMControl(ExternalProcess):
         """
         self.name = name
         super(ExternalDMControl, self).__init__(
-            constructor=(name, wrappers, n_repeat_action, kwargs)
+            constructor=(name, wrappers, n_repeat_action, args, kwargs)
         )
 
     def _worker(self, data, conn):
@@ -275,9 +276,9 @@ class ExternalDMControl(ExternalProcess):
           KeyError: When receiving a message of unknown type.
         """
         try:
-            name, wrappers, n_repeat_action, kwargs = data
+            name, wrappers, n_repeat_action, args, kwargs = data
 
-            env = DMControlEnv(name, n_repeat_action=n_repeat_action, **kwargs)
+            env = DMControlEnv(name, n_repeat_action=n_repeat_action, *args,  **kwargs)
             # dom_name, task_name = name.split("-")
             # custom_death = CustomDeath(domain_name=dom_name,
             #                             task_name=task_name)
@@ -305,16 +306,28 @@ class ExternalDMControl(ExternalProcess):
                     break
                 raise KeyError("Received message of unknown type {}".format(message))
         except Exception:  # pylint: disable=broad-except
-            import tensorflow as tf
-
+            #import tensorflow as tf
+            # TODO: use logging to report exceptions.
             stacktrace = "".join(traceback.format_exception(*sys.exc_info()))
-            tf.logging.error("Error in environment process: {}".format(stacktrace))
+            print("Error in environment process: {}".format(stacktrace))
             conn.send((self._EXCEPTION, stacktrace))
             conn.close()
 
 
 class ParallelDMControl(Environment):
-    """Wrap a dm_control environment to be stepped in parallel."""
+    """Wrap a dm_control environment to be stepped in parallel. It contains a
+    :class: DMControlEnv that performs non-vectorized operations, and a :class: BatchEnv
+    that performs the `step_batch` method asynchronously.
+
+    Args:
+            name: Name of the Environment. following the same conventions as
+                :class: DMControlEnv.
+            n_repeat_action:
+            n_workers: Number of processes that will be used.
+            blocking: if False step the environments asynchronously.
+            *args: args of the environment that will be parallelized.
+            **kwargs: kwargs of the environment that will be parallelized.
+    """
 
     def __init__(
         self,
@@ -322,26 +335,18 @@ class ParallelDMControl(Environment):
         n_repeat_action: int = 1,
         n_workers: int = 8,
         blocking: bool = True,
+        *args,
         **kwargs
     ):
-        """
-
-        :param name: Name of the Environment
-        :param env_class: Class of the environment to be wrapped.
-        :param n_workers: number of workers that will be used.
-        :param blocking: step the environments asynchronously.
-        :param args: args of the environment that will be parallelized.
-        :param kwargs: kwargs of the environment that will be parallelized.
-        """
 
         super(ParallelDMControl, self).__init__(name=name)
 
         envs = [
-            ExternalDMControl(name=name, n_repeat_action=n_repeat_action, **kwargs)
+            ExternalDMControl(name=name, n_repeat_action=n_repeat_action, *args, **kwargs)
             for _ in range(n_workers)
         ]
         self._batch_env = BatchEnv(envs, blocking)
-        self._env = DMControlEnv(name, n_repeat_action=n_repeat_action, **kwargs)
+        self._env = DMControlEnv(name, n_repeat_action=n_repeat_action, *args, **kwargs)
 
         self.observation_space = self._env.observation_space
         self.action_space = self._env.action_space
@@ -355,26 +360,84 @@ class ParallelDMControl(Environment):
         states: np.ndarray = None,
         n_repeat_action: [np.ndarray, int] = None,
     ):
+        """
+        Vectorized version of the `step` method. It allows to step a vector of
+        states and actions. The signature and behaviour is the same as `step`, but taking
+        a list of states, actions and n_repeat_actions as input.
+
+        Args:
+           actions: Iterable containing the different actions to be applied.
+           states: Iterable containing the different states to be set.
+           n_repeat_action: int or array containing the frameskips that will be applied.
+
+        Returns:
+           if states is None:
+               (observs, rewards, ends, infos)
+           else:
+               (new_states, observs, rewards, ends, infos)
+        """
         return self._batch_env.step_batch(
             actions=actions, states=states, n_repeat_action=n_repeat_action
         )
 
     def step(self, action: np.ndarray, state: np.ndarray = None, n_repeat_action: int = None):
+        """
+        Step the environment applying a given action from an arbitrary state. If
+        is not provided the signature matches the one from OpenAI gym. It allows
+        to apply arbitrary boundary conditions to define custom end states in case
+        the env was initialized with a "CustomDeath' object.
+
+        Args:
+            action: Array containing the action to be applied.
+            state: State to be set before stepping the environment.
+            n_repeat_action: Consecutive number of times to apply the given action.
+
+        Returns:
+            if state is None:
+                (obs, reward, end, info)
+            else:
+                (new_state, obs, reward, end, info)
+        """
         return self._env.step(action=action, state=state, n_repeat_action=n_repeat_action)
 
     def reset(self, return_state: bool = True, blocking: bool = True):
+        """
+        Resets the environment and returns the first observation, or the first
+            (state, obs) tuple, and synchronized the states of all the workers to
+            match the state of the internal :class: DMControlEnv.
+        Args:
+            return_state: If true return a also the initial state of the env.
+
+        Returns:
+            Observation of the environment if `return_state` is False. Otherwise
+            return (state, obs) after reset.
+        """
         state, obs = self._env.reset(return_state=True)
         self.sync_states()
         return state, obs if return_state else obs
 
     def get_state(self):
+        """
+        Returns a tuple containing the three arrays that characterize the state
+         of the system. Each tuple contains the position of the robot, its velocity
+         and the control variables currently being applied.
+
+        Returns:
+            Tuple of numpy arrays containing all the information needed to describe
+            the current state of the simulation.
+        """
         return self._env.get_state()
 
     def set_state(self, state):
+        """Sets the state of the underlying :class: DMControlEnv and the states of all the
+        workers used by the internal :class: BatchEnv."""
         self._env.set_state(state)
         self.sync_states()
 
     def sync_states(self):
+        """Set all the states of the different workers of the internal :class: BatchEnv to the
+        same state as the internal :class: DMControlEnv used to apply the
+        non-vectorized steps."""
         self._batch_env.sync_states(self.get_state())
 
 
