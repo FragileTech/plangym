@@ -95,7 +95,8 @@ class DMControlEnv(Environment):
     def reset(self, return_state: bool = False) -> [np.ndarray, tuple]:
         """
         Resets the environment and returns the first observation, or the first
-            (state, obs) tuple.
+        (state, obs) tuple.
+
         Args:
             return_state: If true return a also the initial state of the env.
 
@@ -161,10 +162,8 @@ class DMControlEnv(Environment):
             n_repeat_action: Consecutive number of times to apply the given action.
 
         Returns:
-            if state is None:
-                (obs, reward, end, info)
-            else:
-                (new_state, obs, reward, end, info)
+            if states is None returns (observs, rewards, ends, infos) else (new_states,
+            observs, rewards, ends, infos)
         """
         n_repeat_action = n_repeat_action if n_repeat_action is not None else self.n_repeat_action
 
@@ -208,9 +207,9 @@ class DMControlEnv(Environment):
             n_repeat_action: int or array containing the frameskips that will be applied.
 
         Returns:
-            if states is None:
+            if states is None
                 (observs, rewards, ends, infos)
-            else:
+            else
                 (new_states, observs, rewards, ends, infos)
         """
         n_repeat_action = n_repeat_action if n_repeat_action is not None else self.n_repeat_action
@@ -371,10 +370,8 @@ class ParallelDMControl(Environment):
            n_repeat_action: int or array containing the frameskips that will be applied.
 
         Returns:
-           if states is None:
-               (observs, rewards, ends, infos)
-           else:
-               (new_states, observs, rewards, ends, infos)
+          if states is None returns (observs, rewards, ends, infos) else (new_states,
+          observs, rewards, ends, infos)
         """
         return self._batch_env.step_batch(
             actions=actions, states=states, n_repeat_action=n_repeat_action
@@ -393,18 +390,16 @@ class ParallelDMControl(Environment):
             n_repeat_action: Consecutive number of times to apply the given action.
 
         Returns:
-            if state is None:
-                (obs, reward, end, info)
-            else:
-                (new_state, obs, reward, end, info)
+            if states is None returns (observs, rewards, ends, infos) else (new_states,
+            observs, rewards, ends, infos)
         """
         return self._env.step(action=action, state=state, n_repeat_action=n_repeat_action)
 
     def reset(self, return_state: bool = True, blocking: bool = True):
         """
         Resets the environment and returns the first observation, or the first
-            (state, obs) tuple, and synchronized the states of all the workers to
-            match the state of the internal :class: DMControlEnv.
+        (state, obs) tuple, and synchronized the states of all the workers to
+        match the state of the internal :class: DMControlEnv.
         Args:
             return_state: If true return a also the initial state of the env.
             blocking: If False, reset the environments asynchronously.

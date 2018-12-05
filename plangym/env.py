@@ -63,8 +63,8 @@ class Environment:
             n_repeat_action: Consecutive number of times to apply an action.
 
         Returns:
-            if state is None: Tuple containing (obs, reward, end, info)
-            else: Tuple containing (new_state, obs, reward, end, info)
+            if states is None returns (observs, rewards, ends, infos)
+            else returns(new_states, observs, rewards, ends, infos)
         """
         raise NotImplementedError
 
@@ -83,8 +83,8 @@ class Environment:
                 applied.
 
         Returns:
-            if state is None: Tuple of arrays containing (obs, reward, end, info)
-            else: Tuple of arrays containing (new_state, obs, reward, end, info)
+            if states is None returns (observs, rewards, ends, infos)
+            else returns(new_states, observs, rewards, ends, infos)
         """
         raise NotImplementedError
 
@@ -128,14 +128,16 @@ class AtariEnvironment(Environment):
         autoreset: Restart environment when reaching a terminal state.
 
     Example::
-        >>>env = AtariEnvironment(name="MsPacman-v0", clone_seeds=True, autoreset=True)
-        >>>state, obs = env.reset()
+
+        >>> env = AtariEnvironment(name="MsPacman-v0",
+        >>>                        clone_seeds=True, autoreset=True)
+        >>> state, obs = env.reset()
         >>>
-        >>>states = [state.copy() for _ in range(10)]
-        >>>actions = [env.action_space.sample() for _ in range(10)]
+        >>> states = [state.copy() for _ in range(10)]
+        >>> actions = [env.action_space.sample() for _ in range(10)]
         >>>
-        >>>new_States, observs, rewards, ends, infos = env.step_batch(states=states,
-        >>>                                                           actions=actions)
+        >>> data = env.step_batch(states=states, actions=actions)
+        >>> new_states, observs, rewards, ends, infos = data
 
     """
 
@@ -217,10 +219,8 @@ class AtariEnvironment(Environment):
             n_repeat_action: Consecutive number of times that the action will be applied.
 
         Returns:
-             if state is None:
-                (obs, reward, end, info)
-            else:
-                (new_state, obs, reward, end, info)
+            if states is None returns (observs, rewards, ends, infos)
+            else returns(new_states, observs, rewards, ends, infos)
         """
         n_repeat_action = n_repeat_action if n_repeat_action is not None else self.n_repeat_action
         if state is not None:
@@ -268,10 +268,8 @@ class AtariEnvironment(Environment):
             n_repeat_action: int or array containing the frameskips that will be applied.
 
         Returns:
-            if states is None:
-                (observs, rewards, ends, infos)
-            else:
-                (new_states, observs, rewards, ends, infos)
+            if states is None returns (observs, rewards, ends, infos)
+            else returns(new_states, observs, rewards, ends, infos)
         """
         n_repeat_action = n_repeat_action if n_repeat_action is not None else self.n_repeat_action
         n_repeat_action = (
@@ -302,7 +300,7 @@ class AtariEnvironment(Environment):
     def reset(self, return_state: bool = True) -> [np.ndarray, tuple]:
         """
         Resets the environment and returns the first observation, or the first
-            (state, obs) tuple.
+        (state, obs) tuple.
         Args:
             return_state: If true return a also the initial state of the env.
 
@@ -429,6 +427,20 @@ class ExternalProcess(object):
     def step_batch(
         self, actions, states=None, n_repeat_action: [np.ndarray, int] = None, blocking=True
     ):
+        """
+        Vectorized version of the `step` method. It allows to step a vector of
+        states and actions. The signature and behaviour is the same as `step`, but taking
+        a list of states, actions and n_repeat_actions as input.
+
+        Args:
+           actions: Iterable containing the different actions to be applied.
+           states: Iterable containing the different states to be set.
+           n_repeat_action: int or array containing the frameskips that will be applied.
+
+        Returns:
+          if states is None returns (observs, rewards, ends, infos)
+          else returns(new_states, observs, rewards, ends, infos)
+        """
         promise = self.call("step_batch", actions, states, n_repeat_action)
         if blocking:
             return promise()
@@ -721,18 +733,21 @@ class ParallelEnvironment(Environment):
         **kwargs: Additional kwargs for the environment.
 
     Example::
-        >>>env = ParallelEnvironment(env_class=AtariEnvironment,
-        >>>                          name="MsPacman-v0",
-        >>>                          clone_seeds=True, autoreset=True,
-        >>>                          blocking=False)
 
-        >>>state, obs = env.reset()
+        >>> env = ParallelEnvironment(env_class=AtariEnvironment,
+        >>>                           name="MsPacman-v0",
+        >>>                           clone_seeds=True, autoreset=True,
+        >>>                           blocking=False)
+        >>>
+        >>> state, obs = env.reset()
+        >>>
+        >>> states = [state.copy() for _ in range(10)]
+        >>> actions = [env.action_space.sample() for _ in range(10)]
+        >>>
+        >>> data =  env.step_batch(states=states,
+        >>>                        actions=actions)
+        >>> new_states, observs, rewards, ends, infos = data
 
-        >>>states = [state.copy() for _ in range(10)]
-        >>>actions = [env.action_space.sample() for _ in range(10)]
-
-        >>>new_States, observs, rewards, ends, infos = env.step_batch(states=states,
-        >>>                                                           actions=actions)
     """
 
     def __init__(
@@ -757,7 +772,8 @@ class ParallelEnvironment(Environment):
         states: np.ndarray = None,
         n_repeat_action: [np.ndarray, int] = None,
     ):
-        """Vectorized version of the `step` method. It allows to step a vector of
+        """
+        Vectorized version of the `step` method. It allows to step a vector of
         states and actions. The signature and behaviour is the same as `step`,
         but taking a list of states, actions and n_repeat_actions as input.
 
@@ -767,22 +783,37 @@ class ParallelEnvironment(Environment):
             n_repeat_action: int or array containing the frameskips that will be applied.
 
         Returns:
-            if states is None:
-                (observs, rewards, ends, infos)
-            else:
-                (new_states, observs, rewards, ends, infos)
+            if states is None returns (observs, rewards, ends, infos) else (new_states,
+            observs, rewards, ends, infos)
+
         """
         return self._batch_env.step_batch(
             actions=actions, states=states, n_repeat_action=n_repeat_action
         )
 
     def step(self, action: np.ndarray, state: np.ndarray = None, n_repeat_action: int = None):
+        """
+        Step the environment applying a given action from an arbitrary state. If
+        is not provided the signature matches the one from OpenAI gym. It allows
+        to apply arbitrary boundary conditions to define custom end states in case
+        the env was initialized with a "CustomDeath' object.
+
+        Args:
+            action: Array containing the action to be applied.
+            state: State to be set before stepping the environment.
+            n_repeat_action: Consecutive number of times to apply the given action.
+
+        Returns:
+            if states is None returns (observs, rewards, ends, infos) else (new_states,
+            observs, rewards, ends, infos)
+        """
         return self._env.step(action=action, state=state, n_repeat_action=n_repeat_action)
 
     def reset(self, return_state: bool = True, blocking: bool = True):
         """
         Resets the environment and returns the first observation, or the first
-            (state, obs) tuple.
+        (state, obs) tuple.
+
         Args:
             return_state: If true return a also the initial state of the env.
             blocking: If False, reset the environments asynchronously.
@@ -796,9 +827,10 @@ class ParallelEnvironment(Environment):
         return state, obs if return_state else obs
 
     def get_state(self):
-        """Returns a tuple containing the three arrays that characterize the state
-         of the system. Each tuple contains the position of the robot, its velocity
-         and the control variables currently being applied.
+        """
+        Returns a tuple containing the three arrays that characterize the state
+        of the system. Each tuple contains the position of the robot, its velocity
+        and the control variables currently being applied.
 
         Returns:
             Tuple of numpy arrays containing all the information needed to describe

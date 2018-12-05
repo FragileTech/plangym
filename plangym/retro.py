@@ -3,7 +3,10 @@ import traceback
 import numpy as np
 from fractalai.environment import Environment, ExternalProcess, BatchEnv, resize_frame
 from gym import spaces
-import retro
+try:
+    import retro
+except ModuleNotFoundError:
+    print("Please install OpenAI retro")
 
 
 class RetroEnvironment(Environment):
