@@ -48,7 +48,7 @@ extensions = [
     'sphinx.ext.imgmath',
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
-    "rinoh.frontend.sphinx",
+    #"rinoh.frontend.sphinx",
     "sphinx.ext.napoleon",
 ]
 
