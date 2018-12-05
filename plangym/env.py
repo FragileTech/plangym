@@ -642,23 +642,23 @@ class BatchEnv(object):
         """
 
         if states is None:
-            observs, rewards, dones, lives = self._make_transitions(actions, None, n_repeat_action)
+            observs, rewards, dones, infos = self._make_transitions(actions, None, n_repeat_action)
         else:
-            states, observs, rewards, dones, lives = self._make_transitions(
+            states, observs, rewards, dones, infos = self._make_transitions(
                 actions, states, n_repeat_action
             )
         try:
             observ = np.stack(observs)
             reward = np.stack(rewards)
             done = np.stack(dones)
-            lives = np.stack(lives)  # TODO: make it work for arbitrary info dicts
+            infos = np.stack(infos)
         except:  # Lets be overconfident for once TODO: remove this.
             for obs in observs:
                 print(obs.shape)
         if states is None:
-            return observ, reward, done, lives
+            return observ, reward, done, infos
         else:
-            return states, observs, rewards, dones, lives
+            return states, observs, rewards, dones, infos
 
     def sync_states(self, state, blocking: bool = True):
         for env in self._envs:
