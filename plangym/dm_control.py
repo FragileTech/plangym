@@ -6,13 +6,19 @@ from gym.envs.classic_control import rendering
 
 
 class DMControlEnv(Environment):
-    """I am offering this just to show that it can also work with any kind of problem, but I will
-        not be offering support for the dm_control package. It relies on Mujoco, and I don't want
-        to pollute this publication with proprietary code. Unfortunately, Mujoco is the only
-         library that allows to easily set and clone the state of the environment.
-         If anyone knows how to make it work with OpenAI Roboschool(PyBullet), I will release a
-          distributed version of the algorithm that allows to scale easily to thousands of walkers,
-        and run simulations in a cluster using ray.
+    """Wrap the dm_control library so it can work for planning problems. It
+        allows parallel and vectorized execution of the environments.
+
+        Args:
+            name: Provide the task to be solved as `domain_name-task_name`. For
+                example 'cartpole-balance'.
+            visualize_reward: match dm_control interface. It modifies the color
+                of the robot depending on its current reward.
+            n_repeat_action: Set a deterministic frameskip to apply the same
+                action N times.
+            custom_death: Class for setting custom boundary conditions to help
+                exploration.
+
         """
 
     def __init__(
@@ -22,15 +28,7 @@ class DMControlEnv(Environment):
         n_repeat_action: int = 1,
         custom_death: "CustomDeath" = None,
     ):
-        """
-            Creates DMControlEnv and initializes the environment.
-            :param domain_name: match dm_control interface.
-            :param task_name: match dm_control interface.
-            :param visualize_reward: match dm_control interface.
-            :param fixed_steps: The number of consecutive times that an action will be applied.
-                            This allows us to set the frequency at which the policy will play.
-            :param custom_death: Pro hack to beat the shit out of DeepMind even further.
-            """
+
         from dm_control import suite
 
         domain_name, task_name = name.split("-")
@@ -68,6 +66,18 @@ class DMControlEnv(Environment):
         self.env.seed(seed)
 
     def render(self, mode="human"):
+        """
+        It stores all the RGB images rendered to be shown when the `show_game`
+        function is called.
+
+        Args:
+            mode: `rgb_array` return an RGB image stored in a numpy array. `human`
+             stores the rendered image in a viewer to be shown when `show_game`
+             is called.
+
+        Returns:
+            np.ndarray when mode == `rgb_array`. True when mode == `human`
+        """
         img = self.env.physics.render(camera_id=0)
         if mode == "rgb_array":
             return img
@@ -83,7 +93,16 @@ class DMControlEnv(Environment):
             time.sleep(sleep)
 
     def reset(self, return_state: bool = False) -> [np.ndarray, tuple]:
-        """Resets the environment and returns the first observation"""
+        """
+        Resets the environment and returns the first observation, or the first
+            (state, obs) tuple.
+        Args:
+            return_state: If true return a also the initial state of the env.
+
+        Returns:
+            Observation of the environment if `return_state` is False. Otherwise
+            return (state, obs) after reset.
+        """
 
         time_step = self._env.reset()
         observed = self._time_step_to_obs(time_step)
@@ -93,13 +112,17 @@ class DMControlEnv(Environment):
         else:
             return self.get_state(), observed
 
-    def set_state(self, state: np.ndarray):
+    def set_state(self, state: tuple):
         """
-            Sets the microstate of the simulator to the microstate of the target State.
-            I will be super grateful if someone shows me how to do this using Open Source code.
-            :param state:
-            :return:
-            """
+        Sets the state of the simulator to the target State.
+        I will be super grateful if someone shows me how to do this using Open Source code.
+
+        Args:
+            state: np.ndarray containing the information about the state to be set.
+
+        Returns:
+            None
+        """
         with self.env.physics.reset_context():
             # mj_reset () is  called  upon  entering  the  context.
             self.env.physics.data.qpos[:] = state[0]  # Set  position ,
@@ -107,6 +130,15 @@ class DMControlEnv(Environment):
             self.env.physics.data.ctrl[:] = state[2]  # and  control.
 
     def get_state(self) -> tuple:
+        """
+        Returns a tuple containing the three arrays that characterize the state
+         of the system. Each tuple contains the position of the robot, its velocity
+         and the control variables currently being applied.
+
+        Returns:
+            Tuple of numpy arrays containing all the information needed to describe
+            the current state of the simulation.
+        """
         state = (
             np.array(self.env.physics.data.qpos),
             np.array(self.env.physics.data.qvel),
@@ -117,6 +149,23 @@ class DMControlEnv(Environment):
     def step(
         self, action: np.ndarray, state: np.ndarray = None, n_repeat_action: int = None
     ) -> tuple:
+        """
+        Step the environment applying a given action from an arbitrary state. If
+        is not provided the signature matches the one from OpenAI gym. It allows
+        to apply arbitrary boundary conditions to define custom end states in case
+        the env was initialized with a "CustomDeath' object.
+
+        Args:
+            action: Array containing the action to be applied.
+            state: State to be set before stepping the environment.
+            n_repeat_action: Consecutive number of times to apply the given action.
+
+        Returns:
+            if state is None:
+                (obs, reward, end, info)
+            else:
+                (new_state, obs, reward, end, info)
+        """
         n_repeat_action = n_repeat_action if n_repeat_action is not None else self.n_repeat_action
 
         custom_death = False
@@ -149,12 +198,18 @@ class DMControlEnv(Environment):
 
     def step_batch(self, actions, states=None, n_repeat_action: [int, np.ndarray] = None) -> tuple:
         """
+        Vectorized version of the `step` method. It allows to step a vector of
+        states and actions. The signature and behaviour is the same as `step`, but taking
+        a list of states, actions and n_repeat_actions as input.
 
-            :param actions:
-            :param states:
-            :param n_repeat_action:
-            :return:
-            """
+        Args:
+            actions: Iterable containing the different actions to be applied.
+            states: Iterable containing the different states to be set.
+            n_repeat_action: int or array containing the frameskips that will be applied.
+
+        Returns:
+
+        """
         n_repeat_action = n_repeat_action if n_repeat_action is not None else self.n_repeat_action
         n_repeat_action = (
             n_repeat_action
