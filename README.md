@@ -15,7 +15,7 @@ compatible with passing the parameters as vectors of steps and actions.
 ```python
 from plangym import AtariEnvironment
 env = AtariEnvironment(name="MsPacman-v0",
-                      clone_seeds=True, autoreset=True)
+                       clone_seeds=True, autoreset=True)
 state, obs = env.reset()
 
 states = [state.copy() for _ in range(10)]
@@ -29,9 +29,9 @@ new_states, observs, rewards, ends, infos = data
 ```python
 from plangym import AtariEnvironment, ParallelEnvironment
 env = ParallelEnvironment(env_class=AtariEnvironment,
-                           name="MsPacman-v0",
-                           clone_seeds=True, autoreset=True,
-                           blocking=False)
+                          name="MsPacman-v0",
+                          clone_seeds=True, autoreset=True,
+                          blocking=False)
 
 state, obs = env.reset()
 
