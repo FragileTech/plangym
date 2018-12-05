@@ -172,7 +172,7 @@ class DMControlEnv(Environment):
         cum_reward = 0
         if state is not None:
             self.set_state(state)
-        for i in range(n_repeat_action):
+        for i in range(int(n_repeat_action)):
             time_step = self.env.step(action)
             end = end or time_step.last()
             cum_reward += time_step.reward
