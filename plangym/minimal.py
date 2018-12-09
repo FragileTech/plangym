@@ -5,11 +5,11 @@ from gym import spaces
 from plangym.env import AtariEnvironment, Environment, resize_frame
 
 
-class CartPoleEnvironment(Environment):
+class ClassicControl(Environment):
     """Environment for playing Atari games."""
 
     def __init__(self, name: str = "CartPole-v1"):
-        super(CartPoleEnvironment, self).__init__(name=name, n_repeat_action=1)
+        super(ClassicControl, self).__init__(name=name, n_repeat_action=1)
         self._env = gym.make(name)
         self.action_space = self._env.action_space
         self.observation_space = self._env.observation_space

@@ -823,7 +823,7 @@ class ParallelEnvironment(Environment):
             return (state, obs) after reset.
         """
         state, obs = self._env.reset(return_state=True)
-        self.sync_states()
+        self.sync_states(state)
         return state, obs if return_state else obs
 
     def get_state(self):
@@ -845,9 +845,10 @@ class ParallelEnvironment(Environment):
         self._env.set_state(state)
         self.sync_states()
 
-    def sync_states(self):
+    def sync_states(self, state: None):
         """Set all the states of the different workers of the internal :class: BatchEnv to the
         same state as the internal :class: DMControlEnv used to apply the
         non-vectorized steps.
         """
-        self._batch_env.sync_states(self.get_state())
+        state = self.get_state() if state is None else state
+        self._batch_env.sync_states(state)
