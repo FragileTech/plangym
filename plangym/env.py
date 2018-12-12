@@ -224,6 +224,7 @@ class AtariEnvironment(Environment):
         """
         n_repeat_action = n_repeat_action if n_repeat_action is not None else self.n_repeat_action
         if state is not None:
+            state = state.astype(np.uint8)
             self.set_state(state)
         reward = 0
         end, _end, lost_live = False, False, False
