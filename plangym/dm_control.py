@@ -51,7 +51,7 @@ class DMControlEnv(Environment):
 
         self._custom_death = custom_death
         shape = np.sum([val.shape for val in self.env.observation_spec().values()])
-        self.observation_space = Box(low=-np.inf, high=np.inf, shape=shape)
+        self.observation_space = Box(low=-np.inf, high=np.inf, shape=tuple([shape]))
 
         self.reset()
 
