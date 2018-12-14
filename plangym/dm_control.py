@@ -1,6 +1,7 @@
 import sys
 import traceback
 import numpy as np
+from gym.spaces import Box
 from plangym.env import Environment, ExternalProcess, BatchEnv
 try:
     from gym.envs.classic_control import rendering
@@ -49,6 +50,8 @@ class DMControlEnv(Environment):
         self._viewer = None if novideo_mode else rendering.SimpleImageViewer()
 
         self._custom_death = custom_death
+        shape = np.sum([val.shape for val in self.env.observation_spec().values()])
+        self.observation_space = Box(low=-np.inf, high=np.inf, shape=shape)
 
         self.reset()
 
@@ -56,6 +59,9 @@ class DMControlEnv(Environment):
         return getattr(self._env, item)
 
     def action_spec(self):
+        return self.env.action_spec()
+
+    def action_space(self):
         return self.env.action_spec()
 
     @property
