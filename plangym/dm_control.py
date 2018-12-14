@@ -2,7 +2,10 @@ import sys
 import traceback
 import numpy as np
 from plangym.env import Environment, ExternalProcess, BatchEnv
-from gym.envs.classic_control import rendering
+try:
+    from gym.envs.classic_control import rendering
+except Exception as e:
+    print("Failed to load rendering tools")
 
 
 class DMControlEnv(Environment):

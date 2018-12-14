@@ -752,7 +752,7 @@ class ParallelEnvironment(Environment):
     """
 
     def __init__(
-        self, name, env_class, n_workers: int = 8, blocking: bool = True, *args, **kwargs
+        self, name, env_class, n_workers: int = 8, blocking: bool = False, *args, **kwargs
     ):
         super(ParallelEnvironment, self).__init__(name=name)
         self._env = env_callable(name, env_class, *args, **kwargs)()
