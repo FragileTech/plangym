@@ -4,7 +4,9 @@ import numpy as np
 from plangym.env import Environment, ExternalProcess, BatchEnv
 try:
     from gym.envs.classic_control import rendering
+    novideo_mode = False
 except Exception as e:
+    novideo_mode = True
     print("Failed to load rendering tools")
 
 
@@ -43,7 +45,8 @@ class DMControlEnv(Environment):
         self._name = name
         self.viewer = []
         self._last_time_step = None
-        self._viewer = rendering.SimpleImageViewer()
+
+        self._viewer = None if novideo_mode else rendering.SimpleImageViewer()
 
         self._custom_death = custom_death
 
