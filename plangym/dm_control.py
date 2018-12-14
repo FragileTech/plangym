@@ -55,7 +55,6 @@ class DMControlEnv(Environment):
                                      dtype=np.float32)
 
         self.action_space = Box(low=self.action_spec().minimum, high=self.action_spec().maximum,
-                                shape=self.action_spec().shape,
                                 dtype=np.float32)
 
         self.reset()
