@@ -518,6 +518,6 @@ class CustomDeath:
         # < max_tilt and reward_change < 0
         # torso_very_tilted = torso_very_tilted if not env.state.dead else False
 
-        crappy_reward = time_step.reward < min_reward if not env.state.dead else False
+        crappy_reward = time_step.reward < min_reward #if not env.state.dead else False
 
         return reward_drops or torso_touches_ground or torso_very_tilted or crappy_reward
