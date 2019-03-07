@@ -25,10 +25,10 @@ class ClassicControl(Environment):
         return self._env.action_space.n
 
     def get_state(self) -> np.ndarray:
-        return copy.copy(self._env.unwrapped.state)
+        return np.array(copy.copy(self._env.unwrapped.state))
 
     def set_state(self, state: np.ndarray):
-        self._env.unwrapped.state = copy.copy(state)
+        self._env.unwrapped.state = copy.copy(tuple(state.tolist()))
         return state
 
     def step(
