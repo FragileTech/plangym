@@ -2,7 +2,7 @@
 
 [![Documentation Status](https://readthedocs.org/projects/plangym/badge/?version=latest)](https://plangym.readthedocs.io/en/latest/?badge=latest)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black) 
-
+[![Build Status](https://travis-ci.org/guillemdb/plangym.svg)](https://travis-ci.org/guillemdb/plangym)
 Plan gym is an interface to use OpenAI gym for planning problems. It allows extends the standard
  interface to allow setting and recovering the environment states.
  

@@ -1,8 +1,10 @@
 import sys
 import traceback
-import numpy as np
-from fractalai.environment import Environment, ExternalProcess, BatchEnv, resize_frame
+
 from gym import spaces
+import numpy as np
+
+from plangym.env import BatchEnv, Environment, ExternalProcess, resize_frame
 
 try:
     import retro
@@ -20,7 +22,7 @@ class RetroEnvironment(Environment):
         height: float = 100,
         width: float = 100,
         wrappers=None,
-        **kwargs
+        **kwargs,
     ):
         self._env_kwargs = kwargs
         self.height = height
@@ -65,7 +67,7 @@ class RetroEnvironment(Environment):
         if state is not None:
             self.set_state(state)
         reward = 0
-        for i in range(n_repeat_action):
+        for _ in range(n_repeat_action):
             obs, _reward, _, info = self._env.step(action)
             reward += _reward
             end_screen = info.get("screen_x", 0) >= info.get("screen_x_end", 1e6)
@@ -128,6 +130,24 @@ class RetroEnvironment(Environment):
 
 
 class ExternalRetro(ExternalProcess):
+    """Step environment in a separate process for lock free paralellism.
+            The environment will be created in the external process by calling the
+            specified callable. This can be an environment class, or a function
+            creating the environment and potentially wrapping it. The returned
+            environment should not access global variables.
+       Args:
+           name:
+           wrappers:
+           n_repeat_action:
+           height:
+           width:
+           **kwargs:
+
+       Attributes:
+          observation_space: The cached observation space of the environment.
+          action_space: The cached action space of the environment.
+    """
+
     def __init__(
         self,
         name,
@@ -135,19 +155,9 @@ class ExternalRetro(ExternalProcess):
         n_repeat_action: int = 1,
         height: float = 100,
         width: float = 100,
-        **kwargs
+        **kwargs,
     ):
-        """Step environment in a separate process for lock free paralellism.
-        The environment will be created in the external process by calling the
-        specified callable. This can be an environment class, or a function
-        creating the environment and potentially wrapping it. The returned
-        environment should not access global variables.
-        Args:
-          constructor: Callable that creates and returns an OpenAI gym environment.
-        Attributes:
-          observation_space: The cached observation space of the environment.
-          action_space: The cached action space of the environment.
-        """
+
         self.name = name
         super(ExternalRetro, self).__init__(
             constructor=(name, wrappers, n_repeat_action, height, width, kwargs)
@@ -156,7 +166,9 @@ class ExternalRetro(ExternalProcess):
     def _worker(self, data, conn):
         """The process waits for actions and sends back environment results.
         Args:
-          constructor: Constructor for the OpenAI Gym environment.
+          data: tuple containing all the parameters for initializing a
+           RetroEnvironment. This is: ( name, wrappers, n_repeat_action,
+           height, width, kwargs)
           conn: Connection for communication to the main process.
         Raises:
           KeyError: When receiving a message of unknown type.
@@ -169,7 +181,7 @@ class ExternalRetro(ExternalProcess):
                 n_repeat_action=n_repeat_action,
                 height=height,
                 width=width,
-                **kwargs
+                **kwargs,
             )
             env.init_env()
             env.reset()
@@ -205,7 +217,17 @@ class ExternalRetro(ExternalProcess):
 
 
 class ParallelRetro(Environment):
-    """Wrap any environment to be stepped in parallel."""
+    """Wrap any environment to be stepped in parallel.
+        Args:
+            name: Name of the Environment.
+            n_repeat_action: Frameskip that will be applied.
+            height: Height of the rgb frame containing the observation.
+            width: Width of the rgb frame containing the observation.
+            wrappers: Wrappers to be applied to the Environment.
+            n_workers: Number of workers that will be used.
+            blocking: Step the environments asynchronously if False.
+            **kwargs: Additional kwargs to be passed to the environment.
+    """
 
     def __init__(
         self,
@@ -216,17 +238,8 @@ class ParallelRetro(Environment):
         wrappers=None,
         n_workers: int = 8,
         blocking: bool = True,
-        **kwargs
+        **kwargs,
     ):
-        """
-
-        :param name: Name of the Environment
-        :param env_class: Class of the environment to be wrapped.
-        :param n_workers: number of workers that will be used.
-        :param blocking: step the environments asynchronously.
-        :param args: args of the environment that will be parallelized.
-        :param kwargs: kwargs of the environment that will be parallelized.
-        """
 
         super(ParallelRetro, self).__init__(name=name)
 
@@ -237,7 +250,7 @@ class ParallelRetro(Environment):
                 height=height,
                 width=width,
                 wrappers=wrappers,
-                **kwargs
+                **kwargs,
             )
             for _ in range(n_workers)
         ]
@@ -248,7 +261,7 @@ class ParallelRetro(Environment):
             height=height,
             width=width,
             wrappers=wrappers,
-            **kwargs
+            **kwargs,
         )
         self._env.init_env()
         self.observation_space = self._env.observation_space

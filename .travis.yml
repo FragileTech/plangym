@@ -12,8 +12,10 @@ stages:
   - style
   - test
 _install: &_install
-  - pip install --upgrade pip cython codecov pytest black
-  - cd $(pip show plangym|grep Location|cut -d' ' -f2)/plangym
+  - pip install --upgrade pip cython codecov pytest
+  - pip install -r requirements.txt
+  - pip install -e .
+  - cd plangym
   - find . -wholename "*/tests/*" -type d -exec chmod 555 {} \;
 _coverage: &_coverage
   - coverage run --concurrency=multiprocessing -m unittest discover
@@ -27,10 +29,10 @@ matrix:
         - make check
       install:
         - pip install -r requirements-lint.txt
-    - stage: test
-      python: 3.5
-      script: *_coverage
-      install: *_install
+    #- stage: test
+    #  python: 3.5
+    #  script: *_coverage
+    #  install: *_install
     - stage: test
       python: 3.6
       script: *_coverage

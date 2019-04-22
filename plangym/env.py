@@ -2,6 +2,7 @@ import atexit
 import multiprocessing
 import sys
 import traceback
+
 from gym.envs.registration import registry as gym_registry
 import numpy as np
 from PIL import Image
@@ -227,10 +228,10 @@ class AtariEnvironment(Environment):
             state = state.astype(np.uint8)
             self.set_state(state)
         reward = 0
-        end, _end, lost_live = False, False, False
+        _end, lost_live = False, False
         info = {"lives": -1}
         terminal = False
-        for i in range(int(n_repeat_action)):
+        for _ in range(int(n_repeat_action)):
             for _ in range(self.min_dt):
                 obs, _reward, _end, _info = self._env.step(action)
                 _info["lives"] = _info.get("ale.lives", -1)
@@ -437,7 +438,7 @@ class ExternalProcess(object):
            actions: Iterable containing the different actions to be applied.
            states: Iterable containing the different states to be set.
            n_repeat_action: int or array containing the frameskips that will be applied.
-
+           blocking: If True, execute sequentially.
         Returns:
           if states is None returns (observs, rewards, ends, infos)
           else returns(new_states, observs, rewards, ends, infos)
@@ -665,7 +666,7 @@ class BatchEnv(object):
             reward = np.stack(rewards)
             done = np.stack(dones)
             infos = np.stack(infos)
-        except:  # Lets be overconfident for once TODO: remove this.
+        except BaseException as e:  # Lets be overconfident for once TODO: remove this.
             for obs in observs:
                 print(obs.shape)
         if states is None:

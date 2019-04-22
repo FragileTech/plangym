@@ -1,6 +1,8 @@
-import gym
 from typing import Callable
+
+import gym
 import numpy as np
+
 from plangym.env import Environment
 
 
@@ -76,7 +78,7 @@ class ESEnvironment(Environment):
             else:
                 processed_obs = self._normalize_observation(obs.flatten())
                 nn_action = self.neural_network.predict(processed_obs)
-            for i in range(n_repeat_action):
+            for _ in range(n_repeat_action):
 
                 obs, _reward, end, info = self._env.step(nn_action)
                 reward += _reward

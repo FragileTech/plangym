@@ -1,10 +1,14 @@
 import sys
 import traceback
-import numpy as np
+
 from gym.spaces import Box
-from plangym.env import Environment, ExternalProcess, BatchEnv
+import numpy as np
+
+from plangym.env import BatchEnv, Environment, ExternalProcess
+
 try:
     from gym.envs.classic_control import rendering
+
     novideo_mode = False
 except Exception as e:
     novideo_mode = True
@@ -51,11 +55,11 @@ class DMControlEnv(Environment):
 
         self._custom_death = custom_death
         shape = self.reset(return_state=False).shape
-        self.observation_space = Box(low=-np.inf, high=np.inf, shape=shape,
-                                     dtype=np.float32)
+        self.observation_space = Box(low=-np.inf, high=np.inf, shape=shape, dtype=np.float32)
 
-        self.action_space = Box(low=self.action_spec().minimum, high=self.action_spec().maximum,
-                                dtype=np.float32)
+        self.action_space = Box(
+            low=self.action_spec().minimum, high=self.action_spec().maximum, dtype=np.float32
+        )
 
         self.reset()
 
@@ -188,7 +192,7 @@ class DMControlEnv(Environment):
         cum_reward = 0
         if state is not None:
             self.set_state(state)
-        for i in range(int(n_repeat_action)):
+        for _ in range(int(n_repeat_action)):
             time_step = self.env.step(action)
             end = end or time_step.last()
             cum_reward += time_step.reward
@@ -265,18 +269,23 @@ class DMControlEnv(Environment):
 
 class ExternalDMControl(ExternalProcess):
     """I cannot find a way to pass a function that creates a DMControl env, so I have to create
-     it manually inside the thread."""
+      it manually inside the thread.
+      Step environment in a separate process for lock free paralellism.
+      The environment will be created in the external process.
+      Args:
+         name: Name of the Environment.
+         wrappers: Wrappers to be applied to the Environment.
+         n_repeat_action: Number of consecutive times that action will be applied.
+         *args: Additional args to be passed to the environment.
+         **kwargs: Additional kwargs to be passed to the environment.
 
-    def __init__(self, name, wrappers=None, n_repeat_action: int = 1, *args, **kwargs):
-        """Step environment in a separate process for lock free paralellism.
-        The environment will be created in the external process by calling the
-        specified callable.
-        Args:
-          constructor: Callable that creates and returns an OpenAI gym environment.
-        Attributes:
+      Attributes:
           observation_space: The cached observation space of the environment.
           action_space: The cached action space of the environment.
-        """
+     """
+
+    def __init__(self, name, wrappers=None, n_repeat_action: int = 1, *args, **kwargs):
+
         self.name = name
         super(ExternalDMControl, self).__init__(
             constructor=(name, wrappers, n_repeat_action, args, kwargs)
@@ -337,7 +346,7 @@ class ParallelDMControl(Environment):
     Args:
             name: Name of the Environment. following the same conventions as
                 :class: DMControlEnv.
-            n_repeat_action:
+            n_repeat_action: Number of consecutive times that action will be applied.
             n_workers: Number of processes that will be used.
             blocking: if False step the environments asynchronously.
             *args: args of the environment that will be parallelized.
@@ -351,7 +360,7 @@ class ParallelDMControl(Environment):
         n_workers: int = 8,
         blocking: bool = True,
         *args,
-        **kwargs
+        **kwargs,
     ):
 
         super(ParallelDMControl, self).__init__(name=name)
@@ -494,10 +503,10 @@ class CustomDeath:
 
     @staticmethod
     def _hopper_death(env, time_step, last_time_step) -> bool:
-        min_torso_height = 0.1
-        max_reward_drop = 0.3
+        # min_torso_height = 0.1
+        # max_reward_drop = 0.3
 
-        torso_touches_ground = env.physics.height() < min_torso_height
+        # torso_touches_ground = env.physics.height() < min_torso_height
         # reward_change = time_step.reward - (last_time_step.reward if
         # last_time_step is not None else 0)
         # reward_drops = reward_change < -max_reward_drop * env.n_repeat_action
@@ -518,6 +527,6 @@ class CustomDeath:
         # < max_tilt and reward_change < 0
         # torso_very_tilted = torso_very_tilted if not env.state.dead else False
 
-        crappy_reward = time_step.reward < min_reward #if not env.state.dead else False
+        crappy_reward = time_step.reward < min_reward  # if not env.state.dead else False
 
         return reward_drops or torso_touches_ground or torso_very_tilted or crappy_reward

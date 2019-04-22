@@ -1,7 +1,10 @@
 import copy
+
 import gym
-import numpy as np
 from gym import spaces
+import numpy as np
+
+
 from plangym.env import AtariEnvironment, Environment, resize_frame
 
 
@@ -205,7 +208,7 @@ class MinimalPacman(AtariEnvironment):
         for _ in range(n_repeat_action):
             full_obs = np.zeros(self.observation_space.shape)
             obs_hist = []
-            for i in range(self.min_dt):
+            for _ in range(self.min_dt):
                 obs, _reward, _end, _info = self._env.step(action)
                 _info["lives"] = _info.get("ale.lives", -1)
                 _info["reward"] = float(info["reward"])
@@ -243,7 +246,7 @@ class MinimalPacman(AtariEnvironment):
         reward = 0
         end = False
         info = {"lives": -1}
-        for i in range(3):
+        for _ in range(3):
 
             obs, _reward, _end, _info = self._env.step(0)
             _info["lives"] = _info.get("ale.lives", -1)

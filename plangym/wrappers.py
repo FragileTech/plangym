@@ -1,12 +1,13 @@
 """
 Environments and wrappers for Sonic training.
 """
+from collections import deque
 
 import gym
-from collections import deque
+from gym import Env, error, spaces
 import numpy as np
-from gym import spaces, error, Env
-from fractalai.environment import Environment, AtariEnvironment
+
+from plangym.env import AtariEnvironment, Environment
 
 
 class Wrapper(gym.Env):
@@ -113,6 +114,7 @@ class AtariWrapper(AtariEnvironment):
         :param obs_ram: Use ram as observations even though it is not specified elsewhere.
         :param episodic_live: Return end = True when losing a live.
         :param autoreset: Restart environment when reaching a terminal state.
+        :param env: Instance of AtariEnvironment, or a wrapped AtariEnvironment.
         """
         super(AtariWrapper, self).__init__(
             name=env.spec.id,
