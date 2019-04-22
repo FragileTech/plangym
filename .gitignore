@@ -1,3 +1,15 @@
+
+#Mac OS
+*.DS_Store
+
+#PyCharm IDE
+.idea/
+
+# Documentation build files
+doc/_build/
+doc/ast2vec.rst
+doc/modules.rst
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -8,6 +20,7 @@ __pycache__/
 
 # Distribution / packaging
 .Python
+env/
 build/
 develop-eggs/
 dist/
@@ -23,7 +36,6 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-MANIFEST
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -45,7 +57,6 @@ nosetests.xml
 coverage.xml
 *.cover
 .hypothesis/
-.pytest_cache/
 
 # Translations
 *.mo
@@ -54,7 +65,6 @@ coverage.xml
 # Django stuff:
 *.log
 local_settings.py
-db.sqlite3
 
 # Flask stuff:
 instance/
@@ -81,14 +91,13 @@ celerybeat-schedule
 # SageMath parsed files
 *.sage.py
 
-# Environments
+# dotenv
 .env
+
+# virtualenv
 .venv
-env/
 venv/
 ENV/
-env.bak/
-venv.bak/
 
 # Spyder project settings
 .spyderproject
@@ -102,3 +111,6 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# CI
+.ci

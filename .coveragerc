@@ -1,0 +1,15 @@
+
+[run]
+branch = True
+source = sourced/ml/core
+
+[report]
+exclude_lines =
+    no cover
+    raise NotImplementedError
+    if __name__ == "__main__":
+ignore_errors = True
+omit =
+    sourced/ml/core/tests/*
+    sourced/ml/core/swivel.py
+    sourced/ml/core/bigartm.py
