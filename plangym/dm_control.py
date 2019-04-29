@@ -360,7 +360,7 @@ class ParallelDMControl(Environment):
         n_workers: int = 8,
         blocking: bool = True,
         *args,
-        **kwargs,
+        **kwargs
     ):
 
         super(ParallelDMControl, self).__init__(name=name)

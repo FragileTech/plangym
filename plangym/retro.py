@@ -22,7 +22,7 @@ class RetroEnvironment(Environment):
         height: float = 100,
         width: float = 100,
         wrappers=None,
-        **kwargs,
+        **kwargs
     ):
         self._env_kwargs = kwargs
         self.height = height
@@ -155,7 +155,7 @@ class ExternalRetro(ExternalProcess):
         n_repeat_action: int = 1,
         height: float = 100,
         width: float = 100,
-        **kwargs,
+        **kwargs
     ):
 
         self.name = name
@@ -181,7 +181,7 @@ class ExternalRetro(ExternalProcess):
                 n_repeat_action=n_repeat_action,
                 height=height,
                 width=width,
-                **kwargs,
+                **kwargs
             )
             env.init_env()
             env.reset()
@@ -238,7 +238,7 @@ class ParallelRetro(Environment):
         wrappers=None,
         n_workers: int = 8,
         blocking: bool = True,
-        **kwargs,
+        **kwargs
     ):
 
         super(ParallelRetro, self).__init__(name=name)
@@ -250,7 +250,7 @@ class ParallelRetro(Environment):
                 height=height,
                 width=width,
                 wrappers=wrappers,
-                **kwargs,
+                **kwargs
             )
             for _ in range(n_workers)
         ]
@@ -261,7 +261,7 @@ class ParallelRetro(Environment):
             height=height,
             width=width,
             wrappers=wrappers,
-            **kwargs,
+            **kwargs
         )
         self._env.init_env()
         self.observation_space = self._env.observation_space
