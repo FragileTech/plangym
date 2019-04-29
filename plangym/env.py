@@ -94,7 +94,8 @@ class Environment:
         raise NotImplementedError
 
     def get_state(self):
-        """Recover the internal state of the simulation. An state must completely
+        """
+        Recover the internal state of the simulation. An state must completely
         describe the Environment at a given moment.
         """
         raise NotImplementedError
@@ -830,22 +831,23 @@ class ParallelEnvironment(Environment):
 
     def get_state(self):
         """
-        Returns a tuple containing the three arrays that characterize the state
-        of the system. Each tuple contains the position of the robot, its velocity
-        and the control variables currently being applied.
+        Recover the internal state of the simulation. An state must completely
+        describe the Environment at a given moment.
 
         Returns:
-            Tuple of numpy arrays containing all the information needed to describe
-            the current state of the simulation.
+            State of the simulation.
         """
         return self._env.get_state()
 
     def set_state(self, state):
-        """Sets the state of the underlying :class: DMControlEnv and the states of all the
-           workers used by the internal :class: BatchEnv.
+        """
+        Set the internal state of the simulation.
+
+        Args:
+            state: Target state to be set in the environment.
         """
         self._env.set_state(state)
-        self.sync_states()
+        self.sync_states(state)
 
     def sync_states(self, state: None):
         """Set all the states of the different workers of the internal :class: BatchEnv to the
