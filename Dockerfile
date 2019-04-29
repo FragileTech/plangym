@@ -9,6 +9,8 @@ RUN apt-get update && \
     apt-get install -y --no-install-suggests --no-install-recommends \
       ca-certificates locales libxml2 libxml2-dev gcc g++ wget make \
       python3 python3-dev python3-distutils libjpeg8-dev zlib1g-dev && \
+    ln -s /usr/lib/x86_64-linux-gnu/libz.so /lib/ && \
+    ln -s /usr/lib/x86_64-linux-gnu/libjpeg.so /lib/ && \
     echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
     locale-gen && \
     wget -O - https://bootstrap.pypa.io/get-pip.py | python3 && \
