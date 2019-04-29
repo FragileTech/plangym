@@ -1,7 +1,7 @@
 
 [run]
 branch = True
-source = sourced/ml/core
+source = plangym
 
 [report]
 exclude_lines =
@@ -10,6 +10,4 @@ exclude_lines =
     if __name__ == "__main__":
 ignore_errors = True
 omit =
-    sourced/ml/core/tests/*
-    sourced/ml/core/swivel.py
-    sourced/ml/core/bigartm.py
+    plangym/tests/*
