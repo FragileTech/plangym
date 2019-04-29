@@ -14,7 +14,7 @@ stages:
 _install: &_install
   - pip install --upgrade pip cython codecov pytest
   - pip install -r requirements.txt
-  - pip install -e .
+  - pip install -e . --no-use-pep517
   - cd plangym
   - find . -wholename "*/tests/*" -type d -exec chmod 555 {} \;
 _coverage: &_coverage

@@ -27,4 +27,4 @@ echo\n\' > /browser && \
     chmod +x /browser
 
 COPY . plangym/
-RUN cd plangym && pip3 install -e .
+RUN cd plangym && pip3 install -e . --no-use-pep517
