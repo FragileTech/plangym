@@ -232,12 +232,14 @@ class AtariEnvironment(Environment):
         _end, lost_live = False, False
         info = {"lives": -1}
         terminal = False
+        game_end = False
         for _ in range(int(n_repeat_action)):
             for _ in range(self.min_dt):
                 obs, _reward, _end, _info = self._env.step(action)
                 _info["lives"] = _info.get("ale.lives", -1)
                 lost_live = info["lives"] > _info["lives"] or lost_live
-                terminal = terminal or _end
+                game_end = game_end or _end
+                terminal = terminal or game_end
                 terminal = terminal or lost_live if self.episodic_life else terminal
                 info = _info.copy()
                 reward += _reward
@@ -248,6 +250,7 @@ class AtariEnvironment(Environment):
         # This allows to get the original values even when using an episodic life environment
         info["terminal"] = terminal
         info["lost_live"] = lost_live
+        info["game_end"] = game_end
         if self.obs_ram:
             obs = self._env.unwrapped.ale.getRAM()
         if state is not None:

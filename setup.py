@@ -18,7 +18,7 @@ setup(
         "planning",
     ],
     install_requires=[
-        "Pillow-simd >= 5.3.0.post0",
+        # "Pillow-simd >= 5.3.0.post0",
         "numpy>=1.16.2",
         "gym[atari] >= 0.10.9",
         "pytest >= 4.0.1",
