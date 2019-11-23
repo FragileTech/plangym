@@ -676,7 +676,7 @@ class Montezuma(AtariEnvironment):
         )
         score, steps, rt0, rt1, ram_death_state, score_objects, cur_lives = state[-12:-5].tolist()
         room_time = (rt0, rt1) if rt0 != -1 and rt1 != -1 else None
-        full_state = state[:1037].astype(np.uint8)
+        full_state = state[:-12].astype(np.uint8)
         data = (
             full_state,
             score,
