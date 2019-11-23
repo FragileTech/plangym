@@ -1,10 +1,8 @@
-from collections import Counter, defaultdict
 import typing
 import logging
 
-import cv2
 import gym
-import matplotlib.pyplot as plt
+
 import numpy as np
 
 from plangym.env import AtariEnvironment
