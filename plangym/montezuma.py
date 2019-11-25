@@ -332,6 +332,7 @@ class MyMontezuma:
         self.cur_steps = steps
         self.pos = pos
         self.room_time = room_time
+        assert len(self.room_time) == 1
         self.ram_death_state = ram_death_state
         return
 
@@ -650,6 +651,7 @@ class Montezuma(AtariEnvironment):
             cur_lives,
         ) = data
         room_time = room_time if room_time[0] is not None else (-1, -1)
+        assert len(room_time) == 2
         metadata = np.array(
             [
                 float(score),
@@ -662,9 +664,10 @@ class Montezuma(AtariEnvironment):
             ],
             dtype=float,
         )
-        array = np.concatenate([full_state, metadata, np.array(pos.tuple, dtype=float)]).astype(
-            float
-        )
+        assert len(metadata) == 7
+        posarray = np.array(pos.tuple, dtype=float)
+        assert len(posarray) == 5
+        array = np.concatenate([full_state, metadata, posarray]).astype(float)
         return array
 
     def set_state(self, state: np.ndarray):
