@@ -156,7 +156,7 @@ class MyMontezuma:
         self.cur_steps = 0
         self.cur_score = 0
         self.rooms = {}
-        self.room_time = None
+        self.room_time = (None, None)
         self.room_threshold = 40
         self.unwrapped.seed(0)
         self.unprocessed_state = unprocessed_state
@@ -649,11 +649,22 @@ class Montezuma(AtariEnvironment):
             score_objects,
             cur_lives,
         ) = data
-        room_time = room_time if room_time is not None else (-1, -1)
+        room_time = room_time if room_time[0] is not None else (-1, -1)
         metadata = np.array(
-            [score, steps, room_time[0], room_time[1], ram_death_state, score_objects, cur_lives]
+            [
+                float(score),
+                float(steps),
+                float(room_time[0]),
+                float(room_time[1]),
+                float(ram_death_state),
+                float(score_objects),
+                float(cur_lives),
+            ],
+            dtype=float,
         )
-        array = np.concatenate([full_state, metadata, np.array(pos.tuple)])
+        array = np.concatenate([full_state, metadata, np.array(pos.tuple, dtype=float)]).astype(
+            float
+        )
         return array
 
     def set_state(self, state: np.ndarray):
@@ -675,7 +686,7 @@ class Montezuma(AtariEnvironment):
             y=float(pos_vals[4]),
         )
         score, steps, rt0, rt1, ram_death_state, score_objects, cur_lives = state[-12:-5].tolist()
-        room_time = (rt0, rt1) if rt0 != -1 and rt1 != -1 else None
+        room_time = (rt0, rt1) if rt0 != -1 and rt1 != -1 else (None, None)
         full_state = state[:-12].astype(np.uint8)
         data = (
             full_state,
@@ -683,9 +694,9 @@ class Montezuma(AtariEnvironment):
             steps,
             pos,
             room_time,
-            ram_death_state,
-            score_objects,
-            cur_lives,
+            int(ram_death_state),
+            bool(score_objects),
+            int(cur_lives),
         )
         self._env.restore(data)
 
