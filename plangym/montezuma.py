@@ -332,7 +332,7 @@ class MyMontezuma:
         self.cur_steps = steps
         self.pos = pos
         self.room_time = room_time
-        assert len(self.room_time) == 1
+        assert len(self.room_time) == 2
         self.ram_death_state = ram_death_state
         return
 
