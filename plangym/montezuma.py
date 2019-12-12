@@ -6,6 +6,7 @@ import cv2
 import gym
 import matplotlib.pyplot as plt
 import numpy as np
+from gym.envs.registration import registry as gym_registry
 
 from plangym.env import AtariEnvironment
 
@@ -148,7 +149,11 @@ class MyMontezuma:
         objects_remember_rooms=False,
         only_keys=False,
     ):  # TODO: version that also considers the room objects were found in
-        self.env = gym.make("MontezumaRevengeDeterministic-v4")
+        spec = gym_registry.spec("MontezumaRevengeDeterministic-v4")
+        # not actually needed, but we feel safer
+        spec.max_episode_steps = None
+        spec.max_episode_time = None
+        self.env = spec.make()
         self.env.reset()
         self.score_objects = score_objects
         self.ram = None
@@ -445,8 +450,9 @@ class MyMontezuma:
             )
         if self.unprocessed_state:
             return unprocessed_state, reward, done, lol
-
-        return self.get_observation(unprocessed_state), reward, done, lol
+        observs = self.get_observation(unprocessed_state)
+        done = done or observs[-1] == 8
+        return done, reward, done, lol
 
     def get_pos(self):
         assert self.pos is not None
@@ -690,7 +696,7 @@ class Montezuma(AtariEnvironment):
         )
         score, steps, rt0, rt1, ram_death_state, score_objects, cur_lives = state[-12:-5].tolist()
         room_time = (rt0, rt1) if rt0 != -1 and rt1 != -1 else (None, None)
-        full_state = state[:-12].astype(np.uint8)
+        full_state = state[:-12].copy().astype(np.uint8)
         data = (
             full_state,
             score,
