@@ -452,7 +452,7 @@ class MyMontezuma:
             return unprocessed_state, reward, done, lol
         observs = self.get_observation(unprocessed_state)
         done = done or observs[-1] == 8
-        return done, reward, done, lol
+        return observs, reward, done, lol
 
     def get_pos(self):
         assert self.pos is not None
