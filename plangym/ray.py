@@ -1,3 +1,8 @@
+import atexit
+import multiprocessing
+import sys
+import traceback
+
 import numpy as np
 import ray
 
@@ -154,6 +159,7 @@ class RayEnv(Environment):
             done = np.stack(dones)
             infos = np.stack(infos)
         except BaseException as e:  # Lets be overconfident for once TODO: remove this.
+            print(e)
             for obs in observs:
                 print(obs.shape)
         if states is None:
@@ -568,6 +574,7 @@ class BatchEnv(object):
             done = np.stack(dones)
             infos = np.stack(infos)
         except BaseException as e:  # Lets be overconfident for once TODO: remove this.
+            print(e)
             for obs in observs:
                 print(obs.shape)
         if states is None:

@@ -1,14 +1,14 @@
-import typing
 import logging
+import typing
 
 import gym
-
 import numpy as np
+from PIL import Image
 
 from plangym.env import AtariEnvironment
 
-# ------------------------------------------------------------------------------
 
+# ------------------------------------------------------------------------------
 # Copyright (c) 2018-2019 Uber Technologies, Inc.
 #
 # Licensed under the Uber Non-Commercial License (the "License");
@@ -23,8 +23,6 @@ class IgnoreNoHandles(logging.Filter):
             return 0
         return 1
 
-
-from PIL import Image
 
 _plt_logger = logging.getLogger("matplotlib.legend")
 _plt_logger.addFilter(IgnoreNoHandles())
@@ -72,6 +70,7 @@ def resize_frame(frame: np.ndarray, height: int, width: int, mode="RGB") -> np.n
         frame: Target numpy array representing the image that will be resized.
         height: Height of the resized image.
         width: Width of the resized image.
+        mode: Color mode of the resized image.
 
     Returns:
         The resized frame that matches the provided width and height.
@@ -177,7 +176,7 @@ class MyMontezuma:
                     room = 1
                     level += 1
                 elif direction_x == 0 or direction_y == 0:
-                    _room = PYRAMID[room_y + direction_y][room_x + direction_x]
+                    # _room = PYRAMID[room_y + direction_y][room_x + direction_x]
                     # if _room != -1:
                     room = room
                     assert room != -1, f"Impossible room change: ({direction_y}, {direction_x})"

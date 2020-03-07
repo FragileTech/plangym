@@ -98,6 +98,8 @@ class ClassicControl(Environment):
 
 
 class MinimalPong(AtariEnvironment):
+    """Minimal pong environment"""
+
     def __init__(self, name="PongNoFrameskip-V4", *args, **kwargs):
         """Environment adapted to play pong returning the smallest observation possible.
         This is meant for testing RL algos. The number of possible actions has been reduced to 2,
@@ -168,6 +170,8 @@ class MinimalPong(AtariEnvironment):
 
 
 class MinimalPacman(AtariEnvironment):
+    """Minimal pacman environment"""
+
     def __init__(self, *args, **kwargs):
         obs_shape = kwargs.get("obs_shape", (80, 80, 2))
         # Do not pas obs_shape to AtariEnvironment

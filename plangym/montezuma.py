@@ -1,17 +1,17 @@
 from collections import Counter, defaultdict
-import typing
 import logging
+import typing
 
 import cv2
-import gym
+from gym.envs.registration import registry as gym_registry
 import matplotlib.pyplot as plt
 import numpy as np
-from gym.envs.registration import registry as gym_registry
+from PIL import Image
 
 from plangym.env import AtariEnvironment
 
-# ------------------------------------------------------------------------------
 
+# ------------------------------------------------------------------------------
 # Copyright (c) 2018-2019 Uber Technologies, Inc.
 #
 # Licensed under the Uber Non-Commercial License (the "License");
@@ -26,8 +26,6 @@ class IgnoreNoHandles(logging.Filter):
             return 0
         return 1
 
-
-from PIL import Image
 
 _plt_logger = logging.getLogger("matplotlib.legend")
 _plt_logger.addFilter(IgnoreNoHandles())
@@ -75,6 +73,7 @@ def resize_frame(frame: np.ndarray, height: int, width: int, mode="RGB") -> np.n
         frame: Target numpy array representing the image that will be resized.
         height: Height of the resized image.
         width: Width of the resized image.
+        mode: Color mode of the resized image.
 
     Returns:
         The resized frame that matches the provided width and height.
@@ -205,7 +204,7 @@ class MyMontezuma:
     def pos_from_unprocessed_state(self, face_pixels, unprocessed_state):
         face_pixels = [(y, x * self.x_repeat) for y, x in face_pixels]
         if len(face_pixels) == 0:
-            assert self.pos != None, "No face pixel and no previous pos"
+            assert self.pos is not None, "No face pixel and no previous pos"
             return self.pos  # Simply re-use the same position
         y, x = np.mean(face_pixels, axis=0)
         room = 1
@@ -263,7 +262,7 @@ class MyMontezuma:
         if self.objects_remember_rooms:
             cur_object = []
             old_objects = list(old_objects)
-            for i, n_pixels in enumerate(OBJECT_PIXELS):
+            for _, n_pixels in enumerate(OBJECT_PIXELS):
                 if n_pixels != 40 and self.only_keys:
                     continue
                 if n_pixels in pixel_areas:
@@ -278,8 +277,8 @@ class MyMontezuma:
                     else:
                         cur_object.append((n_pixels, room))
 
-            # TODO: bring back these asserts. Unfortunately the ram and the frames aren't updated at
-            # the same time so these would normally fail :(
+            # TODO: bring back these asserts. Unfortunately the ram and the frames aren't updated
+            # at the same time so these would normally fail :(
             # assert all(e == 0 for e in ground_truth.values())
             return tuple(cur_object)
 
@@ -296,8 +295,8 @@ class MyMontezuma:
                 # These are the key bytes
                 cur_object &= KEY_BITS
 
-            # TODO: bring back these asserts. Unfortunately the ram and the frames aren't updated at
-            # the same time so these would normally fail :(
+            # TODO: bring back these asserts. Unfortunately the ram and the frames aren't updated
+            # at the same time so these would normally fail :(
             # assert all(e == 0 for e in ground_truth.values())
             return cur_object
 
@@ -343,12 +342,15 @@ class MyMontezuma:
 
     def is_transition_screen(self, unprocessed_state):
         unprocessed_state = unprocessed_state[50:, :, :]
-        # The screen is a transition screen if it is all black or if its color is made up only of black and
-        # (0, 28, 136), which is a color seen in the transition screens between two levels.
+        # The screen is a transition screen if it is all black or if its color is made
+        # up only of black and (0, 28, 136), which is a color seen in the transition
+        # screens between two levels.
+        unprocessed_one = unprocessed_state[:, :, 1]
+        unprocessed_two = unprocessed_state[:, :, 2]
         return (
             np.sum(unprocessed_state[:, :, 0] == 0)
-            + np.sum((unprocessed_state[:, :, 1] == 0) | (unprocessed_state[:, :, 1] == 28))
-            + np.sum((unprocessed_state[:, :, 2] == 0) | (unprocessed_state[:, :, 2] == 136))
+            + np.sum((unprocessed_one == 0) | (unprocessed_one == 28))
+            + np.sum((unprocessed_two == 0) | (unprocessed_two == 136))
         ) == unprocessed_state.size
 
     def get_face_pixels(self, unprocessed_state):
@@ -508,7 +510,13 @@ class MyMontezuma:
                     (127, 127, 127),
                     1,
                 )
-                # plt.plot([x_room, x_room + img.shape[1]], [y_room + i, y_room + i], '--', linewidth=1, color='gray')
+                # plt.plot(
+                #     [x_room, x_room + img.shape[1]],
+                #     [y_room + i, y_room + i],
+                #     "--",
+                #     linewidth=1,
+                #     color="gray",
+                # )
             for i in np.arange(resolution, img.shape[1], resolution):
                 cv2.line(
                     final_image,
@@ -517,7 +525,13 @@ class MyMontezuma:
                     (127, 127, 127),
                     1,
                 )
-                # plt.plot([x_room + i, x_room + i], [y_room, y_room + img.shape[0]], '--', linewidth=1, color='gray')
+                # plt.plot(
+                #     [x_room + i, x_room + i],
+                #     [y_room, y_room + img.shape[0]],
+                #     "--",
+                #     linewidth=1,
+                #     color="gray",
+                # )
 
             cv2.line(
                 final_image, (x_room, y_room), (x_room, y_room + img.shape[0]), (255, 255, 255), 1
