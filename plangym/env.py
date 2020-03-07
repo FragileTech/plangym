@@ -546,10 +546,14 @@ class ExternalProcess(object):
             import tensorflow as tf
             import logging
 
-            logger = tf.get_logger()
-            logger.setLevel(logging.ERROR)
             stacktrace = "".join(traceback.format_exception(*sys.exc_info()))
-            logger.error("Error in environment process: {}".format(stacktrace))
+            message = f"Error in environment process: {stacktrace}"
+            if hasattr(tf, "logging"):
+                tf.logging.error(message)
+            else:
+                logger = tf.get_logger()
+                logger.setLevel(logging.ERROR)
+                logger.error(message)
             conn.send((self._EXCEPTION, stacktrace))
             conn.close()
 
