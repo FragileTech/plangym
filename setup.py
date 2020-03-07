@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import find_packages, setup
 
 
 setup(
@@ -23,6 +23,7 @@ setup(
         "gym[atari] >= 0.10.9",
         "pytest >= 4.0.1",
     ],
+    packages=find_packages(),
     package_data={"": ["LICENSE", "README.md"]},
     classifiers=[
         "Development Status :: 3 - Alpha",
