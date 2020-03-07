@@ -544,9 +544,16 @@ class ExternalProcess(object):
                 raise KeyError("Received message of unknown type {}".format(message))
         except Exception:  # pylint: disable=broad-except
             import tensorflow as tf
+            import logging
 
             stacktrace = "".join(traceback.format_exception(*sys.exc_info()))
-            tf.logging.error("Error in environment process: {}".format(stacktrace))
+            message = f"Error in environment process: {stacktrace}"
+            if hasattr(tf, "logging"):
+                tf.logging.error(message)
+            else:
+                logger = tf.get_logger()
+                logger.setLevel(logging.ERROR)
+                logger.error(message)
             conn.send((self._EXCEPTION, stacktrace))
             conn.close()
 
@@ -671,6 +678,7 @@ class BatchEnv(object):
             done = np.stack(dones)
             infos = np.stack(infos)
         except BaseException as e:  # Lets be overconfident for once TODO: remove this.
+            print(e)
             for obs in observs:
                 print(obs.shape)
         if states is None:

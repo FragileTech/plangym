@@ -12,7 +12,7 @@ try:
     novideo_mode = False
 except Exception as e:
     novideo_mode = True
-    print("Failed to load rendering tools")
+    print(f"Failed to load rendering tools: {e}")
 
 
 class DMControlEnv(Environment):

@@ -4,10 +4,10 @@ PROJECT = plangym
 
 .PHONY: check
 check:
-	!(grep -R /tmp plangym/tests)
-	flake8 --count
+	!(grep -R /tmp tests)
+	flake8 plangym --count
 	pylint plangym
-	black --check .
+	black --check plangym
 
 .PHONY: test
 test:
