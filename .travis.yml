@@ -29,7 +29,7 @@ matrix:
       install:
         - pip install -r requirements-lint.txt
     - stage: test
-      python: 3.5
+      python: 3.8
       script: *_coverage
       install: *_install
     - stage: test
