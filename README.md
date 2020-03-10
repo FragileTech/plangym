@@ -2,9 +2,9 @@
 
 [![Documentation Status](https://readthedocs.org/projects/plangym/badge/?version=latest)](https://plangym.readthedocs.io/en/latest/?badge=latest)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black) 
-[![Build Status](https://travis-ci.com/Guillemdb/plangym.svg?branch=master)](https://travis-ci.com/Guillemdb/plangym)
+[![Build Status](https://travis-ci.com/FragileTech/plangym.svg?branch=master)](https://travis-ci.com/FragileTech/plangym)
 
-Plan gym is an interface to use OpenAI gym for planning problems. It extends the standard
+`Plangym` is an interface to use OpenAI gym for planning problems. It extends the standard
  interface to allow setting and recovering the environment states.
  
 Furthermore, it provides functionality for stepping the environments in parallel, and it is 
@@ -46,5 +46,5 @@ new_states, observs, rewards, ends, infos = data
 
 ## Installation 
 
-``pip3 install git+https://github.com/Guillemdb/plangym.git
+``pip3 install git+https://github.com/FragileTech/plangym.git
 ``
