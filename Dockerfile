@@ -7,7 +7,7 @@ COPY requirements.txt plangym/requirements.txt
 
 RUN apt-get update && \
     apt-get install -y --no-install-suggests --no-install-recommends \
-      ca-certificates locales libxml2 libxml2-dev gcc g++ wget make \
+      ca-certificates locales libxml2 libxml2-dev gcc g++ wget make cmake git \
       python3 python3-dev python3-distutils libjpeg8-dev zlib1g-dev && \
     ln -s /usr/lib/x86_64-linux-gnu/libz.so /lib/ && \
     ln -s /usr/lib/x86_64-linux-gnu/libjpeg.so /lib/ && \
