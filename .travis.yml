@@ -70,7 +70,7 @@ matrix:
       script:
         - set -e
         - git pull --no-edit origin master
-        - version_file=fragile/version.py
+        - version_file=plangym/version.py
         - current_version=$(grep __version__ $version_file | cut -d\" -f2)
         - bumpversion --tag --current-version $current_version --commit patch $version_file
         - git remote add fragile-bot-remote https://fragile-bot:${PLANGYM_GITHUB_TOKEN}@github.com/$TRAVIS_REPO_SLUG
