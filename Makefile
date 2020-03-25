@@ -1,6 +1,7 @@
 current_dir = $(shell pwd)
 
 PROJECT = plangym
+VERSION ?= latest
 
 .PHONY: check
 check:
@@ -11,15 +12,20 @@ check:
 
 .PHONY: test
 test:
-	python3 -m pytest
+	pytest -s
 
 
 .PHONY: docker-test
 docker-test:
 	find -name "*.pyc" -delete
-	docker run --rm -it --network host -w /plangym --entrypoint python3 plangym -m pytest
+	docker run --rm -it --network host -w /plangym --entrypoint python3 plangym:${VERSION} -m pytest
 
 
 .PHONY: docker-build
 docker-build:
 	docker build -t plangym .
+
+
+.PHONY: docker-push
+docker-push:
+	docker push fragiletech/plangym:${VERSION}

@@ -1,10 +1,10 @@
 from setuptools import find_packages, setup
-
+from plangym.version import __version__
 
 setup(
     name="plangym",
     description="OpenAI gym environments adapted for planning.",
-    version="0.0.1",
+    version=__version__,
     license="MIT",
     author="Guillem Duran Ballester",
     author_email="guillem.db@fragile.tech",
@@ -24,7 +24,7 @@ setup(
         "Pillow>=7.0.0",
         "opencv-python>=4.2.0.32",
         "pytest>=4.0.1",
-        "atari-py<=0.2.0",
+        "atari-py==0.1.1",
     ],
     packages=find_packages(),
     package_data={"": ["LICENSE", "README.md"]},
