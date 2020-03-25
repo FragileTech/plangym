@@ -29,14 +29,14 @@ setup(
     packages=find_packages(),
     package_data={"": ["LICENSE", "README.md"]},
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 4 - Beta",
         "Environment :: Console",
         "Intended Audience :: Developers",
-        "License :: OSI Approved :: MIT license",
+        "License :: OSI Approved :: MIT License",
         "Operating System :: POSIX",
-        "Programming Language :: Python :: 3.4",
-        "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
         "Topic :: Software Development :: Libraries",
     ],
 )
