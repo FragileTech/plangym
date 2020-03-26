@@ -4,10 +4,10 @@ import gym
 import numpy
 import pytest
 
-from plangym.core import Environment
+from plangym.core import BaseEnvironment
 
 
-class DummyEnv(Environment):
+class DummyEnv(BaseEnvironment):
     action_space = gym.spaces.Discrete(2)
     observation_space = gym.spaces.Box(low=0, high=255, dtype=numpy.uint8, shape=(128,))
     dt = 1
@@ -44,7 +44,7 @@ environments = [lambda: DummyEnv(name="dummy")]
 
 
 @pytest.fixture(params=environments)
-def env(request) -> Environment:
+def env(request) -> BaseEnvironment:
     return request.param()
 
 

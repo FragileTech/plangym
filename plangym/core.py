@@ -8,7 +8,7 @@ import numpy
 wrap_callable = Union[Callable[[], gym.Wrapper], Tuple[Callable[..., gym.Wrapper], Dict[str, Any]]]
 
 
-class Environment:
+class BaseEnvironment:
     """Inherit from this class to adapt environments to different problems."""
 
     action_space = None
@@ -27,7 +27,7 @@ class Environment:
         self._name = name
 
     @property
-    def unwrapped(self) -> "Environment":
+    def unwrapped(self) -> "BaseEnvironment":
         """
         Completely unwrap this Environment.
 
@@ -117,7 +117,7 @@ class Environment:
         raise NotImplementedError
 
 
-class GymEnvironment(Environment):
+class GymEnvironment(BaseEnvironment):
     """Base class for implementing OpenAI ``gym`` environments in ``plangym``."""
 
     def __init__(

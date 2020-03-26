@@ -8,7 +8,8 @@ COPY requirements.txt plangym/requirements.txt
 RUN apt-get update && \
     apt-get install -y --no-install-suggests --no-install-recommends \
       ca-certificates locales libxml2 libxml2-dev gcc g++ wget make cmake git \
-      python3 python3-dev python3-distutils libglib2.0-0  \
+      python3 python3-dev python3-distutils libglib2.0-0 \
+      build-essential autoconf libtool pkg-config python-opengl libgle3\
       libsm6 libxrender1 libxrender-dev libxext6 libjpeg8-dev zlib1g-dev && \
     ln -s /usr/lib/x86_64-linux-gnu/libz.so /lib/ && \
     ln -s /usr/lib/x86_64-linux-gnu/libjpeg.so /lib/ && \
@@ -30,4 +31,4 @@ echo\n\' > /browser && \
     chmod +x /browser
 
 COPY . plangym/
-RUN cd plangym && pip3 install -e . --no-use-pep517
+RUN cd plangym && pip3 install -e .["retro"] --no-use-pep517

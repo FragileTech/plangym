@@ -7,7 +7,7 @@ import gym
 from gym import Env, error, spaces
 import numpy as np
 
-from plangym.env import AtariEnvironment, Environment
+from plangym import AtariEnvironment, BaseEnvironment
 
 
 class Wrapper(gym.Env):
@@ -42,7 +42,7 @@ class Wrapper(gym.Env):
                 break
 
     def step(self, action, *args, **kwargs):
-        if isinstance(self.env, Environment):
+        if isinstance(self.env, BaseEnvironment):
             return self.env.step(action, *args, **kwargs)
         else:
             return self.env.step(action)
@@ -81,7 +81,7 @@ class Wrapper(gym.Env):
 class ActionWrapper(Wrapper):
     def step(self, action, *args, **kwargs):
         action = self.action(action)
-        if isinstance(self.env, Environment):
+        if isinstance(self.env, BaseEnvironment):
             return self.env.step(action, *args, **kwargs)
         else:
             return self.env.step(action)

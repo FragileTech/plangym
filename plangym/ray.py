@@ -1,7 +1,7 @@
 import numpy as np
 import ray
 
-from plangym.core import Environment
+from plangym.core import BaseEnvironment
 
 
 def split_similar_chunks(vector: list, n_chunks: int):
@@ -11,7 +11,7 @@ def split_similar_chunks(vector: list, n_chunks: int):
 
 
 @ray.remote
-class RemoteEnv(Environment):
+class RemoteEnv(BaseEnvironment):
     def __init__(self, env_callable):
         self._env_callable = env_callable
         self.env = None
@@ -92,7 +92,7 @@ class RemoteEnv(Environment):
         return self.env.set_state(state=state)
 
 
-class RayEnv(Environment):
+class RayEnv(BaseEnvironment):
     def __init__(self, env_callable, n_workers: int, blocking: bool = False):
         self._env = env_callable()
         self.action_space = self._env.action_space

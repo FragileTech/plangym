@@ -33,6 +33,7 @@ setup(
         "pillow-simd>=7.0.0.post3",
         "opencv-python>=4.2.0.32",
     ],
+    extras_require=extras,
     packages=find_packages(),
     package_data={"": ["LICENSE", "README.md"]},
     classifiers=[

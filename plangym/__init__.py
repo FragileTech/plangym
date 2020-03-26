@@ -31,10 +31,18 @@ warnings.filterwarnings(
         "instead."
     ),
 )
+warnings.filterwarnings(
+    "ignore", message="WARN: Box bound precision lowered by casting to float32",
+)
+warnings.filterwarnings(
+    "ignore", message="invalid escape sequence",
+)
+
 warnings.filterwarnings("ignore", message="Gdk.Cursor.new is deprecated")
 try:
     from plangym.atari import AtariEnvironment  # noqa: E402
     from plangym.classic_control import ClassicControl  # noqa: E402
+    from plangym.core import BaseEnvironment  # noqa: E402
     from plangym.dm_control import DMControlEnv, ParallelDMControl  # noqa: E402
     from plangym.minimal import MinimalPacman, MinimalPong  # noqa: E402
     from plangym.montezuma import Montezuma  # noqa: E402

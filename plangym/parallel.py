@@ -6,7 +6,7 @@ from typing import Callable
 
 import numpy
 
-from plangym.core import Environment
+from plangym.core import BaseEnvironment
 from plangym.utils import split_similar_chunks
 
 
@@ -454,7 +454,7 @@ class BatchEnv(object):
                 env.close()
 
 
-class ParallelEnvironment(Environment):
+class ParallelEnvironment(BaseEnvironment):
     """
     Wrap any environment to be stepped in parallel when step_batch is called.
 
@@ -480,7 +480,7 @@ class ParallelEnvironment(Environment):
         self,
         name,
         env_class=None,
-        env_callable: Callable[..., Environment] = None,
+        env_callable: Callable[..., BaseEnvironment] = None,
         n_workers: int = 8,
         blocking: bool = False,
         *args,

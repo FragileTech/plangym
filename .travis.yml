@@ -51,7 +51,11 @@ matrix:
       name: "Test python 3.8"
       python: 3.8
       script: *_coverage
-      install: *_install
+      install:
+        - pip install --upgrade pip cython codecov pytest
+        - pip install -r requirements.txt
+        - pip install . --no-use-pep517
+        - find . -wholename "*/tests/*" -type d -exec chmod 555 {} \;
       after_success:
         - codecov
     - stage: test
