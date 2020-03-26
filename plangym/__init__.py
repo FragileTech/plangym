@@ -39,6 +39,7 @@ try:
     from plangym.minimal import MinimalPacman, MinimalPong  # noqa: E402
     from plangym.montezuma import Montezuma  # noqa: E402
     from plangym.parallel import ParallelEnvironment  # noqa: E402
+    from plangym.retro import ParallelRetro, RetroEnvironment  # noqa: E402
 
 except (ImportError, ModuleNotFoundError) as e:
     warnings.warn("Failed to import module in plangym.__init__.py: %s" % str(e))
