@@ -12,4 +12,10 @@ per-file-ignores=
     **/tests/**:D
     # Should be resolved one by one
     # Related issue: https://github.com/src-d/ml/issues/354
-    ./plangym/**:D
+    ./plangym/dm_control.py:D
+    ./plangym/montezuma.py:D
+    ./plangym/wrappers.py:D
+    ./plangym/parallel.py:D
+    ./plangym/ray.py:D
+    ./plangym/minimal.py:D
+    ./plangym/retro.py:D

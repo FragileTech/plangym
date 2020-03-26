@@ -3,333 +3,13 @@ import multiprocessing
 import sys
 import traceback
 
-from gym.envs.registration import registry as gym_registry
-import numpy as np
-from PIL import Image
+import numpy
 
-
-def resize_frame(frame: np.ndarray, height: int, width: int) -> np.ndarray:
-    """
-    Use PIL to resize an RGB frame to an specified height and width.
-
-    Args:
-        frame: Target numpy array representing the image that will be resized.
-        height: Height of the resized image.
-        width: Width of the resized image.
-
-    Returns:
-        The resized frame that matches the provided width and height.
-    """
-    frame = Image.fromarray(frame)
-    frame = frame.convert("L").resize((height, width))
-    return np.array(frame)[:, :, None]
-
-
-class Environment:
-    """Inherit from this class to adapt environments to different problem.
-     Pretty much the same as the OpenAI gym env."""
-
-    action_space = None
-    observation_space = None
-    reward_range = None
-    metadata = None
-
-    def __init__(self, name, n_repeat_action: int = 1):
-        self._name = name
-        self.n_repeat_action = n_repeat_action
-
-    @property
-    def unwrapped(self):
-        """Completely unwrap this Environment.
-
-        Returns:
-            plangym.Environment: The base non-wrapped plangym.Environment instance
-        """
-        return self
-
-    @property
-    def name(self):
-        """This is the name of the environment"""
-        return self._name
-
-    def step(self, action, state=None, n_repeat_action: int = 1) -> tuple:
-        """
-        Take a simulation step and make the environment evolve.
-
-        Args:
-            action: Chosen action applied to the environment.
-            state: Set the environment to the given state before stepping it.
-                If state is None the behaviour of this function will be the
-                same as in OpenAI gym.
-            n_repeat_action: Consecutive number of times to apply an action.
-
-        Returns:
-            if states is None returns (observs, rewards, ends, infos)
-            else returns(new_states, observs, rewards, ends, infos)
-        """
-        raise NotImplementedError
-
-    def step_batch(
-        self, actions: [np.ndarray, list], states=None, n_repeat_action: int = 1
-    ) -> tuple:
-        """
-        Take a step on a batch of states and actions.
-
-        Args:
-            actions: Chosen actions applied to the environment.
-            states: Set the environment to the given states before stepping it.
-                If state is None the behaviour of this function will be the same
-                as in OpenAI gym.
-            n_repeat_action: Consecutive number of times that the action will be
-                applied.
-
-        Returns:
-            if states is None returns (observs, rewards, ends, infos)
-            else returns(new_states, observs, rewards, ends, infos)
-        """
-        raise NotImplementedError
-
-    def reset(self, return_state: bool = True) -> [np.ndarray, tuple]:
-        """Restart the environment."""
-        raise NotImplementedError
-
-    def get_state(self):
-        """
-        Recover the internal state of the simulation. An state must completely
-        describe the Environment at a given moment.
-        """
-        raise NotImplementedError
-
-    def set_state(self, state):
-        """
-        Set the internal state of the simulation.
-
-        Args:
-            state: Target state to be set in the environment.
-
-        Returns:
-            None
-        """
-        raise NotImplementedError
-
-
-class AtariEnvironment(Environment):
-    """
-    Create an environment to play OpenAI gym Atari Games.
-
-    Args:
-        name: Name of the environment. Follows standard gym syntax conventions.
-        clone_seeds: Clone the random seed of the ALE emulator when
-            reading/setting the state. False makes the environment stochastic.
-        n_repeat_action: Consecutive number of times a given action will be applied.
-        min_dt: Number of times an action will be applied for each step
-            in n_repeat_action.
-        obs_ram: Use ram as observations even though it is not specified in the
-            `name` parameter.
-        episodic_live: Return end = True when losing a live.
-        autoreset: Restart environment when reaching a terminal state.
-
-    Example::
-
-        >>> env = AtariEnvironment(name="MsPacman-v0",
-        >>>                        clone_seeds=True, autoreset=True)
-        >>> state, obs = env.reset()
-        >>>
-        >>> states = [state.copy() for _ in range(10)]
-        >>> actions = [env.action_space.sample() for _ in range(10)]
-        >>>
-        >>> data = env.step_batch(states=states, actions=actions)
-        >>> new_states, observs, rewards, ends, infos = data
-
-    """
-
-    def __init__(
-        self,
-        name: str,
-        clone_seeds: bool = True,
-        n_repeat_action: int = 1,
-        min_dt: int = 1,
-        obs_ram: bool = False,
-        episodic_live: bool = False,
-        autoreset: bool = True,
-    ):
-
-        super(AtariEnvironment, self).__init__(name=name, n_repeat_action=n_repeat_action)
-        self.min_dt = min_dt
-        self.clone_seeds = clone_seeds
-        # This is for removing undocumented wrappers.
-        spec = gym_registry.spec(name)
-        # not actually needed, but we feel safer
-        spec.max_episode_steps = None
-        spec.max_episode_time = None
-        self._env = spec.make()
-        self.action_space = self._env.action_space
-        self.observation_space = self._env.observation_space
-        self.reward_range = self._env.reward_range
-        self.metadata = self._env.metadata
-        self.obs_ram = obs_ram
-        self.episodic_life = episodic_live
-        self.autoreset = autoreset
-
-    def __getattr__(self, item):
-        return getattr(self._env, item)
-
-    @property
-    def n_actions(self):
-        return self._env.action_space.n
-
-    def get_state(self) -> np.ndarray:
-        """
-        Recover the internal state of the simulation. If clone seed is False the
-        environment will be stochastic.
-        Cloning the full state ensures the environment is deterministic.
-        """
-        if self.clone_seeds:
-            return self._env.unwrapped.clone_full_state()
-        else:
-            return self._env.unwrapped.clone_state()
-
-    def set_state(self, state: np.ndarray):
-        """
-        Set the internal state of the simulation.
-
-        Args:
-            state: Target state to be set in the environment.
-
-        Returns:
-            None
-        """
-        if self.clone_seeds:
-            self._env.unwrapped.restore_full_state(state)
-        else:
-            self._env.unwrapped.restore_state(state)
-        return state
-
-    def step(
-        self, action: np.ndarray, state: np.ndarray = None, n_repeat_action: int = None
-    ) -> tuple:
-        """
-
-        Take n_repeat_action simulation steps and make the environment evolve
-        in multiples of min_dt.
-        The info dictionary will contain a boolean called 'lost_live' that will
-        be true if a life was lost during the current step.
-
-        Args:
-            action: Chosen action applied to the environment.
-            state: Set the environment to the given state before stepping it.
-            n_repeat_action: Consecutive number of times that the action will be applied.
-
-        Returns:
-            if states is None returns (observs, rewards, ends, infos)
-            else returns(new_states, observs, rewards, ends, infos)
-        """
-        n_repeat_action = n_repeat_action if n_repeat_action is not None else self.n_repeat_action
-        if state is not None:
-            state = state.astype(np.uint8)
-            self.set_state(state)
-        reward = 0
-        _end, lost_live = False, False
-        info = {"lives": -1}
-        terminal = False
-        game_end = False
-        for _ in range(int(n_repeat_action)):
-            for _ in range(self.min_dt):
-                obs, _reward, _end, _info = self._env.step(action)
-                _info["lives"] = _info.get("ale.lives", -1)
-                lost_live = info["lives"] > _info["lives"] or lost_live
-                game_end = game_end or _end
-                terminal = terminal or game_end
-                terminal = terminal or lost_live if self.episodic_life else terminal
-                info = _info.copy()
-                reward += _reward
-                if _end:
-                    break
-            if _end:
-                break
-        # This allows to get the original values even when using an episodic life environment
-        info["terminal"] = terminal
-        info["lost_live"] = lost_live
-        info["game_end"] = game_end
-        if self.obs_ram:
-            obs = self._env.unwrapped.ale.getRAM()
-        if state is not None:
-            new_state = self.get_state()
-            data = new_state, obs, reward, terminal, info
-        else:
-            data = obs, reward, terminal, info
-        if _end and self.autoreset:
-            self._env.reset()
-        return data
-
-    def step_batch(self, actions, states=None, n_repeat_action: [int, np.ndarray] = None) -> tuple:
-        """
-        Vectorized version of the `step` method. It allows to step a vector of
-        states and actions. The signature and behaviour is the same as `step`,
-        but taking a list of states, actions and n_repeat_actions as input.
-
-        Args:
-            actions: Iterable containing the different actions to be applied.
-            states: Iterable containing the different states to be set.
-            n_repeat_action: int or array containing the frameskips that will be applied.
-
-        Returns:
-            if states is None returns (observs, rewards, ends, infos)
-            else returns(new_states, observs, rewards, ends, infos)
-        """
-        n_repeat_action = n_repeat_action if n_repeat_action is not None else self.n_repeat_action
-        n_repeat_action = (
-            n_repeat_action
-            if isinstance(n_repeat_action, np.ndarray)
-            else np.ones(len(states)) * n_repeat_action
-        )
-        data = [
-            self.step(action, state, n_repeat_action=dt)
-            for action, state, dt in zip(actions, states, n_repeat_action)
-        ]
-        new_states, observs, rewards, terminals, infos = [], [], [], [], []
-        for d in data:
-            if states is None:
-                obs, _reward, end, info = d
-            else:
-                new_state, obs, _reward, end, info = d
-                new_states.append(new_state)
-            observs.append(obs)
-            rewards.append(_reward)
-            terminals.append(end)
-            infos.append(info)
-        if states is None:
-            return observs, rewards, terminals, infos
-        else:
-            return new_states, observs, rewards, terminals, infos
-
-    def reset(self, return_state: bool = True) -> [np.ndarray, tuple]:
-        """
-        Resets the environment and returns the first observation, or the first
-        (state, obs) tuple.
-        Args:
-            return_state: If true return a also the initial state of the env.
-
-        Returns:
-            Observation of the environment if `return_state` is False. Otherwise
-            return (state, obs) after reset.
-        """
-        if self.obs_ram:
-            obs = self._env.unwrapped.ale.getRAM()
-        else:
-            obs = self._env.reset()
-        if not return_state:
-            return obs
-        else:
-            return self.get_state(), obs
-
-    def render(self):
-        """Render the environment using OpenGL. This wraps the OpenAI render method."""
-        return self._env.render()
+from plangym.core import Environment
 
 
 def split_similar_chunks(vector: list, n_chunks: int):
-    chunk_size = int(np.ceil(len(vector) / n_chunks))
+    chunk_size = int(numpy.ceil(len(vector) / n_chunks))
     for i in range(0, len(vector), chunk_size):
         yield vector[i : i + chunk_size]
 
@@ -430,36 +110,34 @@ class ExternalProcess(object):
         else:
             return promise
 
-    def step_batch(
-        self, actions, states=None, n_repeat_action: [np.ndarray, int] = None, blocking=True
-    ):
+    def step_batch(self, actions, states=None, dt: [numpy.ndarray, int] = None, blocking=True):
         """
         Vectorized version of the `step` method. It allows to step a vector of
         states and actions. The signature and behaviour is the same as `step`, but taking
-        a list of states, actions and n_repeat_actions as input.
+        a list of states, actions and dts as input.
 
         Args:
            actions: Iterable containing the different actions to be applied.
            states: Iterable containing the different states to be set.
-           n_repeat_action: int or array containing the frameskips that will be applied.
+           dt: int or array containing the frameskips that will be applied.
            blocking: If True, execute sequentially.
         Returns:
           if states is None returns (observs, rewards, ends, infos)
           else returns(new_states, observs, rewards, ends, infos)
         """
-        promise = self.call("step_batch", actions, states, n_repeat_action)
+        promise = self.call("step_batch", actions, states, dt)
         if blocking:
             return promise()
         else:
             return promise
 
-    def step(self, action, state=None, n_repeat_action: int = None, blocking=True):
+    def step(self, action, state=None, dt: int = None, blocking=True):
         """Step the environment.
 
         Args:
           action: The action to apply to the environment.
           state: State to be set on the environment before stepping it.
-          n_repeat_action: Number of consecutive times that action will be applied.
+          dt: Number of consecutive times that action will be applied.
           blocking: Whether to wait for the result.
 
         Returns:
@@ -467,7 +145,7 @@ class ExternalProcess(object):
           transition tuple.
         """
 
-        promise = self.call("step", action, state, n_repeat_action)
+        promise = self.call("step", action, state, dt)
         if blocking:
             return promise()
         else:
@@ -599,28 +277,22 @@ class BatchEnv(object):
         """
         return getattr(self._envs[0], name)
 
-    def _make_transitions(self, actions, states=None, n_repeat_action: [np.ndarray, int] = None):
+    def _make_transitions(self, actions, states=None, dt: [numpy.ndarray, int] = None):
+        no_states = states is None or states[0] is None
         states = states if states is not None else [None] * len(actions)
-        if n_repeat_action is None:
-            n_repeat_action = np.array([None] * len(states))
-        n_repeat_action = (
-            n_repeat_action
-            if isinstance(n_repeat_action, np.ndarray)
-            else np.ones(len(states)) * n_repeat_action
-        )
+        if dt is None:
+            dt = numpy.array([None] * len(states))
+        dt = dt if isinstance(dt, numpy.ndarray) else numpy.ones(len(states)) * dt
         chunks = len(self._envs)
         states_chunk = split_similar_chunks(states, n_chunks=chunks)
         actions_chunk = split_similar_chunks(actions, n_chunks=chunks)
-        repeat_chunk = split_similar_chunks(n_repeat_action, n_chunks=chunks)
+        repeat_chunk = split_similar_chunks(dt, n_chunks=chunks)
         results = []
         for env, states_batch, actions_batch, dt in zip(
             self._envs, states_chunk, actions_chunk, repeat_chunk
         ):
             result = env.step_batch(
-                actions=actions_batch,
-                states=states_batch,
-                n_repeat_action=dt,
-                blocking=self._blocking,
+                actions=actions_batch, states=states_batch, dt=dt, blocking=self._blocking,
             )
             results.append(result)
 
@@ -631,13 +303,13 @@ class BatchEnv(object):
         infos = []
         for result in results:
             if self._blocking:
-                if states is None:
+                if no_states:
                     obs, rew, ends, info = result
                 else:
                     _sts, obs, rew, ends, info = result
                     _states += _sts
             else:
-                if states is None:
+                if no_states:
                     obs, rew, ends, info = result()
                 else:
                     _sts, obs, rew, ends, info = result()
@@ -646,18 +318,18 @@ class BatchEnv(object):
             rewards += rew
             terminals += ends
             infos += info
-        if states is None:
+        if no_states:
             transitions = observs, rewards, terminals, infos
         else:
             transitions = _states, observs, rewards, terminals, infos
         return transitions
 
-    def step_batch(self, actions, states=None, n_repeat_action: [np.ndarray, int] = None):
+    def step_batch(self, actions, states=None, dt: [numpy.ndarray, int] = None):
         """Forward a batch of actions to the wrapped environments.
         Args:
           actions: Batched action to apply to the environment.
           states: States to be stepped. If None, act on current state.
-          n_repeat_action: Number of consecutive times the action will be applied.
+          dt: Number of consecutive times the action will be applied.
 
         Raises:
           ValueError: Invalid actions.
@@ -665,23 +337,21 @@ class BatchEnv(object):
         Returns:
           Batch of observations, rewards, and done flags.
         """
-
-        if states is None:
-            observs, rewards, dones, infos = self._make_transitions(actions, None, n_repeat_action)
+        no_states = states is None or states[0] is None
+        if no_states:
+            observs, rewards, dones, infos = self._make_transitions(actions, states, dt)
         else:
-            states, observs, rewards, dones, infos = self._make_transitions(
-                actions, states, n_repeat_action
-            )
+            states, observs, rewards, dones, infos = self._make_transitions(actions, states, dt)
         try:
-            observ = np.stack(observs)
-            reward = np.stack(rewards)
-            done = np.stack(dones)
-            infos = np.stack(infos)
+            observ = numpy.stack(observs)
+            reward = numpy.stack(rewards)
+            done = numpy.stack(dones)
+            infos = numpy.stack(infos)
         except BaseException as e:  # Lets be overconfident for once TODO: remove this.
             print(e)
             for obs in observs:
                 print(obs.shape)
-        if states is None:
+        if no_states:
             return observ, reward, done, infos
         else:
             return states, observs, rewards, dones, infos
@@ -704,7 +374,7 @@ class BatchEnv(object):
           Batch of observations.
         """
         if indices is None:
-            indices = np.arange(len(self._envs))
+            indices = numpy.arange(len(self._envs))
         if self._blocking:
             observs = [self._envs[index].reset(return_states=return_states) for index in indices]
         else:
@@ -715,9 +385,9 @@ class BatchEnv(object):
             transitions = [trans() for trans in transitions]
             states, observs = zip(*transitions)
 
-        observ = np.stack(observs)
+        observ = numpy.stack(observs)
         if return_states:
-            return np.array(states), observ
+            return numpy.array(states), observ
         return observ
 
     def close(self):
@@ -782,30 +452,28 @@ class ParallelEnvironment(Environment):
 
     def step_batch(
         self,
-        actions: np.ndarray,
-        states: np.ndarray = None,
-        n_repeat_action: [np.ndarray, int] = None,
+        actions: numpy.ndarray,
+        states: numpy.ndarray = None,
+        dt: [numpy.ndarray, int] = None,
     ):
         """
         Vectorized version of the `step` method. It allows to step a vector of
         states and actions. The signature and behaviour is the same as `step`,
-        but taking a list of states, actions and n_repeat_actions as input.
+        but taking a list of states, actions and dts as input.
 
         Args:
             actions: Iterable containing the different actions to be applied.
             states: Iterable containing the different states to be set.
-            n_repeat_action: int or array containing the frameskips that will be applied.
+            dt: int or array containing the frameskips that will be applied.
 
         Returns:
             if states is None returns (observs, rewards, ends, infos) else (new_states,
             observs, rewards, ends, infos)
 
         """
-        return self._batch_env.step_batch(
-            actions=actions, states=states, n_repeat_action=n_repeat_action
-        )
+        return self._batch_env.step_batch(actions=actions, states=states, dt=dt)
 
-    def step(self, action: np.ndarray, state: np.ndarray = None, n_repeat_action: int = None):
+    def step(self, action: numpy.ndarray, state: numpy.ndarray = None, dt: int = None):
         """
         Step the environment applying a given action from an arbitrary state. If
         is not provided the signature matches the one from OpenAI gym. It allows
@@ -815,13 +483,13 @@ class ParallelEnvironment(Environment):
         Args:
             action: Array containing the action to be applied.
             state: State to be set before stepping the environment.
-            n_repeat_action: Consecutive number of times to apply the given action.
+            dt: Consecutive number of times to apply the given action.
 
         Returns:
             if states is None returns (observs, rewards, ends, infos) else (new_states,
             observs, rewards, ends, infos)
         """
-        return self._env.step(action=action, state=state, n_repeat_action=n_repeat_action)
+        return self._env.step(action=action, state=state, dt=dt)
 
     def reset(self, return_state: bool = True, blocking: bool = True):
         """

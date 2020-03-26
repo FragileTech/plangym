@@ -4,7 +4,9 @@ import traceback
 from gym import spaces
 import numpy as np
 
-from plangym.env import BatchEnv, Environment, ExternalProcess, resize_frame
+from plangym.core import GymEnvironment
+from plangym.parallel import BatchEnv, ExternalProcess
+from plangym.utils import resize_frame
 
 try:
     import retro
@@ -12,23 +14,25 @@ except ModuleNotFoundError:
     print("Please install OpenAI retro")
 
 
-class RetroEnvironment(Environment):
+class RetroEnvironment(GymEnvironment):
     """Environment for playing Atari games."""
 
     def __init__(
         self,
         name: str,
-        n_repeat_action: int = 1,
+        dt: int = 1,
         height: float = 100,
         width: float = 100,
         wrappers=None,
+        delay_init: bool = False,
         **kwargs
     ):
-        self._env_kwargs = kwargs
+        self.gym_env_kwargs = kwargs
         self.height = height
         self.width = width
-        super(RetroEnvironment, self).__init__(name=name, n_repeat_action=n_repeat_action)
-        self._env = None
+        super(RetroEnvironment, self).__init__(name=name, dt=dt)
+        del self.gym_env
+        self.gym_env = None if delay_init else self.init_env()
         if height is not None and width is not None:
             self.observation_space = spaces.Box(
                 low=0, high=255, shape=(self.height, self.width, 1), dtype=np.uint8
@@ -36,39 +40,36 @@ class RetroEnvironment(Environment):
         self.wrappers = wrappers
 
     def init_env(self):
-        env = retro.make(self.name, **self._env_kwargs).unwrapped
+        env = retro.make(self.name, **self.gym_env_kwargs).unwrapped
         if self.wrappers is not None:
-            for wrap in self.wrappers:
-                env = wrap(env)
-        self._env = env
-        self.action_space = self._env.action_space
+            self.wrap_environment(self.wrappers)
+        self.gym_env = env
+        self.action_space = self.gym_env.action_space
         self.observation_space = (
-            self._env.observation_space
+            self.gym_env.observation_space
             if self.observation_space is None
             else self.observation_space
         )
 
     def __getattr__(self, item):
-        return getattr(self._env, item)
+        return getattr(self.gym_env, item)
 
     def get_state(self) -> np.ndarray:
-        state = self._env.em.get_state()
+        state = self.gym_env.em.get_state()
         return np.frombuffer(state, dtype=np.int32)
 
     def set_state(self, state: np.ndarray):
         raw_state = state.tobytes()
-        self._env.em.set_state(raw_state)
+        self.gym_env.em.set_state(raw_state)
         return state
 
-    def step(
-        self, action: np.ndarray, state: np.ndarray = None, n_repeat_action: int = None
-    ) -> tuple:
-        n_repeat_action = n_repeat_action if n_repeat_action is not None else self.n_repeat_action
+    def step(self, action: np.ndarray, state: np.ndarray = None, dt: int = None) -> tuple:
+        dt = dt if dt is not None else self.dt
         if state is not None:
             self.set_state(state)
         reward = 0
-        for _ in range(n_repeat_action):
-            obs, _reward, _, info = self._env.step(action)
+        for _ in range(dt):
+            obs, _reward, _, info = self.gym_env.step(action)
             reward += _reward
             end_screen = info.get("screen_x", 0) >= info.get("screen_x_end", 1e6)
             terminal = info.get("x", 0) >= info.get("screen_x_end", 1e6) or end_screen
@@ -82,24 +83,17 @@ class RetroEnvironment(Environment):
             return new_state, obs, reward, terminal, info
         return obs, reward, terminal, info
 
-    def step_batch(self, actions, states=None, n_repeat_action: [int, np.ndarray] = None) -> tuple:
+    def step_batch(self, actions, states=None, dt: [int, np.ndarray] = None) -> tuple:
         """
 
         :param actions:
         :param states:
-        :param n_repeat_action:
+        :param dt:
         :return:
         """
-        n_repeat_action = n_repeat_action if n_repeat_action is not None else self.n_repeat_action
-        n_repeat_action = (
-            n_repeat_action
-            if isinstance(n_repeat_action, np.ndarray)
-            else np.ones(len(states)) * n_repeat_action
-        )
-        data = [
-            self.step(action, state, n_repeat_action=dt)
-            for action, state, dt in zip(actions, states, n_repeat_action)
-        ]
+        dt = dt if dt is not None else self.dt
+        dt = dt if isinstance(dt, np.ndarray) else np.ones(len(states)) * dt
+        data = [self.step(action, state, dt=dt) for action, state, dt in zip(actions, states, dt)]
         new_states, observs, rewards, terminals, infos = [], [], [], [], []
         for d in data:
             if states is None:
@@ -117,7 +111,7 @@ class RetroEnvironment(Environment):
             return new_states, observs, rewards, terminals, infos
 
     def reset(self, return_state: bool = True):
-        obs = self._env.reset()
+        obs = self.gym_env.reset()
         obs = (
             resize_frame(obs, self.height, self.width)
             if self.width is not None and self.height is not None
@@ -138,7 +132,7 @@ class ExternalRetro(ExternalProcess):
        Args:
            name:
            wrappers:
-           n_repeat_action:
+           dt:
            height:
            width:
            **kwargs:
@@ -149,39 +143,28 @@ class ExternalRetro(ExternalProcess):
     """
 
     def __init__(
-        self,
-        name,
-        wrappers=None,
-        n_repeat_action: int = 1,
-        height: float = 100,
-        width: float = 100,
-        **kwargs
+        self, name, wrappers=None, dt: int = 1, height: float = 100, width: float = 100, **kwargs
     ):
 
         self.name = name
         super(ExternalRetro, self).__init__(
-            constructor=(name, wrappers, n_repeat_action, height, width, kwargs)
+            constructor=(name, wrappers, dt, height, width, kwargs)
         )
 
     def _worker(self, data, conn):
         """The process waits for actions and sends back environment results.
         Args:
           data: tuple containing all the parameters for initializing a
-           RetroEnvironment. This is: ( name, wrappers, n_repeat_action,
+           RetroEnvironment. This is: ( name, wrappers, dt,
            height, width, kwargs)
           conn: Connection for communication to the main process.
         Raises:
           KeyError: When receiving a message of unknown type.
         """
         try:
-            name, wrappers, n_repeat_action, height, width, kwargs = data
+            name, wrappers, dt, height, width, kwargs = data
             env = RetroEnvironment(
-                name,
-                wrappers=wrappers,
-                n_repeat_action=n_repeat_action,
-                height=height,
-                width=width,
-                **kwargs
+                name, wrappers=wrappers, dt=dt, height=height, width=width, **kwargs
             )
             env.init_env()
             env.reset()
@@ -216,11 +199,11 @@ class ExternalRetro(ExternalProcess):
             conn.close()
 
 
-class ParallelRetro(Environment):
+class ParallelRetro(GymEnvironment):
     """Wrap any environment to be stepped in parallel.
         Args:
             name: Name of the Environment.
-            n_repeat_action: Frameskip that will be applied.
+            dt: Frameskip that will be applied.
             height: Height of the rgb frame containing the observation.
             width: Width of the rgb frame containing the observation.
             wrappers: Wrappers to be applied to the Environment.
@@ -232,12 +215,12 @@ class ParallelRetro(Environment):
     def __init__(
         self,
         name: str,
-        n_repeat_action: int = 1,
+        dt: int = 1,
         height: float = 100,
         width: float = 100,
         wrappers=None,
         n_workers: int = 8,
-        blocking: bool = True,
+        blocking: bool = False,
         **kwargs
     ):
 
@@ -245,54 +228,39 @@ class ParallelRetro(Environment):
 
         envs = [
             ExternalRetro(
-                name=name,
-                n_repeat_action=n_repeat_action,
-                height=height,
-                width=width,
-                wrappers=wrappers,
-                **kwargs
+                name=name, dt=dt, height=height, width=width, wrappers=wrappers, **kwargs
             )
             for _ in range(n_workers)
         ]
         self._batch_env = BatchEnv(envs, blocking)
-        self._env = RetroEnvironment(
-            name,
-            n_repeat_action=n_repeat_action,
-            height=height,
-            width=width,
-            wrappers=wrappers,
-            **kwargs
+        self.gym_env = RetroEnvironment(
+            name, dt=dt, height=height, width=width, wrappers=wrappers, **kwargs
         )
-        self._env.init_env()
-        self.observation_space = self._env.observation_space
-        self.action_space = self._env.action_space
+        self.gym_env.init_env()
+        self.observation_space = self.gym_env.observation_space
+        self.action_space = self.gym_env.action_space
 
     def __getattr__(self, item):
-        return getattr(self._env, item)
+        return getattr(self.gym_env, item)
 
     def step_batch(
-        self,
-        actions: np.ndarray,
-        states: np.ndarray = None,
-        n_repeat_action: [np.ndarray, int] = None,
+        self, actions: np.ndarray, states: np.ndarray = None, dt: [np.ndarray, int] = None,
     ):
-        return self._batch_env.step_batch(
-            actions=actions, states=states, n_repeat_action=n_repeat_action
-        )
+        return self._batch_env.step_batch(actions=actions, states=states, dt=dt)
 
-    def step(self, action: np.ndarray, state: np.ndarray = None, n_repeat_action: int = None):
-        return self._env.step(action=action, state=state, n_repeat_action=n_repeat_action)
+    def step(self, action: np.ndarray, state: np.ndarray = None, dt: int = None):
+        return self.gym_env.step(action=action, state=state, dt=dt)
 
     def reset(self, return_state: bool = True, blocking: bool = True):
-        state, obs = self._env.reset(return_state=True)
+        state, obs = self.gym_env.reset(return_state=True)
         self.sync_states()
         return state, obs if return_state else obs
 
     def get_state(self):
-        return self._env.get_state()
+        return self.gym_env.get_state()
 
     def set_state(self, state):
-        self._env.set_state(state)
+        self.gym_env.set_state(state)
         self.sync_states()
 
     def sync_states(self):

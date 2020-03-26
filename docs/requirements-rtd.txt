@@ -1,0 +1,11 @@
+attrs>=19.3.0
+gym==0.17.1
+sphinx-rtd-theme==0.4.3
+m2r==0.2.1
+networkx==2.4
+numpy==1.18.2
+scipy==1.4.1
+psycopg2-binary==2.8.4
+setproctitle==1.1.10
+ipython==7.13.0
+xxhash==1.4.3
