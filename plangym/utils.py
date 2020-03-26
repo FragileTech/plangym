@@ -1,3 +1,5 @@
+from typing import Generator, Union
+
 import numpy
 from PIL import Image
 
@@ -29,3 +31,22 @@ def resize_frame(
     frame = Image.fromarray(frame)
     frame = frame.convert(mode).resize(size=(width, height))
     return numpy.array(frame)
+
+
+def split_similar_chunks(
+    vector: Union[list, numpy.ndarray], n_chunks: int
+) -> Generator[Union[list, numpy.ndarray], None, None]:
+    """
+    Split an indexable object into similar chunks.
+
+    Args:
+        vector: Target object to be split.
+        n_chunks: Number of similar chunks.
+
+    Returns:
+        Generator that returns the chunks created after splitting the target object.
+
+    """
+    chunk_size = int(numpy.ceil(len(vector) / n_chunks))
+    for i in range(0, len(vector), chunk_size):
+        yield vector[i : i + chunk_size]

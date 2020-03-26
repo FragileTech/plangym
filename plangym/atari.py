@@ -145,15 +145,15 @@ class AtariEnvironment(GymEnvironment):
 
     def reset(self, return_state: bool = True) -> [numpy.ndarray, tuple]:
         """
-        Reset the environment and return the first observation, or the first \
-        (state, obs) tuple.
+        Reset the environment and return the first ``observation``, or the first \
+        ``(state, obs)`` tuple.
 
         Args:
-            return_state: If true return a also the initial state of the env.
+            return_state: If ``True`` return a also the initial state of the env.
 
         Returns:
-            Observation of the environment if `return_state` is False. Otherwise
-            return (state, obs) after reset.
+            ``Observation`` of the environment if `return_state` is ``False``. \
+            Otherwise return ``(state, obs)`` after reset.
 
         """
         obs = ale_to_ram(self.gym_env.unwrapped.ale) if self.obs_ram else self.gym_env.reset()

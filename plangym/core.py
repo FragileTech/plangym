@@ -128,6 +128,7 @@ class GymEnvironment(Environment):
         episodic_live: bool = False,
         autoreset: bool = True,
         wrappers: Iterable[wrap_callable] = None,
+        delay_init: bool = False,
     ):
         """
         Initialize a :class:`GymEnvironment`.
@@ -142,25 +143,37 @@ class GymEnvironment(Environment):
             wrappers: Wrappers that will be applied to the underlying OpenAI env. \
                      Every element of the iterable can be either a :class:`gym.Wrapper` \
                      or a tuple containing ``(gym.Wrapper, kwargs)``.
+            delay_init: If ``True`` do not initialize the ``gym.Environment`` \
+                     and wait for ``init_env`` to be called later.
 
         """
         super(GymEnvironment, self).__init__(name=name)
         self.dt = dt
         self.min_dt = min_dt
-        # This is for removing undocumented wrappers.
-        spec = gym_registry.spec(name)
-        # not actually needed, but we feel safer
+        self._wrappers = wrappers
+        self.episodic_life = episodic_live
+        self.autoreset = autoreset
+        self.gym_env = None
+        self.action_space = None
+        self.observation_space = None
+        self.reward_range = None
+        self.metadata = None
+        if not delay_init:
+            self.init_env()
+
+    def init_env(self):
+        """Initialize the target :class:`gym.Env` instance."""
+        # Remove any undocumented wrappers
+        spec = gym_registry.spec(self.name)
         spec.max_episode_steps = None
         spec.max_episode_time = None
         self.gym_env = spec.make()
-        if wrappers is not None:
-            self.wrap_environment(wrappers)
+        if self._wrappers is not None:
+            self.wrap_environment(self._wrappers)
         self.action_space = self.gym_env.action_space
         self.observation_space = self.gym_env.observation_space
         self.reward_range = self.gym_env.reward_range
         self.metadata = self.gym_env.metadata
-        self.episodic_life = episodic_live
-        self.autoreset = autoreset
 
     def __getattr__(self, item):
         return getattr(self.gym_env, item)
@@ -217,7 +230,8 @@ class GymEnvironment(Environment):
                 _info["lives"] = self.get_lives_from_info(_info)
                 lost_live = info["lives"] > _info["lives"] or lost_live
                 oob = oob or _oob
-                terminal = terminal or oob
+                custom_terminal = self.custom_terminal_condition(info, _info, _oob)
+                terminal = terminal or oob or custom_terminal
                 terminal = terminal or lost_live if self.episodic_life else terminal
                 info = _info.copy()
                 reward += _reward
@@ -240,6 +254,11 @@ class GymEnvironment(Environment):
     @staticmethod
     def get_win_condition(info: Dict[str, Any]) -> bool:
         """Return ``True`` if the current state corresponds to winning the game."""
+        return False
+
+    @staticmethod
+    def custom_terminal_condition(old_info, new_info, oob) -> bool:
+        """Calculate a new terminal condition using the info data."""
         return False
 
     def step_batch(

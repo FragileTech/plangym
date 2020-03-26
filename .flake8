@@ -15,7 +15,5 @@ per-file-ignores=
     ./plangym/dm_control.py:D
     ./plangym/montezuma.py:D
     ./plangym/wrappers.py:D
-    ./plangym/parallel.py:D
     ./plangym/ray.py:D
     ./plangym/minimal.py:D
-    ./plangym/retro.py:D

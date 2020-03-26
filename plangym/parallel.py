@@ -2,21 +2,18 @@ import atexit
 import multiprocessing
 import sys
 import traceback
+from typing import Callable
 
 import numpy
 
 from plangym.core import Environment
-
-
-def split_similar_chunks(vector: list, n_chunks: int):
-    chunk_size = int(numpy.ceil(len(vector) / n_chunks))
-    for i in range(0, len(vector), chunk_size):
-        yield vector[i : i + chunk_size]
+from plangym.utils import split_similar_chunks
 
 
 class ExternalProcess(object):
     """
     Step environment in a separate process for lock free paralellism.
+
     The environment will be created in the external process by calling the
     specified callable. This can be an environment class, or a function
     creating the environment and potentially wrapping it. The returned
@@ -32,7 +29,7 @@ class ExternalProcess(object):
     ..notes:
         This is mostly a copy paste from
         https://github.com/tensorflow/agents/blob/master/agents/tools/wrappers.py,
-        but it lets us set and read the environment state.
+        that lets us set and read the environment state.
 
     """
 
@@ -44,7 +41,13 @@ class ExternalProcess(object):
     _CLOSE = 5
 
     def __init__(self, constructor):
+        """
+        Initialize a :class:`ExternalProcess`.
 
+        Args:
+            constructor: Callable that returns the target environment that will be parallelized.
+
+        """
         self._conn, conn = multiprocessing.Pipe()
         self._process = multiprocessing.Process(target=self._worker, args=(constructor, conn))
         atexit.register(self.close)
@@ -54,19 +57,23 @@ class ExternalProcess(object):
 
     @property
     def observation_space(self):
+        """Return the observation space of the internal environment."""
         if not self._observ_space:
             self._observ_space = self.__getattr__("observation_space")
         return self._observ_space
 
     @property
     def action_space(self):
+        """Return the action space of the internal environment."""
         if not self._action_space:
             self._action_space = self.__getattr__("action_space")
         return self._action_space
 
     def __getattr__(self, name):
-        """Request an attribute from the environment.
-        Note that this involves communication with the external process, so it can
+        """
+        Request an attribute from the environment.
+
+        Note that this involves communication with the external process, so it can \
         be slow.
 
         Args:
@@ -74,12 +81,14 @@ class ExternalProcess(object):
 
         Returns:
           Value of the attribute.
+
         """
         self._conn.send((self._ACCESS, name))
         return self._receive()
 
     def call(self, name, *args, **kwargs):
-        """Asynchronously call a method of the external environment.
+        """
+        Asynchronously call a method of the external environment.
 
         Args:
           name: Name of the method to call.
@@ -88,6 +97,7 @@ class ExternalProcess(object):
 
         Returns:
           Promise object that blocks and provides the return value when called.
+
         """
         payload = name, args, kwargs
         self._conn.send((self._CALL, payload))
@@ -104,6 +114,7 @@ class ExternalProcess(object):
         self._process.join()
 
     def set_state(self, state, blocking=True):
+        """Set the state of the internal environment."""
         promise = self.call("set_state", state)
         if blocking:
             return promise()
@@ -112,18 +123,22 @@ class ExternalProcess(object):
 
     def step_batch(self, actions, states=None, dt: [numpy.ndarray, int] = None, blocking=True):
         """
-        Vectorized version of the `step` method. It allows to step a vector of
-        states and actions. The signature and behaviour is the same as `step`, but taking
-        a list of states, actions and dts as input.
+        Vectorized version of the ``step`` method.
+
+        It allows to step a vector of states and actions. The signature and \
+        behaviour is the same as ``step``, but taking a list of states, actions \
+        and dts as input.
 
         Args:
            actions: Iterable containing the different actions to be applied.
            states: Iterable containing the different states to be set.
            dt: int or array containing the frameskips that will be applied.
            blocking: If True, execute sequentially.
+
         Returns:
-          if states is None returns (observs, rewards, ends, infos)
-          else returns(new_states, observs, rewards, ends, infos)
+          if states is None returns ``(observs, rewards, ends, infos)``
+          else returns ``(new_states, observs, rewards, ends, infos)``
+
         """
         promise = self.call("step_batch", actions, states, dt)
         if blocking:
@@ -132,7 +147,8 @@ class ExternalProcess(object):
             return promise
 
     def step(self, action, state=None, dt: int = None, blocking=True):
-        """Step the environment.
+        """
+        Step the environment.
 
         Args:
           action: The action to apply to the environment.
@@ -141,10 +157,10 @@ class ExternalProcess(object):
           blocking: Whether to wait for the result.
 
         Returns:
-          Transition tuple when blocking, otherwise callable that returns the
+          Transition tuple when blocking, otherwise callable that returns the \
           transition tuple.
-        """
 
+        """
         promise = self.call("step", action, state, dt)
         if blocking:
             return promise()
@@ -152,15 +168,17 @@ class ExternalProcess(object):
             return promise
 
     def reset(self, blocking=True, return_states: bool = False):
-        """Reset the environment.
+        """
+        Reset the environment.
 
         Args:
           blocking: Whether to wait for the result.
           return_states: If true return also the initial state of the environment.
 
         Returns:
-          New observation when blocking, otherwise callable that returns the new
+          New observation when blocking, otherwise callable that returns the new \
           observation.
+
         """
         promise = self.call("reset", return_states=return_states)
         if blocking:
@@ -169,7 +187,8 @@ class ExternalProcess(object):
             return promise
 
     def _receive(self):
-        """Wait for a message from the worker process and return its payload.
+        """
+        Wait for a message from the worker process and return its payload.
 
         Raises:
           Exception: An exception was raised inside the worker process.
@@ -177,6 +196,7 @@ class ExternalProcess(object):
 
         Returns:
           Payload object of the message.
+
         """
         message, payload = self._conn.recv()
         # Re-raise exceptions in the main process.
@@ -188,12 +208,16 @@ class ExternalProcess(object):
         raise KeyError("Received message of unexpected type {}".format(message))
 
     def _worker(self, constructor, conn):
-        """The process waits for actions and sends back environment results.
+        """
+        Wait for actions and send back environment results.
+
         Args:
           constructor: Constructor for the OpenAI Gym environment.
           conn: Connection for communication to the main process.
+
         Raises:
           KeyError: When receiving a message of unknown type.
+
         """
         try:
             env = constructor()
@@ -237,14 +261,16 @@ class ExternalProcess(object):
 
 
 class BatchEnv(object):
-    """Combine multiple environments to step them in batch.
-    It is mostly a copy paste from
-    https://github.com/tensorflow/agents/blob/master/agents/tools/wrappers.py
+    """
+    Combine multiple environments to step them in batch.
+
+    It is mostly a copy paste from \
+    https://github.com/tensorflow/agents/blob/master/agents/tools/wrappers.py \
     that also allows to set and get the states.
 
-    To step environments in parallel, environments must support a
-        `blocking=False` argument to their step and reset functions that makes them
-        return callables instead to receive the result at a later time.
+    To step environments in parallel, environments must support a \
+    ``blocking=False`` argument to their step and reset functions that \
+    makes them return callables instead to receive the result at a later time.
 
     Args:
       envs: List of environments.
@@ -252,14 +278,24 @@ class BatchEnv(object):
 
     Raises:
       ValueError: Environments have different observation or action spaces.
+
     """
 
     def __init__(self, envs, blocking):
+        """
+        Initialize a :class:`BatchEnv`.
+
+        Args:
+            envs: List of :class:`ExternalProcess` that contain the target environment.
+            blocking: If ``True`` perform the steps sequentially. If ``False`` step \
+                     the environments in parallel.
+
+        """
         self._envs = envs
         self._blocking = blocking
 
-    def __len__(self):
-        """Number of combined environments."""
+    def __len__(self) -> int:
+        """Return the number of combined environments."""
         return len(self._envs)
 
     def __getitem__(self, index):
@@ -267,13 +303,15 @@ class BatchEnv(object):
         return self._envs[index]
 
     def __getattr__(self, name):
-        """Forward unimplemented attributes to one of the original environments.
+        """
+        Forward unimplemented attributes to one of the original environments.
 
         Args:
           name: Attribute that was accessed.
 
         Returns:
           Value behind the attribute name one of the wrapped environments.
+
         """
         return getattr(self._envs[0], name)
 
@@ -282,7 +320,7 @@ class BatchEnv(object):
         states = states if states is not None else [None] * len(actions)
         if dt is None:
             dt = numpy.array([None] * len(states))
-        dt = dt if isinstance(dt, numpy.ndarray) else numpy.ones(len(states)) * dt
+        dt = dt if isinstance(dt, numpy.ndarray) else numpy.ones(len(states), dtype=int) * dt
         chunks = len(self._envs)
         states_chunk = split_similar_chunks(states, n_chunks=chunks)
         actions_chunk = split_similar_chunks(actions, n_chunks=chunks)
@@ -325,7 +363,9 @@ class BatchEnv(object):
         return transitions
 
     def step_batch(self, actions, states=None, dt: [numpy.ndarray, int] = None):
-        """Forward a batch of actions to the wrapped environments.
+        """
+        Forward a batch of actions to the wrapped environments.
+
         Args:
           actions: Batched action to apply to the environment.
           states: States to be stepped. If None, act on current state.
@@ -336,6 +376,7 @@ class BatchEnv(object):
 
         Returns:
           Batch of observations, rewards, and done flags.
+
         """
         no_states = states is None or states[0] is None
         if no_states:
@@ -356,7 +397,19 @@ class BatchEnv(object):
         else:
             return states, observs, rewards, dones, infos
 
-    def sync_states(self, state, blocking: bool = True):
+    def sync_states(self, state, blocking: bool = True) -> None:
+        """
+        Set the same state to all the environments that are inside an external process.
+
+        Args:
+            state: Target state to set on the environments.
+            blocking: If ``True`` perform the update sequentially. If ``False`` step \
+                     the environments in parallel.
+
+        Returns:
+            None.
+
+        """
         for env in self._envs:
             try:
                 env.set_state(state, blocking=blocking)
@@ -364,14 +417,18 @@ class BatchEnv(object):
                 continue
 
     def reset(self, indices=None, return_states: bool = True):
-        """Reset the environment and convert the resulting observation.
+        """
+        Reset the environment and return the resulting batch observations, \
+        or batch of observations and states.
 
         Args:
           indices: The batch indices of environments to reset; defaults to all.
           return_states: return the corresponding states after reset.
 
         Returns:
-          Batch of observations.
+          Batch of observations. If ``return_states`` is ``True`` return a tuple \
+          containing ``(batch_of_observations, batch_of_states)``.
+
         """
         if indices is None:
             indices = numpy.arange(len(self._envs))
@@ -397,24 +454,9 @@ class BatchEnv(object):
                 env.close()
 
 
-def env_callable(name, env_class, *args, **kwargs):
-    def _dummy():
-        return env_class(name, *args, **kwargs)
-
-    return _dummy
-
-
 class ParallelEnvironment(Environment):
     """
     Wrap any environment to be stepped in parallel when step_batch is called.
-
-    Args:
-        name:  Name of the Environment.
-        env_class: Class of the environment to be wrapped.
-        n_workers:  Number of workers that will be used to step the env.
-        blocking: Step the environments synchronously.
-        *args: Additional args for the environment.
-        **kwargs: Additional kwargs for the environment.
 
     Example::
 
@@ -435,20 +477,52 @@ class ParallelEnvironment(Environment):
     """
 
     def __init__(
-        self, name, env_class, n_workers: int = 8, blocking: bool = False, *args, **kwargs
+        self,
+        name,
+        env_class=None,
+        env_callable: Callable[..., Environment] = None,
+        n_workers: int = 8,
+        blocking: bool = False,
+        *args,
+        **kwargs
     ):
+        """
+        Initialize a :class:`ParallelEnvironment`.
+
+        Args:
+            name:  Name of the Environment.
+            env_class: Class of the environment to be wrapped.
+            env_callable: Callable that returns an instance of the environment \
+                         that will be parallelized.
+            n_workers:  Number of workers that will be used to step the env.
+            blocking: Step the environments synchronously.
+            *args: Additional args for the environment.
+            **kwargs: Additional kwargs for the environment.
+
+        """
+        # Noqa: D202
+        def _env_callable(name, env_class, *args, **kwargs):
+            def _dummy():
+                return env_class(name, *args, **kwargs)
+
+            return _dummy
+
+        if env_class is None and env_callable is None:
+            raise ValueError("env_callable and env_class cannot be both None.")
+        env_callable = _env_callable if env_callable is None else env_callable
+
         super(ParallelEnvironment, self).__init__(name=name)
-        self._env = env_callable(name, env_class, *args, **kwargs)()
+        self.gym_env = env_callable(name, env_class, *args, **kwargs)()
         envs = [
             ExternalProcess(constructor=env_callable(name, env_class, *args, **kwargs))
             for _ in range(n_workers)
         ]
         self._batch_env = BatchEnv(envs, blocking)
-        self.action_space = self._env.action_space
-        self.observation_space = self._env.observation_space
+        self.action_space = self.gym_env.action_space
+        self.observation_space = self.gym_env.observation_space
 
     def __getattr__(self, item):
-        return getattr(self._env, item)
+        return getattr(self.gym_env, item)
 
     def step_batch(
         self,
@@ -457,9 +531,11 @@ class ParallelEnvironment(Environment):
         dt: [numpy.ndarray, int] = None,
     ):
         """
-        Vectorized version of the `step` method. It allows to step a vector of
-        states and actions. The signature and behaviour is the same as `step`,
-        but taking a list of states, actions and dts as input.
+        Vectorized version of the ``step`` method.
+
+        It allows to step a vector of states and actions. The signature and \
+        behaviour is the same as ``step``, but taking a list of states, actions \
+        and dts as input.
 
         Args:
             actions: Iterable containing the different actions to be applied.
@@ -467,17 +543,18 @@ class ParallelEnvironment(Environment):
             dt: int or array containing the frameskips that will be applied.
 
         Returns:
-            if states is None returns (observs, rewards, ends, infos) else (new_states,
-            observs, rewards, ends, infos)
+            if states is None returns ``(observs, rewards, ends, infos)`` else \
+            ``(new_states, observs, rewards, ends, infos)``
 
         """
         return self._batch_env.step_batch(actions=actions, states=states, dt=dt)
 
     def step(self, action: numpy.ndarray, state: numpy.ndarray = None, dt: int = None):
         """
-        Step the environment applying a given action from an arbitrary state. If
-        is not provided the signature matches the one from OpenAI gym. It allows
-        to apply arbitrary boundary conditions to define custom end states in case
+        Step the environment applying a given action from an arbitrary state.
+
+        If is not provided the signature matches the one from OpenAI gym. It allows \
+        to apply arbitrary boundary conditions to define custom end states in case \
         the env was initialized with a "CustomDeath' object.
 
         Args:
@@ -486,14 +563,15 @@ class ParallelEnvironment(Environment):
             dt: Consecutive number of times to apply the given action.
 
         Returns:
-            if states is None returns (observs, rewards, ends, infos) else (new_states,
-            observs, rewards, ends, infos)
+            if states is None returns ``(observs, rewards, ends, infos) ``else \
+            ``(new_states, observs, rewards, ends, infos)``.
+
         """
-        return self._env.step(action=action, state=state, dt=dt)
+        return self.gym_env.step(action=action, state=state, dt=dt)
 
     def reset(self, return_state: bool = True, blocking: bool = True):
         """
-        Resets the environment and returns the first observation, or the first
+        Reset the environment and returns the first observation, or the first \
         (state, obs) tuple.
 
         Args:
@@ -503,20 +581,23 @@ class ParallelEnvironment(Environment):
         Returns:
             Observation of the environment if `return_state` is False. Otherwise
             return (state, obs) after reset.
+
         """
-        state, obs = self._env.reset(return_state=True)
+        state, obs = self.gym_env.reset(return_state=True)
         self.sync_states(state)
         return state, obs if return_state else obs
 
     def get_state(self):
         """
-        Recover the internal state of the simulation. An state must completely
-        describe the Environment at a given moment.
+        Recover the internal state of the simulation.
+
+        An state completely describes the Environment at a given moment.
 
         Returns:
             State of the simulation.
+
         """
-        return self._env.get_state()
+        return self.gym_env.get_state()
 
     def set_state(self, state):
         """
@@ -524,13 +605,15 @@ class ParallelEnvironment(Environment):
 
         Args:
             state: Target state to be set in the environment.
+
         """
-        self._env.set_state(state)
+        self.gym_env.set_state(state)
         self.sync_states(state)
 
     def sync_states(self, state: None):
-        """Set all the states of the different workers of the internal :class: BatchEnv to the
-        same state as the internal :class: DMControlEnv used to apply the
+        """
+        Set all the states of the different workers of the internal :class:`BatchEnv` \
+        to the same state as the internal :class:`Environment` used to apply the \
         non-vectorized steps.
         """
         state = self.get_state() if state is None else state
