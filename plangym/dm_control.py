@@ -4,45 +4,47 @@ import traceback
 from gym.spaces import Box
 import numpy as np
 
-from plangym.env import BatchEnv, Environment, ExternalProcess
+from plangym.core import GymEnvironment
+from plangym.parallel import BatchEnv, ExternalProcess
 
 try:
     from gym.envs.classic_control import rendering
 
     novideo_mode = False
-except Exception as e:
+except Exception:
     novideo_mode = True
-    print(f"Failed to load rendering tools: {e}")
 
 
-class DMControlEnv(Environment):
-    """Wrap the dm_control library so it can work for planning problems. It
-        allows parallel and vectorized execution of the environments.
+class DMControlEnv(GymEnvironment):
+    """
+    Wrap the dm_control library so it can work for planning problems.
 
-        Args:
-            name: Provide the task to be solved as `domain_name-task_name`. For
-                example 'cartpole-balance'.
-            visualize_reward: match dm_control interface. It modifies the color
-                of the robot depending on its current reward.
-            n_repeat_action: Set a deterministic frameskip to apply the same
-                action N times.
-            custom_death: Class for setting custom boundary conditions to help
-                exploration.
+    It allows parallel and vectorized execution of the environments.
 
-        """
+    Args:
+        name: Provide the task to be solved as `domain_name-task_name`. For
+            example 'cartpole-balance'.
+        visualize_reward: match dm_control interface. It modifies the color
+            of the robot depending on its current reward.
+        dt: Set a deterministic frameskip to apply the same
+            action N times.
+        custom_death: Class for setting custom boundary conditions to help
+            exploration.
+
+    """
 
     def __init__(
         self,
         name: str = "cartpole-balance",
         visualize_reward: bool = True,
-        n_repeat_action: int = 1,
+        dt: int = 1,
         custom_death: "CustomDeath" = None,
     ):
 
         from dm_control import suite
 
         domain_name, task_name = name.split("-")
-        super(DMControlEnv, self).__init__(name=name, n_repeat_action=n_repeat_action)
+        super(DMControlEnv, self).__init__(name=name, dt=dt)
         self._render_i = 0
         self._env = suite.load(
             domain_name=domain_name, task_name=task_name, visualize_reward=visualize_reward
@@ -167,9 +169,7 @@ class DMControlEnv(Environment):
         )
         return state
 
-    def step(
-        self, action: np.ndarray, state: np.ndarray = None, n_repeat_action: int = None
-    ) -> tuple:
+    def step(self, action: np.ndarray, state: np.ndarray = None, dt: int = None) -> tuple:
         """
         Step the environment applying a given action from an arbitrary state. If
         is not provided the signature matches the one from OpenAI gym. It allows
@@ -179,20 +179,20 @@ class DMControlEnv(Environment):
         Args:
             action: Array containing the action to be applied.
             state: State to be set before stepping the environment.
-            n_repeat_action: Consecutive number of times to apply the given action.
+            dt: Consecutive number of times to apply the given action.
 
         Returns:
             if states is None returns (observs, rewards, ends, infos) else (new_states,
             observs, rewards, ends, infos)
         """
-        n_repeat_action = n_repeat_action if n_repeat_action is not None else self.n_repeat_action
+        dt = dt if dt is not None else self.dt
 
         custom_death = False
         end = False
         cum_reward = 0
         if state is not None:
             self.set_state(state)
-        for _ in range(int(n_repeat_action)):
+        for _ in range(int(dt)):
             time_step = self.env.step(action)
             end = end or time_step.last()
             cum_reward += time_step.reward
@@ -212,19 +212,19 @@ class DMControlEnv(Environment):
 
         if state is not None:
             new_state = self.get_state()
-            return new_state, observed, cum_reward, end, {"lives": 0, "dt": n_repeat_action}
-        return observed, cum_reward, end, {"lives": 0, "dt": n_repeat_action}
+            return new_state, observed, cum_reward, end, {"lives": 0, "dt": dt}
+        return observed, cum_reward, end, {"lives": 0, "dt": dt}
 
-    def step_batch(self, actions, states=None, n_repeat_action: [int, np.ndarray] = None) -> tuple:
+    def step_batch(self, actions, states=None, dt: [int, np.ndarray] = None) -> tuple:
         """
         Vectorized version of the `step` method. It allows to step a vector of
         states and actions. The signature and behaviour is the same as `step`, but taking
-        a list of states, actions and n_repeat_actions as input.
+        a list of states, actions and dts as input.
 
         Args:
             actions: Iterable containing the different actions to be applied.
             states: Iterable containing the different states to be set.
-            n_repeat_action: int or array containing the frameskips that will be applied.
+            dt: int or array containing the frameskips that will be applied.
 
         Returns:
             if states is None
@@ -232,16 +232,9 @@ class DMControlEnv(Environment):
             else
                 (new_states, observs, rewards, ends, infos)
         """
-        n_repeat_action = n_repeat_action if n_repeat_action is not None else self.n_repeat_action
-        n_repeat_action = (
-            n_repeat_action
-            if isinstance(n_repeat_action, np.ndarray)
-            else np.ones(len(states)) * n_repeat_action
-        )
-        data = [
-            self.step(action, state, n_repeat_action=dt)
-            for action, state, dt in zip(actions, states, n_repeat_action)
-        ]
+        dt = dt if dt is not None else self.dt
+        dt = dt if isinstance(dt, np.ndarray) else np.ones(len(states)) * dt
+        data = [self.step(action, state, dt=dt) for action, state, dt in zip(actions, states, dt)]
         new_states, observs, rewards, terminals, lives = [], [], [], [], []
         for d in data:
             if states is None:
@@ -275,7 +268,7 @@ class ExternalDMControl(ExternalProcess):
       Args:
          name: Name of the Environment.
          wrappers: Wrappers to be applied to the Environment.
-         n_repeat_action: Number of consecutive times that action will be applied.
+         dt: Number of consecutive times that action will be applied.
          *args: Additional args to be passed to the environment.
          **kwargs: Additional kwargs to be passed to the environment.
 
@@ -284,12 +277,10 @@ class ExternalDMControl(ExternalProcess):
           action_space: The cached action space of the environment.
      """
 
-    def __init__(self, name, wrappers=None, n_repeat_action: int = 1, *args, **kwargs):
+    def __init__(self, name, wrappers=None, dt: int = 1, *args, **kwargs):
 
         self.name = name
-        super(ExternalDMControl, self).__init__(
-            constructor=(name, wrappers, n_repeat_action, args, kwargs)
-        )
+        super(ExternalDMControl, self).__init__(constructor=(name, wrappers, dt, args, kwargs))
 
     def _worker(self, data, conn):
         """The process waits for actions and sends back environment results.
@@ -300,9 +291,9 @@ class ExternalDMControl(ExternalProcess):
           KeyError: When receiving a message of unknown type.
         """
         try:
-            name, wrappers, n_repeat_action, args, kwargs = data
+            name, wrappers, dt, args, kwargs = data
 
-            env = DMControlEnv(name, n_repeat_action=n_repeat_action, *args, **kwargs)
+            env = DMControlEnv(name, dt=dt, *args, **kwargs)
             # dom_name, task_name = name.split("-")
             # custom_death = CustomDeath(domain_name=dom_name,
             #                             task_name=task_name)
@@ -338,7 +329,7 @@ class ExternalDMControl(ExternalProcess):
             conn.close()
 
 
-class ParallelDMControl(Environment):
+class ParallelDMControl(GymEnvironment):
     """Wrap a dm_control environment to be stepped in parallel. It contains a
     :class: DMControlEnv that performs non-vectorized operations, and a :class: BatchEnv
     that performs the `step_batch` method asynchronously.
@@ -346,7 +337,7 @@ class ParallelDMControl(Environment):
     Args:
             name: Name of the Environment. following the same conventions as
                 :class: DMControlEnv.
-            n_repeat_action: Number of consecutive times that action will be applied.
+            dt: Number of consecutive times that action will be applied.
             n_workers: Number of processes that will be used.
             blocking: if False step the environments asynchronously.
             *args: args of the environment that will be parallelized.
@@ -354,23 +345,14 @@ class ParallelDMControl(Environment):
     """
 
     def __init__(
-        self,
-        name: str,
-        n_repeat_action: int = 1,
-        n_workers: int = 8,
-        blocking: bool = True,
-        *args,
-        **kwargs
+        self, name: str, dt: int = 1, n_workers: int = 8, blocking: bool = True, *args, **kwargs
     ):
 
         super(ParallelDMControl, self).__init__(name=name)
 
-        envs = [
-            ExternalDMControl(name=name, n_repeat_action=n_repeat_action, *args, **kwargs)
-            for _ in range(n_workers)
-        ]
+        envs = [ExternalDMControl(name=name, dt=dt, *args, **kwargs) for _ in range(n_workers)]
         self._batch_env = BatchEnv(envs, blocking)
-        self._env = DMControlEnv(name, n_repeat_action=n_repeat_action, *args, **kwargs)
+        self._env = DMControlEnv(name, dt=dt, *args, **kwargs)
 
         self.observation_space = self._env.observation_space
         self.action_space = self._env.action_space
@@ -379,30 +361,25 @@ class ParallelDMControl(Environment):
         return getattr(self._env, item)
 
     def step_batch(
-        self,
-        actions: np.ndarray,
-        states: np.ndarray = None,
-        n_repeat_action: [np.ndarray, int] = None,
+        self, actions: np.ndarray, states: np.ndarray = None, dt: [np.ndarray, int] = None,
     ):
         """
         Vectorized version of the `step` method. It allows to step a vector of
         states and actions. The signature and behaviour is the same as `step`, but taking
-        a list of states, actions and n_repeat_actions as input.
+        a list of states, actions and dts as input.
 
         Args:
            actions: Iterable containing the different actions to be applied.
            states: Iterable containing the different states to be set.
-           n_repeat_action: int or array containing the frameskips that will be applied.
+           dt: int or array containing the frameskips that will be applied.
 
         Returns:
           if states is None returns (observs, rewards, ends, infos) else (new_states,
           observs, rewards, ends, infos)
         """
-        return self._batch_env.step_batch(
-            actions=actions, states=states, n_repeat_action=n_repeat_action
-        )
+        return self._batch_env.step_batch(actions=actions, states=states, dt=dt)
 
-    def step(self, action: np.ndarray, state: np.ndarray = None, n_repeat_action: int = None):
+    def step(self, action: np.ndarray, state: np.ndarray = None, dt: int = None):
         """
         Step the environment applying a given action from an arbitrary state. If
         is not provided the signature matches the one from OpenAI gym. It allows
@@ -412,13 +389,13 @@ class ParallelDMControl(Environment):
         Args:
             action: Array containing the action to be applied.
             state: State to be set before stepping the environment.
-            n_repeat_action: Consecutive number of times to apply the given action.
+            dt: Consecutive number of times to apply the given action.
 
         Returns:
             if states is None returns (observs, rewards, ends, infos) else (new_states,
             observs, rewards, ends, infos)
         """
-        return self._env.step(action=action, state=state, n_repeat_action=n_repeat_action)
+        return self._env.step(action=action, state=state, dt=dt)
 
     def reset(self, return_state: bool = True, blocking: bool = True):
         """
@@ -509,7 +486,7 @@ class CustomDeath:
         # torso_touches_ground = env.physics.height() < min_torso_height
         # reward_change = time_step.reward - (last_time_step.reward if
         # last_time_step is not None else 0)
-        # reward_drops = reward_change < -max_reward_drop * env.n_repeat_action
+        # reward_drops = reward_change < -max_reward_drop * env.dt
         return False
 
     @staticmethod

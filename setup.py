@@ -1,6 +1,15 @@
 from setuptools import find_packages, setup
 from plangym.version import __version__
 
+extras = {
+    "atari": ["atari-py==0.1.1"],
+    "retro": ["gym-retro>=0.7.0"],
+    "test": ["pytest>=5.3.5"],
+    "ray": ["ray", "setproctitle"],
+}
+
+extras["all"] = [item for group in extras.values() for item in group]
+
 setup(
     name="plangym",
     description="OpenAI gym environments adapted for planning.",
@@ -21,11 +30,10 @@ setup(
     install_requires=[
         "numpy>=1.16.2",
         "gym>=0.10.9",
-        "Pillow>=7.0.0",
+        "pillow-simd>=7.0.0.post3",
         "opencv-python>=4.2.0.32",
-        "pytest>=4.0.1",
-        "atari-py==0.1.1",
     ],
+    extras_require=extras,
     packages=find_packages(),
     package_data={"": ["LICENSE", "README.md"]},
     classifiers=[

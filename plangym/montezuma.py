@@ -1,14 +1,12 @@
-from collections import Counter, defaultdict
-import logging
+from collections import defaultdict
 import typing
 
 import cv2
 from gym.envs.registration import registry as gym_registry
-import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 
-from plangym.env import AtariEnvironment
+from plangym.atari import AtariEnvironment
 
 
 # ------------------------------------------------------------------------------
@@ -20,15 +18,6 @@ from plangym.env import AtariEnvironment
 #
 # See the License for the specific language governing permissions and
 # limitations under the License.
-class IgnoreNoHandles(logging.Filter):
-    def filter(self, record):
-        if record.getMessage() == "No handles with labels found to put in legend.":
-            return 0
-        return 1
-
-
-_plt_logger = logging.getLogger("matplotlib.legend")
-_plt_logger.addFilter(IgnoreNoHandles())
 
 
 class MontezumaPosLevel:
@@ -393,50 +382,9 @@ class MyMontezuma:
         ram_death = self.is_ram_death()
         # TODO: remove all this stuff
         if self.check_death and pixel_death:
-            if not ram_death:
-                print("Image-detected death. Check it!", self.ram[55], self.ram[58])
-                plt.imshow(unprocessed_state[50:, :, :])
-                print(np.sum(unprocessed_state[51:, :, :] == 0), unprocessed_state[50:].size)
-                plt.show()
-                print(np.where(unprocessed_state[:, :, 0] == 228))
-                plt.imshow(unprocessed_state[:, :, 0] == 228)
-                plt.show()
-                print(
-                    Counter(
-                        list(
-                            zip(
-                                unprocessed_state[51:, :, 0].flatten(),
-                                unprocessed_state[51:, :, 1].flatten(),
-                                unprocessed_state[51:, :, 2].flatten(),
-                            )
-                        )
-                    )
-                )
             done = True
         elif self.check_death and not pixel_death and ram_death:
-            if self.ram_death_state == -1:
-                self.ram_death_state = self.cur_steps
-            if self.cur_steps - self.ram_death_state > 0 and not self.ignore_ram_death:
-                print("OMG, undetected death!!!")
-                self.ignore_ram_death = True
-                plt.imshow(unprocessed_state)
-                plt.show()
-                plt.imshow(unprocessed_state[:, :, 0] == 228)
-                plt.show()
-                print(np.where(unprocessed_state[:, :, 0] == 228))
-                print(self.ram)
-                print(
-                    Counter(
-                        list(
-                            zip(
-                                unprocessed_state[:, :, 0].flatten(),
-                                unprocessed_state[:, :, 1].flatten(),
-                                unprocessed_state[:, :, 2].flatten(),
-                            )
-                        )
-                    )
-                )
-                # done = True
+            done = True
 
         self.cur_score += reward
         self.pos = self.pos_from_unprocessed_state(face_pixels, unprocessed_state)
@@ -470,6 +418,8 @@ class MyMontezuma:
         get_val=lambda x: x.score,
         minmax=None,
     ):
+        import matplotlib.pyplot as plt
+
         height, width = list(self.rooms.values())[0][1].shape[:2]
 
         final_image = np.zeros((height * 4, width * 9, 3), dtype=np.uint8) + 255
@@ -624,7 +574,7 @@ class MyMontezuma:
 class Montezuma(AtariEnvironment):
     def __init__(
         self,
-        n_repeat_action: int = 1,
+        dt: int = 1,
         min_dt: int = 1,
         episodic_live: bool = False,
         autoreset: bool = True,
@@ -635,23 +585,23 @@ class Montezuma(AtariEnvironment):
 
         super(Montezuma, self).__init__(
             name="MontezumaRevengeDeterministic-v4",
-            n_repeat_action=n_repeat_action,
+            dt=dt,
             clone_seeds=True,
             min_dt=min_dt,
             obs_ram=False,
         )
-        self._env = MyMontezuma(*args, **kwargs)
-        self.action_space = self._env.action_space
-        self.observation_space = self._env.observation_space
-        self.reward_range = self._env.reward_range
-        self.metadata = self._env.metadata
+        self.gym_env = MyMontezuma(*args, **kwargs)
+        self.action_space = self.gym_env.action_space
+        self.observation_space = self.gym_env.observation_space
+        self.reward_range = self.gym_env.reward_range
+        self.metadata = self.gym_env.metadata
 
     def __getattr__(self, item):
-        return getattr(self._env, item)
+        return getattr(self.gym_env, item)
 
     @property
     def n_actions(self):
-        return self._env.action_space.n
+        return self.gym_env.action_space.n
 
     def get_state(self) -> np.ndarray:
         """
@@ -659,7 +609,7 @@ class Montezuma(AtariEnvironment):
         environment will be stochastic.
         Cloning the full state ensures the environment is deterministic.
         """
-        data = self._env.get_restore()
+        data = self.gym_env.get_restore()
         (
             full_state,
             score,
@@ -721,14 +671,12 @@ class Montezuma(AtariEnvironment):
             bool(score_objects),
             int(cur_lives),
         )
-        self._env.restore(data)
+        self.gym_env.restore(data)
 
-    def step(
-        self, action: np.ndarray, state: np.ndarray = None, n_repeat_action: int = None
-    ) -> tuple:
+    def step(self, action: np.ndarray, state: np.ndarray = None, dt: int = None) -> tuple:
         """
 
-        Take n_repeat_action simulation steps and make the environment evolve
+        Take dt simulation steps and make the environment evolve
         in multiples of min_dt.
         The info dictionary will contain a boolean called 'lost_live' that will
         be true if a life was lost during the current step.
@@ -736,13 +684,13 @@ class Montezuma(AtariEnvironment):
         Args:
             action: Chosen action applied to the environment.
             state: Set the environment to the given state before stepping it.
-            n_repeat_action: Consecutive number of times that the action will be applied.
+            dt: Consecutive number of times that the action will be applied.
 
         Returns:
             if states is None returns (observs, rewards, ends, infos)
             else returns(new_states, observs, rewards, ends, infos)
         """
-        n_repeat_action = n_repeat_action if n_repeat_action is not None else self.n_repeat_action
+        dt = dt if dt is not None else self.dt
         if state is not None:
             self.set_state(state)
         reward = 0
@@ -750,9 +698,9 @@ class Montezuma(AtariEnvironment):
         info = {"lives": -1}
         terminal = False
         game_end = False
-        for _ in range(int(n_repeat_action)):
+        for _ in range(int(dt)):
             for _ in range(self.min_dt):
-                obs, _reward, _end, _info = self._env.step(action)
+                obs, _reward, _end, _info = self.gym_env.step(action)
                 _info["lives"] = _info.get("ale.lives", -1)
                 lost_live = info["lives"] > _info["lives"] or lost_live
                 game_end = game_end or _end
@@ -774,9 +722,9 @@ class Montezuma(AtariEnvironment):
         else:
             data = obs, reward, terminal, info
         if _end and self.autoreset:
-            self._env.reset()
+            self.gym_env.reset()
         return data
 
     def render(self):
         """Render the environment using OpenGL. This wraps the OpenAI render method."""
-        return self._env.render()
+        return self.gym_env.render()
