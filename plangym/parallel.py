@@ -512,17 +512,17 @@ class ParallelEnvironment(Environment):
         env_callable = _env_callable if env_callable is None else env_callable
 
         super(ParallelEnvironment, self).__init__(name=name)
-        self.gym_env = env_callable(name, env_class, *args, **kwargs)()
+        self.plangym_env = env_callable(name, env_class, *args, **kwargs)()
         envs = [
             ExternalProcess(constructor=env_callable(name, env_class, *args, **kwargs))
             for _ in range(n_workers)
         ]
         self._batch_env = BatchEnv(envs, blocking)
-        self.action_space = self.gym_env.action_space
-        self.observation_space = self.gym_env.observation_space
+        self.action_space = self.plangym_env.action_space
+        self.observation_space = self.plangym_env.observation_space
 
     def __getattr__(self, item):
-        return getattr(self.gym_env, item)
+        return getattr(self.plangym_env, item)
 
     def step_batch(
         self,
@@ -567,7 +567,7 @@ class ParallelEnvironment(Environment):
             ``(new_states, observs, rewards, ends, infos)``.
 
         """
-        return self.gym_env.step(action=action, state=state, dt=dt)
+        return self.plangym_env.step(action=action, state=state, dt=dt)
 
     def reset(self, return_state: bool = True, blocking: bool = True):
         """
@@ -583,7 +583,7 @@ class ParallelEnvironment(Environment):
             return (state, obs) after reset.
 
         """
-        state, obs = self.gym_env.reset(return_state=True)
+        state, obs = self.plangym_env.reset(return_state=True)
         self.sync_states(state)
         return state, obs if return_state else obs
 
@@ -597,7 +597,7 @@ class ParallelEnvironment(Environment):
             State of the simulation.
 
         """
-        return self.gym_env.get_state()
+        return self.plangym_env.get_state()
 
     def set_state(self, state):
         """
@@ -607,7 +607,7 @@ class ParallelEnvironment(Environment):
             state: Target state to be set in the environment.
 
         """
-        self.gym_env.set_state(state)
+        self.plangym_env.set_state(state)
         self.sync_states(state)
 
     def sync_states(self, state: None):

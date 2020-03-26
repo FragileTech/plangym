@@ -121,7 +121,7 @@ class RetroEnvironment(GymEnvironment):
         data = super(RetroEnvironment, self).step(action=action, state=state, dt=dt)
         if state is None:
             observ, reward, terminal, info = data
-            observ = state.copy() if self.obs_ram else self.process_obs(observ)
+            observ = self.get_state().copy() if self.obs_ram else self.process_obs(observ)
             return observ, reward, terminal, info
         else:
             state, observ, reward, terminal, info = data
