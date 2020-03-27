@@ -290,9 +290,7 @@ class MyMontezuma:
             return cur_object
 
     def get_observation(self, unprocessed_state) -> np.ndarray:
-        # ram = self.env.unwrapped.ale.getRAM()
         pos = np.array([self.pos.x, self.pos.y, self.pos.room])
-        # np.array(self.pos.tuple + self.room_time)
         return np.concatenate([unprocessed_state.flatten(), pos])
 
     def get_restore(self):
