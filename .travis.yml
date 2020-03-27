@@ -46,6 +46,8 @@ matrix:
       python: 3.7
       script: *_coverage
       install: *_install
+      after_success:
+        - codecov
     - stage: test
       if: commit_message !~ /^Bump version/
       name: "Test python 3.8"
@@ -56,8 +58,6 @@ matrix:
         - pip install -r requirements.txt
         - pip install . --no-use-pep517
         - find . -wholename "*/tests/*" -type d -exec chmod 555 {} \;
-      after_success:
-        - codecov
     - stage: test
       if: commit_message !~ /^Bump version/
       name: "Tests inside docker"
