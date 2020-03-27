@@ -15,6 +15,6 @@ def minimal_pong():
 environments = [minimal_pacman, minimal_pong]
 
 
-@pytest.fixture(params=environments)
+@pytest.fixture(params=environments, scope="class")
 def env(request) -> AtariEnvironment:
     return request.param()

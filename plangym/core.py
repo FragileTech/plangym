@@ -165,6 +165,10 @@ class GymEnvironment(BaseEnvironment):
         """Initialize the target :class:`gym.Env` instance."""
         # Remove any undocumented wrappers
         spec = gym_registry.spec(self.name)
+        if hasattr(spec, "max_episode_steps"):
+            setattr(spec, "_max_episode_steps", spec.max_episode_steps)
+        if hasattr(spec, "max_episode_time"):
+            setattr(spec, "_max_episode_time", spec.max_episode_time)
         spec.max_episode_steps = None
         spec.max_episode_time = None
         self.gym_env = spec.make()

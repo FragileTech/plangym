@@ -1,4 +1,3 @@
-import gc
 from typing import Union
 
 import pytest

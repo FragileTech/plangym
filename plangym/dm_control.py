@@ -98,7 +98,7 @@ class DMControlEnv(GymEnvironment):
              is called.
 
         Returns:
-            np.ndarray when mode == `rgb_array`. True when mode == `human`
+            numpy.ndarray when mode == `rgb_array`. True when mode == `human`
         """
         img = self.env.physics.render(camera_id=0)
         if mode == "rgb_array":
@@ -141,7 +141,7 @@ class DMControlEnv(GymEnvironment):
         I will be super grateful if someone shows me how to do this using Open Source code.
 
         Args:
-            state: np.ndarray containing the information about the state to be set.
+            state: numpy.ndarray containing the information about the state to be set.
 
         Returns:
             None

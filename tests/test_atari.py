@@ -19,6 +19,6 @@ def pong_obs_ram():
 environments = [pacman_obs, qbert_ram, pong_obs_ram]
 
 
-@pytest.fixture(params=environments)
+@pytest.fixture(params=environments, scope="class")
 def env(request) -> AtariEnvironment:
     return request.param()

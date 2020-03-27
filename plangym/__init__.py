@@ -32,7 +32,7 @@ warnings.filterwarnings(
     ),
 )
 warnings.filterwarnings(
-    "ignore", message="WARN: Box bound precision lowered by casting to float32",
+    "ignore", category=UserWarning,
 )
 warnings.filterwarnings(
     "ignore", message="invalid escape sequence",
