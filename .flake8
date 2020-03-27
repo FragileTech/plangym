@@ -6,14 +6,13 @@ exclude=
     docs
 inline-quotes="
 import-order-style=appnexus
-application-package-names=plangym
+application-package-names=plangym, wrappers
 per-file-ignores=
     **/__init__.py: F401
     **/tests/**:D
+    **/wrappers/**: D
     # Should be resolved one by one
-    # Related issue: https://github.com/src-d/ml/issues/354
     ./plangym/dm_control.py:D
     ./plangym/montezuma.py:D
-    ./plangym/wrappers.py:D
     ./plangym/ray.py:D
     ./plangym/minimal.py:D
