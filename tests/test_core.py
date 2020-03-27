@@ -43,7 +43,7 @@ class DummyEnv(BaseEnvironment):
 environments = [lambda: DummyEnv(name="dummy")]
 
 
-@pytest.fixture(params=environments)
+@pytest.fixture(params=environments, scope="class")
 def env(request) -> BaseEnvironment:
     return request.param()
 

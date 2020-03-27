@@ -17,6 +17,6 @@ def parallel_pacman():
 environments = [parallel_cartpole, parallel_pacman]
 
 
-@pytest.fixture(params=environments)
+@pytest.fixture(params=environments, scope="class")
 def env(request) -> ClassicControl:
     return request.param()

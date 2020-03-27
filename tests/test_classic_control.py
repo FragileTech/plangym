@@ -13,6 +13,6 @@ environments = [
 ]
 
 
-@pytest.fixture(params=environments)
+@pytest.fixture(params=environments, scope="class")
 def env(request) -> ClassicControl:
     return ClassicControl(name=request.param)
