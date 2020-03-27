@@ -7,7 +7,7 @@ Welcome to Plan gym's documentation!
 ====================================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 4
    :caption: Contents:
 
    notes/interface.rst
