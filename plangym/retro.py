@@ -1,11 +1,11 @@
 import sys
 import traceback
-from typing import Any, Dict, Union
+from typing import Any, Dict, Iterable, Union
 
 from gym import spaces
 import numpy
 
-from plangym.core import GymEnvironment
+from plangym.core import GymEnvironment, wrap_callable
 from plangym.parallel import BatchEnv, ExternalProcess
 from plangym.utils import resize_frame
 
@@ -24,7 +24,7 @@ class RetroEnvironment(GymEnvironment):
         dt: int = 1,
         height: int = 100,
         width: int = 100,
-        wrappers=None,
+        wrappers: Iterable[wrap_callable] = None,
         obs_ram: bool = False,
         delay_init: bool = False,
         **kwargs
