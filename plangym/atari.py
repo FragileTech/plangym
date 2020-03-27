@@ -1,9 +1,9 @@
-from typing import Any, Dict, Union
+from typing import Any, Dict, Iterable, Union
 
 from gym import spaces
 import numpy
 
-from plangym.core import GymEnvironment
+from plangym.core import GymEnvironment, wrap_callable
 from plangym.utils import ale_to_ram
 
 
@@ -35,6 +35,7 @@ class AtariEnvironment(GymEnvironment):
         episodic_live: bool = False,
         autoreset: bool = True,
         possible_to_win: bool = False,
+        wrappers: Iterable[wrap_callable] = None,
     ):
         """
         Initialize a :class:`AtariEnvironment`.
@@ -53,10 +54,18 @@ class AtariEnvironment(GymEnvironment):
             possible_to_win: It is possible to finish the Atari game without \
                             getting a terminal state that is not out of bounds \
                             or doest not involve losing a live.
+            wrappers: Wrappers that will be applied to the underlying OpenAI env. \
+                     Every element of the iterable can be either a :class:`gym.Wrapper` \
+                     or a tuple containing ``(gym.Wrapper, kwargs)``.
 
         """
         super(AtariEnvironment, self).__init__(
-            name=name, dt=dt, min_dt=min_dt, episodic_live=episodic_live, autoreset=autoreset
+            name=name,
+            dt=dt,
+            min_dt=min_dt,
+            episodic_live=episodic_live,
+            autoreset=autoreset,
+            wrappers=wrappers,
         )
         self.clone_seeds = clone_seeds
         self.obs_ram = obs_ram
