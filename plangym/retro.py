@@ -22,6 +22,9 @@ class RetroEnvironment(GymEnvironment):
         self,
         name: str,
         dt: int = 1,
+        min_dt: int = 1,
+        episodic_live: bool = False,
+        autoreset: bool = True,
         height: int = 100,
         width: int = 100,
         wrappers: Iterable[wrap_callable] = None,
@@ -35,6 +38,10 @@ class RetroEnvironment(GymEnvironment):
         Args:
             name: Name of the environment. Follows the retro syntax conventions.
             dt: Consecutive number of times a given action will be applied.
+            min_dt: Number of times an action will be applied for each ``dt``.
+            episodic_live: Return ``end = True`` when losing a live.
+            autoreset: Automatically reset the environment when the OpenAI environment
+                      returns ``end = True``.
             height: Resize the observation to have this height.
             width: Resize the observations to have this width.
             wrappers: Wrappers that will be applied to the underlying OpenAI env. \
@@ -52,14 +59,36 @@ class RetroEnvironment(GymEnvironment):
         self.height = height
         self.width = width
         super(RetroEnvironment, self).__init__(
-            name=name, dt=dt, delay_init=True, wrappers=wrappers
+            name=name,
+            dt=dt,
+            min_dt=min_dt,
+            episodic_live=episodic_live,
+            delay_init=True,
+            wrappers=wrappers,
+            autoreset=autoreset,
         )
+        self.delay_init = delay_init
         if not delay_init:
             self.init_env()
         if height is not None and width is not None:
             self.observation_space = spaces.Box(
                 low=0, high=255, shape=(self.height, self.width, 1), dtype=numpy.uint8
             )
+
+    def clone(self) -> "RetroEnvironment":
+        """Return a copy of the environment with its initialization delayed."""
+        return RetroEnvironment(
+            name=self.name,
+            dt=self.dt,
+            min_dt=self.min_dt,
+            wrappers=self._wrappers,
+            episodic_live=self.episodic_life,
+            autoreset=self.autoreset,
+            delay_init=self.delay_init,
+            obs_ram=self.obs_ram,
+            height=self.height,
+            width=self.width,
+        )
 
     def init_env(self):
         """
@@ -68,7 +97,7 @@ class RetroEnvironment(GymEnvironment):
         """
         env = retro.make(self.name, **self.gym_env_kwargs).unwrapped
         if self._wrappers is not None:
-            self.wrap_environment(self._wrappers)
+            self.apply_wrappers(self._wrappers)
         self.gym_env = env
         self.action_space = self.gym_env.action_space
         self.observation_space = (

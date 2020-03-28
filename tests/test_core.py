@@ -109,4 +109,4 @@ class TestGymEnvironment:
     # TODO: add after finishing wrappers
     def _test_wrap_environment(self, env):
         wrappers = []
-        env.wrap_environment(wrappers)
+        env.apply_wrappers(wrappers)
