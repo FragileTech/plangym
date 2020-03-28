@@ -158,8 +158,21 @@ class GymEnvironment(BaseEnvironment):
         self.observation_space = None
         self.reward_range = None
         self.metadata = None
+        self.delay_init = delay_init
         if not delay_init:
             self.init_env()
+
+    def clone(self) -> "GymEnvironment":
+        """Return a copy of the environment."""
+        return GymEnvironment(
+            name=self.name,
+            dt=self.dt,
+            min_dt=self.min_dt,
+            wrappers=self._wrappers,
+            episodic_live=self.episodic_life,
+            autoreset=self.autoreset,
+            delay_init=self.delay_init,
+        )
 
     def init_env(self):
         """Initialize the target :class:`gym.Env` instance."""
@@ -173,7 +186,7 @@ class GymEnvironment(BaseEnvironment):
         spec.max_episode_time = None
         self.gym_env = spec.make()
         if self._wrappers is not None:
-            self.wrap_environment(self._wrappers)
+            self.apply_wrappers(self._wrappers)
         self.action_space = self.gym_env.action_space
         self.observation_space = self.gym_env.observation_space
         self.reward_range = self.gym_env.reward_range
@@ -182,14 +195,18 @@ class GymEnvironment(BaseEnvironment):
     def __getattr__(self, item):
         return getattr(self.gym_env, item)
 
-    def wrap_environment(self, wrappers: Iterable[wrap_callable]):
+    def apply_wrappers(self, wrappers: Iterable[wrap_callable]):
         """Wrap the underlying OpenAI gym environment."""
         for item in wrappers:
             if isinstance(item, tuple):
                 wrapper, kwargs = item
-                self.gym_env = wrapper(self.gym_env, **kwargs)
+                self.wrap(wrapper, **kwargs)
             else:
-                self.gym_env = item(self.gym_env)
+                self.wrap(item)
+
+    def wrap(self, wrapper: Callable, *args, **kwargs):
+        """Apply a single OpenAI gym wrapper to the environment."""
+        self.gym_env = wrapper(self.gym_env, *args, **kwargs)
 
     def step(
         self, action: Union[numpy.ndarray, int], state: numpy.ndarray = None, dt: int = None

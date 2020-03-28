@@ -36,6 +36,7 @@ class AtariEnvironment(GymEnvironment):
         autoreset: bool = True,
         possible_to_win: bool = False,
         wrappers: Iterable[wrap_callable] = None,
+        delay_init: bool = False,
     ):
         """
         Initialize a :class:`AtariEnvironment`.
@@ -57,6 +58,8 @@ class AtariEnvironment(GymEnvironment):
             wrappers: Wrappers that will be applied to the underlying OpenAI env. \
                      Every element of the iterable can be either a :class:`gym.Wrapper` \
                      or a tuple containing ``(gym.Wrapper, kwargs)``.
+            delay_init: If ``True`` do not initialize the ``gym.Environment`` \
+                     and wait for ``init_env`` to be called later.
 
         """
         super(AtariEnvironment, self).__init__(
@@ -66,6 +69,7 @@ class AtariEnvironment(GymEnvironment):
             episodic_live=episodic_live,
             autoreset=autoreset,
             wrappers=wrappers,
+            delay_init=delay_init,
         )
         self.clone_seeds = clone_seeds
         self.obs_ram = obs_ram
@@ -75,6 +79,21 @@ class AtariEnvironment(GymEnvironment):
 
     def __getattr__(self, item):
         return getattr(self.gym_env, item)
+
+    def clone(self) -> "AtariEnvironment":
+        """Return a copy of the environment."""
+        return AtariEnvironment(
+            name=self.name,
+            dt=self.dt,
+            min_dt=self.min_dt,
+            wrappers=self._wrappers,
+            episodic_live=self.episodic_life,
+            autoreset=self.autoreset,
+            delay_init=self.delay_init,
+            obs_ram=self.obs_ram,
+            possible_to_win=self.possible_to_win,
+            clone_seeds=self.clone_seeds,
+        )
 
     @property
     def n_actions(self) -> int:

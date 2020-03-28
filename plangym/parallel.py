@@ -10,7 +10,7 @@ from plangym.core import BaseEnvironment
 from plangym.utils import split_similar_chunks
 
 
-class ExternalProcess(object):
+class ExternalProcess:
     """
     Step environment in a separate process for lock free paralellism.
 
@@ -260,7 +260,7 @@ class ExternalProcess(object):
             conn.close()
 
 
-class BatchEnv(object):
+class BatchEnv:
     """
     Combine multiple environments to step them in batch.
 
