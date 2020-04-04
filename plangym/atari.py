@@ -77,8 +77,10 @@ class AtariEnvironment(GymEnvironment):
             self.observation_space = spaces.Box(low=0, high=255, dtype=numpy.uint8, shape=(128,))
         self.possible_to_win = possible_to_win
 
-    def __getattr__(self, item):
-        return getattr(self.gym_env, item)
+    @property
+    def ale(self):
+        """Return the ``ale`` interface of the underlying :class:`gym.Env`.."""
+        return self.gym_env.unwrapped.ale
 
     def clone(self) -> "AtariEnvironment":
         """Return a copy of the environment."""

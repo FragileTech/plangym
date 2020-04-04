@@ -184,7 +184,7 @@ class GymEnvironment(BaseEnvironment):
             setattr(spec, "_max_episode_time", spec.max_episode_time)
         spec.max_episode_steps = None
         spec.max_episode_time = None
-        self.gym_env = spec.make()
+        self.gym_env: gym.Env = spec.make()
         if self._wrappers is not None:
             self.apply_wrappers(self._wrappers)
         self.action_space = self.gym_env.action_space
@@ -192,8 +192,21 @@ class GymEnvironment(BaseEnvironment):
         self.reward_range = self.gym_env.reward_range
         self.metadata = self.gym_env.metadata
 
-    def __getattr__(self, item):
-        return getattr(self.gym_env, item)
+    def close(self):
+        """Close the underlying :class:`gym.Env`."""
+        return self.gym_env.close()
+
+    def seed(self, seed=None):
+        """Seed the underlying :class:`gym.Env`."""
+        return self.gym_env.seed(seed)
+
+    def __enter__(self):
+        self.gym_env.__enter__()
+        return self
+
+    def __exit__(self):
+        self.gym_env.__exit__()
+        return False
 
     def apply_wrappers(self, wrappers: Iterable[wrap_callable]):
         """Wrap the underlying OpenAI gym environment."""
