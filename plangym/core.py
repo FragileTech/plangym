@@ -343,6 +343,6 @@ class GymEnvironment(BaseEnvironment):
         else:
             return new_states, observs, rewards, terminals, infos
 
-    def render(self, mode='human'):
+    def render(self, mode="human"):
         """Render the environment using OpenGL. This wraps the OpenAI render method."""
         return self.gym_env.render(mode)
