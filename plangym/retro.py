@@ -30,6 +30,7 @@ class RetroEnvironment(GymEnvironment):
         wrappers: Iterable[wrap_callable] = None,
         obs_ram: bool = False,
         delay_init: bool = False,
+        states_on_reset: bool = True,
         **kwargs
     ):
         """
@@ -66,6 +67,7 @@ class RetroEnvironment(GymEnvironment):
             delay_init=True,
             wrappers=wrappers,
             autoreset=autoreset,
+            states_on_reset=states_on_reset,
         )
         self.delay_init = delay_init
         if not delay_init:
@@ -173,7 +175,7 @@ class RetroEnvironment(GymEnvironment):
         terminal = info.get("x", 0) >= info.get("screen_x_end", 1e6) or end_screen
         return terminal
 
-    def reset(self, return_state: bool = True):
+    def reset(self, return_state: bool = None):
         """
         Reset the environment and return the first ``observation``, or the first \
         ``(state, obs)`` tuple.
@@ -186,6 +188,7 @@ class RetroEnvironment(GymEnvironment):
             Otherwise return ``(state, obs)`` after reset.
 
         """
+        return_state = self.states_on_reset if return_state is None else return_state
         obs = self.gym_env.reset()
         if self.obs_ram:
             obs = self.get_state().copy()

@@ -81,7 +81,7 @@ class BaseEnvironment:
         raise NotImplementedError
 
     def reset(
-        self, return_state: bool = True
+        self, return_state: bool = None
     ) -> Union[numpy.ndarray, Tuple[numpy.ndarray, numpy.ndarray]]:
         """
         Restart the environment.
@@ -129,6 +129,7 @@ class GymEnvironment(BaseEnvironment):
         autoreset: bool = True,
         wrappers: Iterable[wrap_callable] = None,
         delay_init: bool = False,
+        states_on_reset: bool = True,
     ):
         """
         Initialize a :class:`GymEnvironment`.
@@ -145,9 +146,13 @@ class GymEnvironment(BaseEnvironment):
                      or a tuple containing ``(gym.Wrapper, kwargs)``.
             delay_init: If ``True`` do not initialize the ``gym.Environment`` \
                      and wait for ``init_env`` to be called later.
+            states_on_reset: If True, return the initial state of the environment after reset \
+                             by default.
+
 
         """
         super(GymEnvironment, self).__init__(name=name)
+        self.states_on_reset = states_on_reset
         self.dt = dt
         self.min_dt = min_dt
         self._wrappers = wrappers
@@ -343,6 +348,25 @@ class GymEnvironment(BaseEnvironment):
         else:
             return new_states, observs, rewards, terminals, infos
 
-    def render(self):
+    def render(self, *args, **kwargs):
         """Render the environment using OpenGL. This wraps the OpenAI render method."""
-        return self.gym_env.render()
+        return self.gym_env.render(*args, **kwargs)
+
+    def reset(self, return_state: bool = None) -> [numpy.ndarray, Union[tuple, numpy.ndarray]]:
+        """
+        Reset the environment and return the first ``observation``, or the first \
+        ``(state, obs)`` tuple.
+
+        Args:
+            return_state: If ``True`` return a also the initial state of the env.
+
+        Returns:
+            ``Observation`` of the environment if `return_state` is ``False``. \
+            Otherwise return ``(state, obs)`` after reset.
+
+        """
+        return_state = self.states_on_reset if return_state is None else return_state
+        if not return_state:
+            return self.gym_env.reset()
+        else:
+            return self.get_state(), self.gym_env.reset()

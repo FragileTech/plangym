@@ -416,7 +416,7 @@ class BatchEnv:
             except EOFError:
                 continue
 
-    def reset(self, indices=None, return_states: bool = True):
+    def reset(self, indices=None, return_states: bool = None):
         """
         Reset the environment and return the resulting batch observations, \
         or batch of observations and states.
@@ -430,6 +430,7 @@ class BatchEnv:
           containing ``(batch_of_observations, batch_of_states)``.
 
         """
+        return_state = self.states_on_reset if return_state is None else return_state
         if indices is None:
             indices = numpy.arange(len(self._envs))
         if self._blocking:

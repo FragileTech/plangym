@@ -63,7 +63,8 @@ class MinimalPong(AtariEnvironment):
             self.gym_env.reset()
         return data
 
-    def reset(self, return_state: bool = True):
+    def reset(self, return_state: bool = None):
+        return_state = self.states_on_reset if return_state is None else return_state
         obs = self.gym_env.reset()
         if "ram" not in self.name:
             proc_obs = np.zeros((80, 80, 2))
@@ -147,7 +148,8 @@ class MinimalPacman(AtariEnvironment):
             return new_state, full_obs, reward, end, info
         return full_obs, reward, end, info
 
-    def reset(self, return_state: bool = True):
+    def reset(self, return_state: bool = None):
+        return_state = self.states_on_reset if return_state is None else return_state
         full_obs = np.zeros(self.observation_space.shape)
         obs = self.reshape_frame(self.gym_env.reset())
         obs_hist = [copy.deepcopy(obs)]
