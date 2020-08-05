@@ -26,7 +26,7 @@ class ClassicControl(GymEnvironment):
         self.gym_env.unwrapped.state = copy.copy(tuple(state.tolist()))
         return state
 
-    def reset(self, return_state: bool = True):
+    def reset(self, return_state: bool = None):
         """
         Restart the environment.
 
@@ -37,6 +37,7 @@ class ClassicControl(GymEnvironment):
             ``obs`` if ```return_state`` is ``True`` else return ``(state, obs)``.
 
         """
+        return_state = self.states_on_reset if return_state is None else return_state
         if not return_state:
             return self.gym_env.reset()
         else:

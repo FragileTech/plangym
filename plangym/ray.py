@@ -192,8 +192,9 @@ class RayEnv(BaseEnvironment):
             transitions = _states, observs, rewards, terminals, infos
         return transitions
 
-    def reset(self, return_state: bool = True) -> [np.ndarray, tuple]:
+    def reset(self, return_state: bool = None) -> [np.ndarray, tuple]:
         """Restart the environment."""
+        return_state = self._env.states_on_reset if return_state is None else return_state
         resets = ray.get([w.reset.remote(return_state=return_state) for w in self.workers])
         ray.get([w.set_state.remote(resets[0][0]) for w in self.workers])
         return resets[0]

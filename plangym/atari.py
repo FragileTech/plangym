@@ -37,6 +37,7 @@ class AtariEnvironment(GymEnvironment):
         possible_to_win: bool = False,
         wrappers: Iterable[wrap_callable] = None,
         delay_init: bool = False,
+        states_on_reset: bool = True,
     ):
         """
         Initialize a :class:`AtariEnvironment`.
@@ -60,6 +61,8 @@ class AtariEnvironment(GymEnvironment):
                      or a tuple containing ``(gym.Wrapper, kwargs)``.
             delay_init: If ``True`` do not initialize the ``gym.Environment`` \
                      and wait for ``init_env`` to be called later.
+            states_on_reset: If True, return the initial state of the environment after reset \
+                             by default.
 
         """
         super(AtariEnvironment, self).__init__(
@@ -70,6 +73,7 @@ class AtariEnvironment(GymEnvironment):
             autoreset=autoreset,
             wrappers=wrappers,
             delay_init=delay_init,
+            states_on_reset=states_on_reset,
         )
         self.clone_seeds = clone_seeds
         self.obs_ram = obs_ram
@@ -173,7 +177,7 @@ class AtariEnvironment(GymEnvironment):
             return False
         return not info["lost_live"] and info["terminal"]
 
-    def reset(self, return_state: bool = True) -> [numpy.ndarray, tuple]:
+    def reset(self, return_state: bool = None) -> [numpy.ndarray, tuple]:
         """
         Reset the environment and return the first ``observation``, or the first \
         ``(state, obs)`` tuple.
@@ -186,6 +190,7 @@ class AtariEnvironment(GymEnvironment):
             Otherwise return ``(state, obs)`` after reset.
 
         """
+        return_state = self.states_on_reset if return_state is None else return_state
         obs = ale_to_ram(self.gym_env.unwrapped.ale) if self.obs_ram else self.gym_env.reset()
         if not return_state:
             return obs

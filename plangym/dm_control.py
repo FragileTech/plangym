@@ -39,12 +39,14 @@ class DMControlEnv(GymEnvironment):
         visualize_reward: bool = True,
         dt: int = 1,
         custom_death: "CustomDeath" = None,
+        *args,
+        **kwargs,
     ):
 
         from dm_control import suite
 
         domain_name, task_name = name.split("-")
-        super(DMControlEnv, self).__init__(name=name, dt=dt)
+        super(DMControlEnv, self).__init__(name=name, dt=dt, *args, **kwargs)
         self._render_i = 0
         self._env = suite.load(
             domain_name=domain_name, task_name=task_name, visualize_reward=visualize_reward
@@ -114,7 +116,7 @@ class DMControlEnv(GymEnvironment):
             self._viewer.imshow(img)
             time.sleep(sleep)
 
-    def reset(self, return_state: bool = False) -> [np.ndarray, tuple]:
+    def reset(self, return_state: bool = None) -> [np.ndarray, tuple]:
         """
         Resets the environment and returns the first observation, or the first
         (state, obs) tuple.
@@ -126,7 +128,7 @@ class DMControlEnv(GymEnvironment):
             Observation of the environment if `return_state` is False. Otherwise
             return (state, obs) after reset.
         """
-
+        return_state = self.states_on_reset if return_state is None else return_state
         time_step = self._env.reset()
         observed = self._time_step_to_obs(time_step)
         self._render_i = 0

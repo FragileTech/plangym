@@ -81,7 +81,7 @@ class BaseEnvironment:
         raise NotImplementedError
 
     def reset(
-        self, return_state: bool = True
+        self, return_state: bool = None
     ) -> Union[numpy.ndarray, Tuple[numpy.ndarray, numpy.ndarray]]:
         """
         Restart the environment.
@@ -129,6 +129,7 @@ class GymEnvironment(BaseEnvironment):
         autoreset: bool = True,
         wrappers: Iterable[wrap_callable] = None,
         delay_init: bool = False,
+        states_on_reset: bool = True,
     ):
         """
         Initialize a :class:`GymEnvironment`.
@@ -145,9 +146,13 @@ class GymEnvironment(BaseEnvironment):
                      or a tuple containing ``(gym.Wrapper, kwargs)``.
             delay_init: If ``True`` do not initialize the ``gym.Environment`` \
                      and wait for ``init_env`` to be called later.
+            states_on_reset: If True, return the initial state of the environment after reset \
+                             by default.
+
 
         """
         super(GymEnvironment, self).__init__(name=name)
+        self.states_on_reset = states_on_reset
         self.dt = dt
         self.min_dt = min_dt
         self._wrappers = wrappers
@@ -244,13 +249,17 @@ class GymEnvironment(BaseEnvironment):
         dt = dt if dt is not None else self.dt
         if state is not None:
             self.set_state(state)
-        obs, reward, terminal, info = self._step_with_dt(action=action, dt=dt)
+        obs, reward, oob, info = self._step_with_dt(action=action, dt=dt)
         if state is not None:
             new_state = self.get_state()
-            data = new_state, obs, reward, terminal, info
+            if oob:
+                data = state, obs, reward, oob, info  #setting a terminal state messes up gym
+            else:
+                data = new_state, obs, reward, oob, info
         else:
-            data = obs, reward, terminal, info
-        if info["oob"] and self.autoreset:  # It won't reset after loosing a life
+            data = obs, reward, oob, info
+        # It won't reset after loosing a life
+        if (info["oob"] or info["terminal"]) and self.autoreset:
             self.gym_env.reset()
         return data
 
@@ -266,19 +275,19 @@ class GymEnvironment(BaseEnvironment):
                 oob = oob or _oob
                 custom_terminal = self.custom_terminal_condition(info, _info, _oob)
                 terminal = terminal or oob or custom_terminal
-                terminal = terminal or lost_live if self.episodic_life else terminal
+                terminal = (terminal or lost_live) if self.episodic_life else terminal
                 info = _info.copy()
                 reward += _reward
-                if terminal:
+                if terminal or _oob:
                     break
-            if terminal:
+            if terminal or _oob:
                 break
         # This allows to get the original values even when using an episodic life environment
         info["terminal"] = terminal
         info["lost_live"] = lost_live
         info["oob"] = oob
         info["win"] = self.get_win_condition(info)
-        return obs, reward, terminal, info
+        return obs, reward, oob, info
 
     @staticmethod
     def get_lives_from_info(info: Dict[str, Any]) -> int:
@@ -343,6 +352,25 @@ class GymEnvironment(BaseEnvironment):
         else:
             return new_states, observs, rewards, terminals, infos
 
-    def render(self, mode="human"):
+    def render(self, *args, **kwargs):
         """Render the environment using OpenGL. This wraps the OpenAI render method."""
-        return self.gym_env.render(mode)
+        return self.gym_env.render(*args, **kwargs)
+
+    def reset(self, return_state: bool = None) -> [numpy.ndarray, Union[tuple, numpy.ndarray]]:
+        """
+        Reset the environment and return the first ``observation``, or the first \
+        ``(state, obs)`` tuple.
+
+        Args:
+            return_state: If ``True`` return a also the initial state of the env.
+
+        Returns:
+            ``Observation`` of the environment if `return_state` is ``False``. \
+            Otherwise return ``(state, obs)`` after reset.
+
+        """
+        return_state = self.states_on_reset if return_state is None else return_state
+        if not return_state:
+            return self.gym_env.reset()
+        else:
+            return self.get_state(), self.gym_env.reset()
