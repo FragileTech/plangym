@@ -16,6 +16,7 @@ from gym.envs.box2d.lunar_lander import (
     VIEWPORT_W,
 )
 
+from plangym.classic_control import ClassicControl
 from plangym.core import GymEnvironment, wrap_callable
 from plangym.box_2d.serialization import get_env_state, set_env_state
 import math
@@ -108,7 +109,8 @@ class FastGymLunarLander(GymLunarLander):
 
         # terrain
         CHUNKS = 11
-        height = np.ones(CHUNKS+1) * H /4 if self.deterministic else self.np_random.uniform(0, H/2, size=(CHUNKS+1,) )
+        deterministic_terrain = True # self.deterministic
+        height = np.ones(CHUNKS+1) * H /4 if deterministic_terrain else self.np_random.uniform(0, H/2, size=(CHUNKS+1,) )
         chunk_x  = [W/(CHUNKS-1)*i for i in range(CHUNKS)]
         self.helipad_x1 = chunk_x[CHUNKS//2-1]
         self.helipad_x2 = chunk_x[CHUNKS//2+1]
@@ -199,7 +201,7 @@ class FastGymLunarLander(GymLunarLander):
         # Engines
         tip = (math.sin(self.lander.angle), math.cos(self.lander.angle))
         side = (-tip[1], tip[0])
-        dispersion = [0, 0] #if self.deterministic else [self.np_random.uniform(-1.0, +1.0) / SCALE for _ in range(2)]
+        dispersion = [0, 0] if self.deterministic else [self.np_random.uniform(-1.0, +1.0) / SCALE for _ in range(2)]
 
         m_power = 0.0
         if (self.continuous and action[0] > 0.0) or (not self.continuous and action == 2):
@@ -369,14 +371,50 @@ class LunarLander(GymEnvironment):
         return False
 
     def _lunar_lander_end(self, obs):
-        if self.gym_env.game_over or abs(obs[0]) >= 1.0:
+        if self.gym_env.game_over or abs(obs[0]) >= 1.0 or obs[1]< 0.:
             return True
         elif not self.gym_env.lander.awake:
             return True
         return False
 
     def _step_with_dt(self, action, dt):
-        obs, reward, _, info = super(LunarLander, self)._step_with_dt(action, dt)
+        obs, reward, end, info = super(LunarLander, self)._step_with_dt(action, dt)
         terminal = self._lunar_lander_end(obs)
-        info["oob"] = terminal
-        return obs, reward, terminal, info
+        fin = terminal or end
+        #reward /= (obs[0] ** 2 + 0.25 * obs[1] ** 2+ 1e-4)
+        if self.gym_env.game_over or (abs(obs[0]) >= 1.0 and (abs(obs[1]) < 0.5 * 1e-3)):
+            fin = True
+            reward += -100
+        if not self.gym_env.lander.awake or (abs(obs[0]) >= 1.0 and (abs(obs[1]) < 0.5 * 1e-3 and obs[1]>=0.)):
+            fin = True
+            reward += 100
+            info["win"] = True
+        info["oob"] = fin
+
+        return obs, reward, end, info
+
+
+class BipedalWalker(GymEnvironment):
+
+    def get_state(self) -> numpy.ndarray:
+        """
+        Recover the internal state of the simulation.
+
+        An state must completely describe the Environment at a given moment.
+        """
+        state = get_env_state(self.gym_env)
+        return numpy.array((state, None), dtype=object)
+
+    def set_state(self, state: numpy.ndarray) -> None:
+        """
+        Set the internal state of the simulation.
+
+        Args:
+            state: Target state to be set in the environment.
+
+        Returns:
+            None
+
+        """
+        box_2d_state = state[0]
+        set_env_state(self.gym_env, box_2d_state)

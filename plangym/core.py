@@ -249,13 +249,17 @@ class GymEnvironment(BaseEnvironment):
         dt = dt if dt is not None else self.dt
         if state is not None:
             self.set_state(state)
-        obs, reward, terminal, info = self._step_with_dt(action=action, dt=dt)
+        obs, reward, oob, info = self._step_with_dt(action=action, dt=dt)
         if state is not None:
             new_state = self.get_state()
-            data = new_state, obs, reward, terminal, info
+            if oob:
+                data = state, obs, reward, oob, info  #setting a terminal state messes up gym
+            else:
+                data = new_state, obs, reward, oob, info
         else:
-            data = obs, reward, terminal, info
-        if info["oob"] and self.autoreset:  # It won't reset after loosing a life
+            data = obs, reward, oob, info
+        # It won't reset after loosing a life
+        if (info["oob"] or info["terminal"]) and self.autoreset:
             self.gym_env.reset()
         return data
 
@@ -271,19 +275,19 @@ class GymEnvironment(BaseEnvironment):
                 oob = oob or _oob
                 custom_terminal = self.custom_terminal_condition(info, _info, _oob)
                 terminal = terminal or oob or custom_terminal
-                terminal = terminal or lost_live if self.episodic_life else terminal
+                terminal = (terminal or lost_live) if self.episodic_life else terminal
                 info = _info.copy()
                 reward += _reward
-                if terminal:
+                if terminal or _oob:
                     break
-            if terminal:
+            if terminal or _oob:
                 break
         # This allows to get the original values even when using an episodic life environment
         info["terminal"] = terminal
         info["lost_live"] = lost_live
         info["oob"] = oob
         info["win"] = self.get_win_condition(info)
-        return obs, reward, terminal, info
+        return obs, reward, oob, info
 
     @staticmethod
     def get_lives_from_info(info: Dict[str, Any]) -> int:
