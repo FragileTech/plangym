@@ -8,4 +8,4 @@ scipy==1.6.0
 psycopg2-binary==2.8.4
 setproctitle==1.2.2
 ipython==7.13.0
-xxhash==1.4.3
+xxhash==2.0.0
