@@ -3,5 +3,5 @@ numpy==1.20.0
 git+https://github.com/FragileTech/atari-py.git#egg=atari-py
 opencv-python==4.2.0.32
 pillow-simd==7.0.0.post3
-gym==0.17.1
+gym==0.18.0
 pytest==5.4.1
