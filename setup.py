@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 from plangym.version import __version__
 
 extras = {
-    "atari": ["atari-py==0.1.1"],
+    "atari": ["atari-py==0.2.9"],
     "retro": ["gym-retro>=0.7.0"],
     "test": ["pytest>=5.3.5"],
     "ray": ["ray", "setproctitle"],
