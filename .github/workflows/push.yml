@@ -73,6 +73,7 @@ jobs:
       run: |
         set -x
         pip install -r requirements-test.txt -r requirements.txt
+        python -m pip install atari-py==0.1.1
         pip install .
 
     - name: Test with pytest
@@ -153,6 +154,7 @@ jobs:
         run: |
           set -x
           python -m pip install dist/*.whl -r requirements-test.txt
+          python -m pip install atari-py==0.1.1
 
       - name: Test package
         run: |

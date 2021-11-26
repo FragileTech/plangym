@@ -15,7 +15,7 @@ with open(Path(__file__).with_name("README.md"), encoding="utf-8") as f:
 
 extras = {
     "atari": ["atari-py==0.1.1"],
-    "retro": ["gym-retro>=0.7.0"],
+    "retro": ["gym-retro>=0.8.0"],
     "test": ["pytest>=5.3.5"],
     "ray": ["ray", "setproctitle"],
 }
@@ -38,7 +38,7 @@ setup(
     tests_require=["pytest>=5.3.5", "hypothesis>=5.6.0"],
     install_requires=[
         "numpy>=1.16.2",
-        "gym>=0.10.9",
+        "gym>=0.10.9,<=0.17.3",
         "pillow-simd>=7.0.0.post3",
         "opencv-python>=4.2.0.32",
     ],

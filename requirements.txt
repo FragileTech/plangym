@@ -2,4 +2,4 @@ Cython>=0.28,<1.0; python_version == '3.7'
 opencv-python==4.5.4.60
 git+https://github.com/FragileTech/atari-py.git#egg=atari-py
 pillow-simd==7.0.0.post3
-gym==0.17.1
+gym==0.17.3
