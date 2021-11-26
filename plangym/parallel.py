@@ -245,8 +245,9 @@ class ExternalProcess:
                     break
                 raise KeyError("Received message of unknown type {}".format(message))
         except Exception:  # pylint: disable=broad-except
-            import tensorflow as tf
             import logging
+
+            import tensorflow as tf
 
             stacktrace = "".join(traceback.format_exception(*sys.exc_info()))
             message = f"Error in environment process: {stacktrace}"
@@ -327,10 +328,16 @@ class BatchEnv:
         repeat_chunk = split_similar_chunks(dt, n_chunks=chunks)
         results = []
         for env, states_batch, actions_batch, dt in zip(
-            self._envs, states_chunk, actions_chunk, repeat_chunk
+            self._envs,
+            states_chunk,
+            actions_chunk,
+            repeat_chunk,
         ):
             result = env.step_batch(
-                actions=actions_batch, states=states_batch, dt=dt, blocking=self._blocking,
+                actions=actions_batch,
+                states=states_batch,
+                dt=dt,
+                blocking=self._blocking,
             )
             results.append(result)
 
@@ -484,7 +491,7 @@ class ParallelEnvironment(BaseEnvironment):
         n_workers: int = 8,
         blocking: bool = False,
         *args,
-        **kwargs
+        **kwargs,
     ):
         """
         Initialize a :class:`ParallelEnvironment`.

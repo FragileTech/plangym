@@ -81,7 +81,8 @@ class BaseEnvironment:
         raise NotImplementedError
 
     def reset(
-        self, return_state: bool = True
+        self,
+        return_state: bool = True,
     ) -> Union[numpy.ndarray, Tuple[numpy.ndarray, numpy.ndarray]]:
         """
         Restart the environment.
@@ -179,9 +180,9 @@ class GymEnvironment(BaseEnvironment):
         # Remove any undocumented wrappers
         spec = gym_registry.spec(self.name)
         if hasattr(spec, "max_episode_steps"):
-            setattr(spec, "_max_episode_steps", spec.max_episode_steps)
+            spec._max_episode_steps = spec.max_episode_steps
         if hasattr(spec, "max_episode_time"):
-            setattr(spec, "_max_episode_time", spec.max_episode_time)
+            spec._max_episode_time = spec.max_episode_time
         spec.max_episode_steps = None
         spec.max_episode_time = None
         self.gym_env: gym.Env = spec.make()
@@ -222,7 +223,10 @@ class GymEnvironment(BaseEnvironment):
         self.gym_env = wrapper(self.gym_env, *args, **kwargs)
 
     def step(
-        self, action: Union[numpy.ndarray, int], state: numpy.ndarray = None, dt: int = None
+        self,
+        action: Union[numpy.ndarray, int],
+        state: numpy.ndarray = None,
+        dt: int = None,
     ) -> tuple:
         """
         Take ``dt`` simulation steps and make the environment evolve in multiples \

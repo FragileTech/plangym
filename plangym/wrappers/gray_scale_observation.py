@@ -4,7 +4,7 @@ import numpy
 
 
 class GrayScaleObservation(ObservationWrapper):
-    r"""Convert the image observation from RGB to gray scale. """
+    r"""Convert the image observation from RGB to gray scale."""
 
     def __init__(self, env, keep_dim=False):
         super(GrayScaleObservation, self).__init__(env)
@@ -14,7 +14,10 @@ class GrayScaleObservation(ObservationWrapper):
         obs_shape = self.observation_space.shape[:2]
         if self.keep_dim:
             self.observation_space = Box(
-                low=0, high=255, shape=(obs_shape[0], obs_shape[1], 1), dtype=numpy.uint8
+                low=0,
+                high=255,
+                shape=(obs_shape[0], obs_shape[1], 1),
+                dtype=numpy.uint8,
             )
         else:
             self.observation_space = Box(low=0, high=255, shape=obs_shape, dtype=numpy.uint8)

@@ -133,7 +133,10 @@ class AtariEnvironment(GymEnvironment):
         return state
 
     def step(
-        self, action: Union[numpy.ndarray, int], state: numpy.ndarray = None, dt: int = None
+        self,
+        action: Union[numpy.ndarray, int],
+        state: numpy.ndarray = None,
+        dt: int = None,
     ) -> tuple:
         """
         Take ``dt`` simulation steps and make the environment evolve in multiples \

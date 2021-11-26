@@ -2,8 +2,7 @@
 import collections
 import copy
 
-from gym import ObservationWrapper
-from gym import spaces
+from gym import ObservationWrapper, spaces
 import numpy
 
 

@@ -165,7 +165,10 @@ class RayEnv(BaseEnvironment):
         repeat_chunk = split_similar_chunks(dt, n_chunks=chunks)
         results_ids = []
         for env, states_batch, actions_batch, dt in zip(
-            self.workers, states_chunk, actions_chunk, repeat_chunk
+            self.workers,
+            states_chunk,
+            actions_chunk,
+            repeat_chunk,
         ):
             result = env.step_batch.remote(actions=actions_batch, states=states_batch, dt=dt)
             results_ids.append(result)

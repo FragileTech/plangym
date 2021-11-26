@@ -7,6 +7,7 @@ import numpy as np
 from plangym.core import GymEnvironment
 from plangym.parallel import BatchEnv, ExternalProcess
 
+
 try:
     from gym.envs.classic_control import rendering
 
@@ -47,7 +48,9 @@ class DMControlEnv(GymEnvironment):
         super(DMControlEnv, self).__init__(name=name, dt=dt)
         self._render_i = 0
         self._env = suite.load(
-            domain_name=domain_name, task_name=task_name, visualize_reward=visualize_reward
+            domain_name=domain_name,
+            task_name=task_name,
+            visualize_reward=visualize_reward,
         )
         self._name = name
         self.viewer = []
@@ -60,7 +63,9 @@ class DMControlEnv(GymEnvironment):
         self.observation_space = Box(low=-np.inf, high=np.inf, shape=shape, dtype=np.float32)
 
         self.action_space = Box(
-            low=self.action_spec().minimum, high=self.action_spec().maximum, dtype=np.float32
+            low=self.action_spec().minimum,
+            high=self.action_spec().maximum,
+            dtype=np.float32,
         )
 
         self.reset()
@@ -200,7 +205,9 @@ class DMControlEnv(GymEnvironment):
             # state space at discretion of the programmer.
             if self._custom_death is not None:
                 custom_death = custom_death or self._custom_death.calculate(
-                    self, time_step, self._last_time_step
+                    self,
+                    time_step,
+                    self._last_time_step,
                 )
             self._last_time_step = time_step
             if end:
@@ -255,27 +262,27 @@ class DMControlEnv(GymEnvironment):
     def _time_step_to_obs(time_step) -> np.ndarray:
         # Concat observations in a single array, so it is easier to calculate distances
         obs_array = np.hstack(
-            [np.array([time_step.observation[x]]).flatten() for x in time_step.observation]
+            [np.array([time_step.observation[x]]).flatten() for x in time_step.observation],
         )
         return obs_array
 
 
 class ExternalDMControl(ExternalProcess):
     """I cannot find a way to pass a function that creates a DMControl env, so I have to create
-      it manually inside the thread.
-      Step environment in a separate process for lock free paralellism.
-      The environment will be created in the external process.
-      Args:
-         name: Name of the Environment.
-         wrappers: Wrappers to be applied to the Environment.
-         dt: Number of consecutive times that action will be applied.
-         *args: Additional args to be passed to the environment.
-         **kwargs: Additional kwargs to be passed to the environment.
+    it manually inside the thread.
+    Step environment in a separate process for lock free paralellism.
+    The environment will be created in the external process.
+    Args:
+       name: Name of the Environment.
+       wrappers: Wrappers to be applied to the Environment.
+       dt: Number of consecutive times that action will be applied.
+       *args: Additional args to be passed to the environment.
+       **kwargs: Additional kwargs to be passed to the environment.
 
-      Attributes:
-          observation_space: The cached observation space of the environment.
-          action_space: The cached action space of the environment.
-     """
+    Attributes:
+        observation_space: The cached observation space of the environment.
+        action_space: The cached action space of the environment.
+    """
 
     def __init__(self, name, wrappers=None, dt: int = 1, *args, **kwargs):
 
@@ -345,7 +352,13 @@ class ParallelDMControl(GymEnvironment):
     """
 
     def __init__(
-        self, name: str, dt: int = 1, n_workers: int = 8, blocking: bool = True, *args, **kwargs
+        self,
+        name: str,
+        dt: int = 1,
+        n_workers: int = 8,
+        blocking: bool = True,
+        *args,
+        **kwargs,
     ):
 
         super(ParallelDMControl, self).__init__(name=name)
@@ -361,7 +374,10 @@ class ParallelDMControl(GymEnvironment):
         return getattr(self._env, item)
 
     def step_batch(
-        self, actions: np.ndarray, states: np.ndarray = None, dt: [np.ndarray, int] = None,
+        self,
+        actions: np.ndarray,
+        states: np.ndarray = None,
+        dt: [np.ndarray, int] = None,
     ):
         """
         Vectorized version of the `step` method. It allows to step a vector of
