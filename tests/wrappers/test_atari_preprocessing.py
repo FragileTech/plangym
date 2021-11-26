@@ -1,7 +1,9 @@
-import numpy
 import gym
-from plangym.wrappers import AtariPreprocessing
+import numpy
 import pytest
+
+from plangym.wrappers import AtariPreprocessing
+
 
 pytest.importorskip("atari_py")
 

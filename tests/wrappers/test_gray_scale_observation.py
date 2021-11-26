@@ -1,9 +1,9 @@
+import gym
+import numpy as np
 import pytest
 
-import numpy as np
-
-import gym
 from plangym.wrappers import AtariPreprocessing, GrayScaleObservation
+
 
 pytest.importorskip("atari_py")
 pytest.importorskip("cv2")

@@ -1,0 +1,251 @@
+name: Push
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+env:
+  PROJECT_NAME: plangym
+  PROJECT_DIR: plangym
+  VERSION_FILE: plangym/version.py
+  DEFAULT_BRANCH: master
+  BOT_NAME: fragile-bot
+  BOT_EMAIL: bot@fragile.tech
+  DOCKER_ORG: fragiletech
+  PIP_CACHE: |
+    ~/.cache/pip
+    ~/.local/bin
+    ~/.local/lib/python3.*/site-packages
+
+jobs:
+  style-check:
+    name: Style check
+    if: "!contains(github.event.head_commit.message, 'Bump version')"
+    runs-on: ubuntu-20.04
+    steps:
+    - name: actions/checkout
+      uses: actions/checkout@v2
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v2
+      with:
+        python-version: "3.8"
+    - name: actions/cache
+      uses: actions/cache@v2
+      with:
+        path: ${{ env.PIP_CACHE }}
+        key: ubuntu-20.04-pip-lint-${{ hashFiles('requirements-lint.txt') }}
+        restore-keys: ubuntu-20.04-pip-lint-
+    - name: Install lint dependencies
+      run: |
+        set -x
+        pip install -r requirements-lint.txt
+
+    - name: Run style check and linter
+      run: |
+        set -x
+        make check
+
+  pytest:
+    name: Run Pytest
+    runs-on: ubuntu-20.04
+    if: "!contains(github.event.head_commit.message, 'Bump version')"
+    strategy:
+      matrix:
+        python-version: ['3.6', '3.7', '3.8', '3.9']
+    steps:
+    - name: actions/checkout
+      uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: actions/cache
+      uses: actions/cache@v2
+      with:
+        path: ${{ env.PIP_CACHE }}
+        key: ubuntu-20.04-pip-test-${{ matrix.python-version }}-${{ hashFiles('requirements.txt', 'requirements-test.txt') }}
+        restore-keys: ubuntu-20.04-pip-test-
+    - name: Install test and package dependencies
+      run: |
+        set -x
+        pip install -r requirements-test.txt -r requirements.txt
+        pip install .
+
+    - name: Test with pytest
+      run: |
+        set -x
+        make test-codecov
+
+    - name: Upload coverage report
+      if: ${{ matrix.python-version=='3.8' }}
+      uses: codecov/codecov-action@v1
+
+  test-docker:
+    name: Test Docker container
+    runs-on: ubuntu-20.04
+    if: "!contains(github.event.head_commit.message, 'Bump version')"
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build container
+      run: |
+        set -x
+        make docker-build
+    - name: Run tests
+      run: |
+        set -x
+        make docker-test
+
+  build-test-package:
+    name: Build and test the package
+    needs: style-check
+    runs-on: ubuntu-20.04
+    if: "!contains(github.event.head_commit.message, 'Bump version')"
+    steps:
+      - name: actions/checkout
+        uses: actions/checkout@v2
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: actions/cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.PIP_CACHE }}
+          key: ubuntu-20.04-pip-test-3.8-${{ hashFiles('requirements.txt', 'requirements-test.txt') }}
+          restore-keys: ubuntu-20.04-pip-test-
+      - name: Install dependencies
+        run: |
+          set -x
+          python -m pip install -U pip
+          python -m pip install -U setuptools twine wheel bump2version
+
+      - name: Create unique version for test.pypi
+        run: |
+          set -x
+          current_version=$(grep __version__ $VERSION_FILE | cut -d\" -f2)
+          ts=$(date +%s)
+          new_version="$current_version$ts"
+          bumpversion --current-version $current_version --new-version $new_version patch $VERSION_FILE
+
+      - name: Build package
+        run: |
+          set -x
+          python setup.py --version
+          python setup.py bdist_wheel sdist --format=gztar
+          twine check dist/*
+
+      - name: Publish package to TestPyPI
+        env:
+          TEST_PYPI_PASS: ${{ secrets.TEST_PYPI_PASS }}
+        if: "'$TEST_PYPI_PASS' != ''"
+        uses: pypa/gh-action-pypi-publish@master
+        with:
+          user: __token__
+          password: ${{ secrets.TEST_PYPI_PASS }}
+          repository_url: https://test.pypi.org/legacy/
+          skip_existing: true
+
+      - name: Install dependencies
+        run: |
+          set -x
+          python -m pip install dist/*.whl -r requirements-test.txt
+
+      - name: Test package
+        run: |
+          set -x
+          rm -rf $PROJECT_DIR
+          make test
+
+  bump-version:
+    name: Bump package version
+    env:
+      BOT_AUTH_TOKEN: ${{ secrets.BOT_AUTH_TOKEN }}
+    if: "!contains(github.event.head_commit.message, 'Bump version') && github.ref == 'refs/heads/master' && '$BOT_AUTH_TOKEN' != ''"
+    runs-on: ubuntu-20.04
+    needs:
+      - pytest
+      - build-test-package
+      - test-docker
+    steps:
+      - name: actions/checkout
+        uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+          fetch-depth: 100
+      - name: current_version
+        run: |
+          set -x
+          echo "current_version=$(grep __version__ $VERSION_FILE | cut -d\" -f2)" >> $GITHUB_ENV
+          echo "version_file=$VERSION_FILE" >> $GITHUB_ENV
+          echo 'bot_name="${BOT_NAME}"' >> $GITHUB_ENV
+          echo 'bot_email="${BOT_EMAIL}"' >> $GITHUB_ENV
+      - name: FragileTech/bump-version
+        uses: FragileTech/bump-version@main
+        with:
+          current_version: "${{ env.current_version }}"
+          files: "${{ env.version_file }}"
+          commit_name: "${{ env.bot_name }}"
+          commit_email: "${{ env.bot_email }}"
+          login: "${{ env.bot_name }}"
+          token: "${{ secrets.BOT_AUTH_TOKEN }}"
+
+  push-docker:
+    name: Push Docker container
+    runs-on: ubuntu-20.04
+    env:
+      DOCKERHUB_PASS: ${{ secrets.DOCKERHUB_PASS }}
+    if: "contains(github.event.head_commit.message, 'Bump version') && github.ref == 'refs/heads/master' && '$DOCKERHUB_PASS' != ''"
+    steps:
+      - uses: actions/checkout@v2
+      - name: Login to DockerHub
+        run: |
+          set -x
+          docker login -u "${{ secrets.DOCKERHUB_LOGIN }}" -p "${{ secrets.DOCKERHUB_PASS }}" docker.io
+
+      - name: Build container
+        run: |
+          set -x
+          CONTAINER_VERSION=v$(grep __version__ $VERSION_FILE | cut -d\" -f2)
+          make docker-build VERSION=$CONTAINER_VERSION PROJECT=$PROJECT_NAME DOCKER_ORG=$DOCKER_ORG
+      - name: Push images
+
+        run: |
+          set -x
+          CONTAINER_VERSION=v$(grep __version__ $VERSION_FILE | cut -d\" -f2)
+          make docker-push VERSION=$CONTAINER_VERSION PROJECT=$PROJECT_NAME DOCKER_ORG=$DOCKER_ORG
+
+  release-package:
+    name: Release PyPI package
+    env:
+      PYPI_PASS: ${{ secrets.PYPI_PASS }}
+    if: "contains(github.event.head_commit.message, 'Bump version') && github.ref == 'refs/heads/master'  && '$PYPI_PASS' != ''"
+    runs-on: ubuntu-20.04
+    steps:
+      - name: actions/checkout
+        uses: actions/checkout@v2
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Install dependencies
+        run: |
+          set -x
+          python -m pip install -U pip
+          python -m pip install -U setuptools twine wheel
+
+      - name: Build package
+        run: |
+          set -x
+          python setup.py --version
+          python setup.py bdist_wheel sdist --format=gztar
+          twine check dist/*
+
+      - name: Publish package to PyPI
+        uses: pypa/gh-action-pypi-publish@master
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_PASS }}

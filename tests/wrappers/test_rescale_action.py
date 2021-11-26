@@ -1,8 +1,7 @@
+import gym
+import numpy as np
 import pytest
 
-import numpy as np
-
-import gym
 from plangym.wrappers import RescaleAction
 
 

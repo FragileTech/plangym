@@ -2,7 +2,7 @@ from typing import Union
 
 import pytest
 
-from plangym.retro import RetroEnvironment, ParallelRetro
+from plangym.retro import ParallelRetro, RetroEnvironment
 from tests.test_core import TestGymEnvironment
 
 

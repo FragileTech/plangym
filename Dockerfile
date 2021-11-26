@@ -1,34 +1,30 @@
-FROM ubuntu:18.04
-
+FROM ubuntu:20.04
+ARG JUPYTER_PASSWORD="plangym"
 ENV BROWSER=/browser \
-    LC_ALL=en_US.UTF-8
-
-COPY requirements.txt plangym/requirements.txt
+    LC_ALL=en_US.UTF-8 \
+    LANG=en_US.UTF-8
+COPY Makefile.docker Makefile
+COPY . plangym/
 
 RUN apt-get update && \
-    apt-get install -y --no-install-suggests --no-install-recommends \
-      ca-certificates locales libxml2 libxml2-dev gcc g++ wget make cmake git \
-      python3 python3-dev python3-distutils libglib2.0-0 \
-      build-essential autoconf libtool pkg-config python-opengl libgle3\
-      libsm6 libxrender1 libxrender-dev libxext6 libjpeg8-dev zlib1g-dev && \
-    ln -s /usr/lib/x86_64-linux-gnu/libz.so /lib/ && \
-    ln -s /usr/lib/x86_64-linux-gnu/libjpeg.so /lib/ && \
-    echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
-    locale-gen && \
-    wget -O - https://bootstrap.pypa.io/get-pip.py | python3 && \
-    cd plangym && \
-    pip3 install --no-cache-dir -r requirements.txt && \
-    apt-get remove -y python3-dev libxml2-dev gcc g++ wget && \
-    apt-get remove -y .*-doc .*-man >/dev/null && \
-    apt-get autoremove -y && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* && \
-    echo '#!/bin/bash\n\
-\n\
-echo\n\
-echo "  $@"\n\
-echo\n\' > /browser && \
-    chmod +x /browser
+	apt-get install -y --no-install-suggests --no-install-recommends make cmake && \
+    make install-python3.8 && \
+    make install-common-dependencies && \
+    make install-python-libs
 
-COPY . plangym/
-RUN cd plangym && pip3 install -e .["retro"] --no-use-pep517
+RUN cd plangym \
+    && python3 -m pip install -U pip \
+    && pip3 install -r requirements-lint.txt  \
+    && pip3 install -r requirements-test.txt  \
+    && pip3 install -r requirements.txt  \
+    && pip install ipython jupyter \
+    && pip3 install -e . \
+    && git config --global init.defaultBranch master \
+    && git config --global user.name "Whoever" \
+    && git config --global user.email "whoever@fragile.tech"
+
+RUN make remove-dev-packages
+
+RUN mkdir /root/.jupyter && \
+    echo 'c.NotebookApp.token = "'${JUPYTER_PASSWORD}'"' > /root/.jupyter/jupyter_notebook_config.py
+CMD jupyter notebook --allow-root --port 8080 --ip 0.0.0.0
