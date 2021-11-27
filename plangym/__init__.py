@@ -32,10 +32,12 @@ warnings.filterwarnings(
     ),
 )
 warnings.filterwarnings(
-    "ignore", category=UserWarning,
+    "ignore",
+    category=UserWarning,
 )
 warnings.filterwarnings(
-    "ignore", message="invalid escape sequence",
+    "ignore",
+    message="invalid escape sequence",
 )
 
 warnings.filterwarnings("ignore", message="Gdk.Cursor.new is deprecated")
@@ -49,6 +51,6 @@ try:
     from plangym.parallel import ParallelEnvironment  # noqa: E402
     from plangym.retro import ParallelRetro, RetroEnvironment  # noqa: E402
 
-except (ImportError, ModuleNotFoundError) as e:
+except ImportError as e:
     warnings.warn("Failed to import module in plangym.__init__.py: %s" % str(e))
 from plangym.version import __version__  # noqa: E402

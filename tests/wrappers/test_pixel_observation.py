@@ -1,11 +1,11 @@
 """Tests for the pixel observation wrapper."""
 
 
-import pytest
-import numpy as np
-
 import gym
 from gym import spaces
+import numpy as np
+import pytest
+
 from plangym.wrappers.pixel_observation import PixelObservationWrapper, STATE_KEY
 
 
@@ -39,7 +39,9 @@ class FakeArrayObservationEnvironment(FakeEnvironment):
 class FakeDictObservationEnvironment(FakeEnvironment):
     def __init__(self, *args, **kwargs):
         self.observation_space = spaces.Dict(
-            {"state": spaces.Box(shape=(2,), low=-1, high=1, dtype=np.float32),}
+            {
+                "state": spaces.Box(shape=(2,), low=-1, high=1, dtype=np.float32),
+            }
         )
         super(FakeDictObservationEnvironment, self).__init__(*args, **kwargs)
 

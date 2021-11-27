@@ -1,6 +1,6 @@
+import gym
 import pytest
 
-import gym
 from plangym.wrappers import RecordEpisodeStatistics
 
 

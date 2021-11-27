@@ -11,7 +11,10 @@ class FlattenObservation(ObservationWrapper):
 
         flatdim = spaces.flatdim(env.observation_space)
         self.observation_space = spaces.Box(
-            low=-float("inf"), high=float("inf"), shape=(flatdim,), dtype=numpy.float32
+            low=-float("inf"),
+            high=float("inf"),
+            shape=(flatdim,),
+            dtype=numpy.float32,
         )
 
     def observation(self, observation):

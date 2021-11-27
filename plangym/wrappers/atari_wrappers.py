@@ -10,6 +10,7 @@ import numpy
 from plangym.wrappers.frame_stack import FrameStack
 from plangym.wrappers.time_limit import TimeLimit
 
+
 os.environ.setdefault("PATH", "")
 cv2.ocl.setUseOpenCL(False)
 
@@ -26,7 +27,7 @@ class NoopResetEnv(gym.Wrapper):
         assert env.unwrapped.get_action_meanings()[0] == "NOOP"
 
     def reset(self, **kwargs):
-        """ Do no-op action for a number of steps in [1, noop_max]."""
+        """Do no-op action for a number of steps in [1, noop_max]."""
         self.env.reset(**kwargs)
         if self.override_num_noops is not None:
             noops = self.override_num_noops
@@ -163,7 +164,10 @@ class WarpFrame(gym.ObservationWrapper):
             num_colors = 3
 
         new_space = gym.spaces.Box(
-            low=0, high=255, shape=(self._height, self._width, num_colors), dtype=numpy.uint8,
+            low=0,
+            high=255,
+            shape=(self._height, self._width, num_colors),
+            dtype=numpy.uint8,
         )
         if self._key is None:
             original_space = self.observation_space
@@ -197,7 +201,10 @@ class ScaledFloatFrame(gym.ObservationWrapper):
     def __init__(self, env):
         gym.ObservationWrapper.__init__(self, env)
         self.observation_space = gym.spaces.Box(
-            low=0, high=1, shape=env.observation_space.shape, dtype=numpy.float32
+            low=0,
+            high=1,
+            shape=env.observation_space.shape,
+            dtype=numpy.float32,
         )
 
     def observation(self, observation):
@@ -217,8 +224,7 @@ def make_atari(env_id, max_episode_steps=None):
 
 
 def wrap_deepmind(env, episode_life=True, clip_rewards=True, frame_stack=False, scale=False):
-    """Configure environment for DeepMind-style Atari.
-    """
+    """Configure environment for DeepMind-style Atari."""
     if episode_life:
         env = EpisodicLifeEnv(env)
     if "FIRE" in env.unwrapped.get_action_meanings():
@@ -316,11 +322,17 @@ class AtariPreprocessing(gym.Wrapper):
         _low, _high, _obs_dtype = (0, 255, numpy.uint8) if not scale_obs else (0, 1, numpy.float32)
         if grayscale_obs:
             self.observation_space = Box(
-                low=_low, high=_high, shape=(screen_size, screen_size), dtype=_obs_dtype
+                low=_low,
+                high=_high,
+                shape=(screen_size, screen_size),
+                dtype=_obs_dtype,
             )
         else:
             self.observation_space = Box(
-                low=_low, high=_high, shape=(screen_size, screen_size, 3), dtype=_obs_dtype
+                low=_low,
+                high=_high,
+                shape=(screen_size, screen_size, 3),
+                dtype=_obs_dtype,
             )
 
     def step(self, action):
@@ -373,7 +385,9 @@ class AtariPreprocessing(gym.Wrapper):
         if self.frame_skip > 1:  # more efficient in-place pooling
             numpy.maximum(self.obs_buffer[0], self.obs_buffer[1], out=self.obs_buffer[0])
         obs = cv2.resize(
-            self.obs_buffer[0], (self.screen_size, self.screen_size), interpolation=cv2.INTER_AREA
+            self.obs_buffer[0],
+            (self.screen_size, self.screen_size),
+            interpolation=cv2.INTER_AREA,
         )
 
         if self.scale_obs:

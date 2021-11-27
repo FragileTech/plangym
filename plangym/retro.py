@@ -9,6 +9,7 @@ from plangym.core import GymEnvironment, wrap_callable
 from plangym.parallel import BatchEnv, ExternalProcess
 from plangym.utils import resize_frame
 
+
 try:
     import retro
 except ModuleNotFoundError:
@@ -30,7 +31,7 @@ class RetroEnvironment(GymEnvironment):
         wrappers: Iterable[wrap_callable] = None,
         obs_ram: bool = False,
         delay_init: bool = False,
-        **kwargs
+        **kwargs,
     ):
         """
         Initialize a :class:`RetroEnvironment`.
@@ -72,7 +73,10 @@ class RetroEnvironment(GymEnvironment):
             self.init_env()
         if height is not None and width is not None:
             self.observation_space = spaces.Box(
-                low=0, high=255, shape=(self.height, self.width, 1), dtype=numpy.uint8
+                low=0,
+                high=255,
+                shape=(self.height, self.width, 1),
+                dtype=numpy.uint8,
             )
 
     def clone(self) -> "RetroEnvironment":
@@ -128,7 +132,10 @@ class RetroEnvironment(GymEnvironment):
         return state
 
     def step(
-        self, action: Union[numpy.ndarray, int], state: numpy.ndarray = None, dt: int = None
+        self,
+        action: Union[numpy.ndarray, int],
+        state: numpy.ndarray = None,
+        dt: int = None,
     ) -> tuple:
         """
         Take ``dt`` simulation steps and make the environment evolve in multiples \
@@ -249,7 +256,7 @@ class ExternalRetro(ExternalProcess):
         """
         self.name = name
         super(ExternalRetro, self).__init__(
-            constructor=(name, wrappers, dt, height, width, obs_ram, kwargs)
+            constructor=(name, wrappers, dt, height, width, obs_ram, kwargs),
         )
 
     def _worker(self, data, conn):
@@ -275,7 +282,7 @@ class ExternalRetro(ExternalProcess):
                 height=height,
                 width=width,
                 obs_ram=obs_ram,
-                **kwargs
+                **kwargs,
             )
             env.reset()
             while True:
@@ -333,7 +340,7 @@ class ParallelRetro(RetroEnvironment):
         n_workers: int = 8,
         blocking: bool = False,
         delay_init: bool = False,
-        **kwargs
+        **kwargs,
     ):
         """
         Initialize a :class:`RetroEnvironment`.
@@ -365,7 +372,7 @@ class ParallelRetro(RetroEnvironment):
             width=width,
             wrappers=wrappers,
             obs_ram=obs_ram,
-            **kwargs
+            **kwargs,
         )
         self._n_workers = n_workers
         self.blocking = blocking
@@ -390,7 +397,7 @@ class ParallelRetro(RetroEnvironment):
                 height=self.height,
                 width=self.width,
                 wrappers=self._wrappers,
-                **self.gym_env_kwargs
+                **self.gym_env_kwargs,
             )
             for _ in range(self.n_workers)
         ]

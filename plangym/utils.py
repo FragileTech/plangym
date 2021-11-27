@@ -13,7 +13,10 @@ def ale_to_ram(ale) -> numpy.ndarray:
 
 
 def resize_frame(
-    frame: numpy.ndarray, width: int, height: int, mode: str = "RGB"
+    frame: numpy.ndarray,
+    width: int,
+    height: int,
+    mode: str = "RGB",
 ) -> numpy.ndarray:
     """
     Use PIL to resize an RGB frame to an specified height and width.
@@ -34,7 +37,8 @@ def resize_frame(
 
 
 def split_similar_chunks(
-    vector: Union[list, numpy.ndarray], n_chunks: int
+    vector: Union[list, numpy.ndarray],
+    n_chunks: int,
 ) -> Generator[Union[list, numpy.ndarray], None, None]:
     """
     Split an indexable object into similar chunks.

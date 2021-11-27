@@ -7,6 +7,7 @@ import numpy
 from plangym.wrappers.atari_wrappers import ClipRewardEnv, FrameStack, ScaledFloatFrame, WarpFrame
 from plangym.wrappers.time_limit import TimeLimit
 
+
 cv2.ocl.setUseOpenCL(False)
 
 
@@ -117,7 +118,10 @@ class Rgb2gray(gym.ObservationWrapper):
         gym.ObservationWrapper.__init__(self, env)
         (oldh, oldw, _oldc) = env.observation_space.shape
         self.observation_space = gym.spaces.Box(
-            low=0, high=255, shape=(oldh, oldw, 1), dtype=numpy.uint8
+            low=0,
+            high=255,
+            shape=(oldh, oldw, 1),
+            dtype=numpy.uint8,
         )
 
     def observation(self, frame):
@@ -147,7 +151,9 @@ class AppendTimeout(gym.Wrapper):
         gym.Wrapper.__init__(self, env)
         self.action_space = env.action_space
         self.timeout_space = gym.spaces.Box(
-            low=numpy.array([0.0]), high=numpy.array([1.0]), dtype=numpy.float32
+            low=numpy.array([0.0]),
+            high=numpy.array([1.0]),
+            dtype=numpy.float32,
         )
         self.original_os = env.observation_space
         if isinstance(self.original_os, gym.spaces.Dict):
@@ -159,13 +165,14 @@ class AppendTimeout(gym.Wrapper):
             self.dict_mode = True
         else:
             self.observation_space = gym.spaces.Dict(
-                {"original": self.original_os, "value_estimation_timeout": self.timeout_space}
+                {"original": self.original_os, "value_estimation_timeout": self.timeout_space},
             )
             self.dict_mode = False
         self.ac_count = None
         while 1:
             if not hasattr(
-                env, "_max_episode_steps"
+                env,
+                "_max_episode_steps",
             ):  # Looking for TimeLimit wrapper that has this field
                 env = env.env
                 continue

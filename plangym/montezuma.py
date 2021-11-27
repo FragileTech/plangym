@@ -76,7 +76,9 @@ def convert_state(state):
     return (
         (
             resize_frame(
-                state, height=MyMontezuma.TARGET_SHAPE[0], width=MyMontezuma.TARGET_SHAPE[1]
+                state,
+                height=MyMontezuma.TARGET_SHAPE[0],
+                width=MyMontezuma.TARGET_SHAPE[1],
             )
             / 255.0
         )
@@ -177,7 +179,8 @@ class MyMontezuma:
         self.ram_death_state = -1
         self.pos = None
         self.pos = self.pos_from_unprocessed_state(
-            self.get_face_pixels(unprocessed_state), unprocessed_state
+            self.get_face_pixels(unprocessed_state),
+            unprocessed_state,
         )
         if self.get_pos().room not in self.rooms:
             self.rooms[self.get_pos().room] = (
@@ -482,10 +485,18 @@ class MyMontezuma:
                 # )
 
             cv2.line(
-                final_image, (x_room, y_room), (x_room, y_room + img.shape[0]), (255, 255, 255), 1
+                final_image,
+                (x_room, y_room),
+                (x_room, y_room + img.shape[0]),
+                (255, 255, 255),
+                1,
             )
             cv2.line(
-                final_image, (x_room, y_room), (x_room + img.shape[1], y_room), (255, 255, 255), 1
+                final_image,
+                (x_room, y_room),
+                (x_room + img.shape[1], y_room),
+                (255, 255, 255),
+                1,
             )
             cv2.line(
                 final_image,
@@ -530,7 +541,8 @@ class MyMontezuma:
         import matplotlib.colors
 
         mappable = matplotlib.cm.ScalarMappable(
-            norm=matplotlib.colors.Normalize(vmin=np.min(vals), vmax=np.max(vals)), cmap="bwr"
+            norm=matplotlib.colors.Normalize(vmin=np.min(vals), vmax=np.max(vals)),
+            cmap="bwr",
         )
         mappable.set_array(vals)
         matplotlib.rcParams.update({"font.size": 22})
@@ -578,7 +590,7 @@ class Montezuma(AtariEnvironment):
         autoreset: bool = True,
         name=None,
         *args,
-        **kwargs
+        **kwargs,
     ):
 
         super(Montezuma, self).__init__(

@@ -1,7 +1,8 @@
+import gym
 import pytest
 
-import gym
 from plangym.wrappers import ResizeObservation
+
 
 try:
     import atari_py

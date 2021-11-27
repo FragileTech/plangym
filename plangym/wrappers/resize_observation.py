@@ -4,7 +4,7 @@ import numpy
 
 
 class ResizeObservation(ObservationWrapper):
-    r"""Downsample the image observation to a square image. """
+    r"""Downsample the image observation to a square image."""
 
     def __init__(self, env, shape):
         super(ResizeObservation, self).__init__(env)

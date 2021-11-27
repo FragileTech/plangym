@@ -1,10 +1,13 @@
 import pytest
 
+
 pytest.importorskip("atari_py")
 
-import numpy as np
 import gym
+import numpy as np
+
 from plangym.wrappers import FrameStack
+
 
 try:
     import lz4

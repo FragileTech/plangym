@@ -7,6 +7,7 @@ from gym.utils.json_utils import json_encode_np
 from gym.wrappers.monitoring import stats_recorder, video_recorder
 import numpy
 
+
 FILE_PREFIX = "plangym"
 MANIFEST_PREFIX = FILE_PREFIX + ".manifest"
 
@@ -90,7 +91,7 @@ class Monitor(Wrapper):
             logger.warn(
                 "Trying to monitor an environment which has no 'spec' set. "
                 "This usually means you did not create it via 'gym.make', and "
-                "is recommended only for advanced users."
+                "is recommended only for advanced users.",
             )
             env_id = "(unknown)"
         else:
@@ -107,8 +108,9 @@ class Monitor(Wrapper):
             raise error.Error(
                 "You must provide a function, None, "
                 "or False for video_callable, not {}: {}".format(
-                    type(video_callable), video_callable
-                )
+                    type(video_callable),
+                    video_callable,
+                ),
             )
         self.video_callable = video_callable
 
@@ -122,8 +124,9 @@ class Monitor(Wrapper):
                     "Trying to write to monitor directory {} with existing monitor files: {}. \n"
                     "You should use a unique directory for each training run, or use 'force=True' "
                     "to automatically clear previous monitor files.".format(
-                        directory, ", ".join(training_manifests[:5])
-                    )
+                        directory,
+                        ", ".join(training_manifests[:5]),
+                    ),
                 )
 
         self._monitor_id = monitor_closer.register(self)
@@ -263,7 +266,9 @@ class Monitor(Wrapper):
             base_path=os.path.join(
                 self.directory,
                 "{}.video.{}.video{:06}".format(
-                    self.file_prefix, self.file_infix, self.episode_id
+                    self.file_prefix,
+                    self.file_infix,
+                    self.episode_id,
                 ),
             ),
             metadata={"episode_id": self.episode_id},
@@ -321,7 +326,8 @@ def clear_monitor_files(training_dir):
         return
 
     logger.info(
-        "Clearing %d monitor files from previous run (because force=True was provided)", len(files)
+        "Clearing %d monitor files from previous run (because force=True was provided)",
+        len(files),
     )
     for file in files:
         os.unlink(file)
@@ -471,8 +477,10 @@ def collapse_env_infos(env_infos, training_dir):
             raise error.Error(
                 "Found two unequal env_infos: {} and {}. This usually indicates that "
                 "your training directory {} has commingled results from multiple runs.".format(
-                    first, other, training_dir
-                )
+                    first,
+                    other,
+                    training_dir,
+                ),
             )
 
     for key in ["env_id", "gym_version"]:
@@ -480,7 +488,9 @@ def collapse_env_infos(env_infos, training_dir):
             raise error.Error(
                 "env_info {} from training directory {} is missing expected key {}. "
                 "This is unexpected and likely indicates a bug in gym.".format(
-                    first, training_dir, key
-                )
+                    first,
+                    training_dir,
+                    key,
+                ),
             )
     return first
