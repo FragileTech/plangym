@@ -4,7 +4,14 @@ from gym import spaces
 import numpy
 
 from plangym.core import GymEnvironment, wrap_callable
-from plangym.utils import ale_to_ram
+
+
+def ale_to_ram(ale) -> numpy.ndarray:
+    """Return the ram of the ale emulator."""
+    ram_size = ale.getRAMSize()
+    ram = numpy.zeros(ram_size, dtype=numpy.uint8)
+    ale.getRAM(ram)
+    return ram
 
 
 class AtariEnvironment(GymEnvironment):
@@ -29,7 +36,6 @@ class AtariEnvironment(GymEnvironment):
         self,
         name: str,
         clone_seeds: bool = True,
-        dt: int = 1,
         min_dt: int = 1,
         obs_ram: bool = False,
         episodic_live: bool = False,
@@ -45,7 +51,6 @@ class AtariEnvironment(GymEnvironment):
             name: Name of the environment. Follows standard gym syntax conventions.
             clone_seeds: Clone the random seed of the ALE emulator when reading/setting \
                         the state. False makes the environment stochastic.
-            dt: Consecutive number of times a given action will be applied.
             min_dt: Number of times an action will be applied for each step \
                 in dt.
             obs_ram: Use ram as observations even though it is not specified in \
@@ -54,7 +59,7 @@ class AtariEnvironment(GymEnvironment):
             autoreset: Restart environment when reaching a terminal state.
             possible_to_win: It is possible to finish the Atari game without \
                             getting a terminal state that is not out of bounds \
-                            or doest not involve losing a live.
+                            or doest not involve losing a life.
             wrappers: Wrappers that will be applied to the underlying OpenAI env. \
                      Every element of the iterable can be either a :class:`gym.Wrapper` \
                      or a tuple containing ``(gym.Wrapper, kwargs)``.
@@ -64,7 +69,6 @@ class AtariEnvironment(GymEnvironment):
         """
         super(AtariEnvironment, self).__init__(
             name=name,
-            dt=dt,
             min_dt=min_dt,
             episodic_live=episodic_live,
             autoreset=autoreset,
@@ -86,7 +90,6 @@ class AtariEnvironment(GymEnvironment):
         """Return a copy of the environment."""
         return AtariEnvironment(
             name=self.name,
-            dt=self.dt,
             min_dt=self.min_dt,
             wrappers=self._wrappers,
             episodic_live=self.episodic_life,
@@ -136,7 +139,7 @@ class AtariEnvironment(GymEnvironment):
         self,
         action: Union[numpy.ndarray, int],
         state: numpy.ndarray = None,
-        dt: int = None,
+        dt: int = 1,
     ) -> tuple:
         """
         Take ``dt`` simulation steps and make the environment evolve in multiples \

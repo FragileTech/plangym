@@ -3,7 +3,7 @@ import pytest
 from plangym.atari import AtariEnvironment
 from plangym.classic_control import ClassicControl
 from plangym.parallel import ParallelEnvironment
-from tests.test_core import TestGymEnvironment
+from tests.api_tests import batch_size, TestGymEnvironment
 
 
 def parallel_cartpole():

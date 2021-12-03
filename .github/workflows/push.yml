@@ -79,7 +79,7 @@ jobs:
     - name: Test with pytest
       run: |
         set -x
-        make test-codecov
+        CI=True make test-codecov
 
     - name: Upload coverage report
       if: ${{ matrix.python-version=='3.8' }}
@@ -160,7 +160,7 @@ jobs:
         run: |
           set -x
           rm -rf $PROJECT_DIR
-          make test
+          CI=True make test
 
   bump-version:
     name: Bump package version

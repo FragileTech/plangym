@@ -4,14 +4,6 @@ import numpy
 from PIL import Image
 
 
-def ale_to_ram(ale) -> numpy.ndarray:
-    """Return the ram of the ale emulator."""
-    ram_size = ale.getRAMSize()
-    ram = numpy.zeros(ram_size, dtype=numpy.uint8)
-    ale.getRAM(ram)
-    return ram
-
-
 def resize_frame(
     frame: numpy.ndarray,
     width: int,

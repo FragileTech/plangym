@@ -584,7 +584,6 @@ class MyMontezuma:
 class Montezuma(AtariEnvironment):
     def __init__(
         self,
-        dt: int = 1,
         min_dt: int = 1,
         episodic_live: bool = False,
         autoreset: bool = True,
@@ -595,12 +594,11 @@ class Montezuma(AtariEnvironment):
 
         super(Montezuma, self).__init__(
             name="MontezumaRevengeDeterministic-v4",
-            dt=dt,
             clone_seeds=True,
             min_dt=min_dt,
             obs_ram=False,
         )
-        self.gym_env = MyMontezuma(*args, **kwargs)
+        self._gym_env = MyMontezuma(*args, **kwargs)
         self.action_space = self.gym_env.action_space
         self.observation_space = self.gym_env.observation_space
         self.reward_range = self.gym_env.reward_range
@@ -608,6 +606,10 @@ class Montezuma(AtariEnvironment):
 
     def __getattr__(self, item):
         return getattr(self.gym_env, item)
+
+    @property
+    def obs_shape(self) -> typing.Tuple[int, ...]:
+        return (100803,)
 
     @property
     def n_actions(self):
@@ -683,7 +685,7 @@ class Montezuma(AtariEnvironment):
         )
         self.gym_env.restore(data)
 
-    def step(self, action: np.ndarray, state: np.ndarray = None, dt: int = None) -> tuple:
+    def step(self, action: np.ndarray, state: np.ndarray = None, dt: int = 1) -> tuple:
         """
 
         Take dt simulation steps and make the environment evolve
@@ -700,7 +702,6 @@ class Montezuma(AtariEnvironment):
             if states is None returns (observs, rewards, ends, infos)
             else returns(new_states, observs, rewards, ends, infos)
         """
-        dt = dt if dt is not None else self.dt
         if state is not None:
             self.set_state(state)
         reward = 0

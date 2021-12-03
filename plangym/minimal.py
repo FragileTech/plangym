@@ -1,6 +1,8 @@
 import copy
+from typing import Tuple, Union
 
 from gym import spaces
+import numpy
 import numpy as np
 
 from plangym.atari import AtariEnvironment
@@ -20,6 +22,11 @@ class MinimalPong(AtariEnvironment):
         super(MinimalPong, self).__init__(name=name, *args, **kwargs)
         self.observation_space = spaces.Box(low=0, high=1, dtype=np.float, shape=(80, 80))
         self.action_space = spaces.Discrete(2)
+
+    @property
+    def obs_shape(self) -> Tuple[int, ...]:
+        """Tuple containing the shape of the observations returned by the Environment."""
+        return 80, 80, 2
 
     @staticmethod
     def process_obs(obs):
@@ -85,11 +92,16 @@ class MinimalPacman(AtariEnvironment):
         if "obs_shape" in kwargs.keys():
             del kwargs["obs_shape"]
         super(MinimalPacman, self).__init__(name=name, *args, **kwargs)
-        self.obs_shape = obs_shape
+        self._obs_shape = obs_shape
         # Im freezing this until proven wrong
         self.min_dt = 4
         self.dt = 1
         self.observation_space = spaces.Box(low=0, high=1, dtype=np.float, shape=obs_shape)
+
+    @property
+    def obs_shape(self) -> Tuple[int]:
+        """Tuple containing the shape of the observations returned by the Environment."""
+        return self._obs_shape
 
     @staticmethod
     def normalize_vector(vector):
@@ -106,10 +118,7 @@ class MinimalPacman(AtariEnvironment):
         frame = resize_frame(cropped, width=width, height=height)
         return frame
 
-    def step(self, action: np.ndarray, state: np.ndarray = None, dt: int = None) -> tuple:
-        dt = dt if dt is not None else self.dt
-        if state is not None:
-            self.set_state(state)
+    def step_with_dt(self, action: Union[numpy.ndarray, int, float], dt: int = 1):
         reward = 0
         end, _end = False, False
         info = {"lives": -1, "reward": 0}
@@ -142,9 +151,6 @@ class MinimalPacman(AtariEnvironment):
             if _end:
                 break
         info["terminal"] = _end
-        if state is not None:
-            new_state = self.get_state()
-            return new_state, full_obs, reward, end, info
         return full_obs, reward, end, info
 
     def reset(self, return_state: bool = True):
