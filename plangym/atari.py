@@ -36,7 +36,7 @@ class AtariEnvironment(GymEnvironment):
         self,
         name: str,
         clone_seeds: bool = True,
-        min_dt: int = 1,
+        frameskip: int = 1,
         obs_ram: bool = False,
         episodic_live: bool = False,
         autoreset: bool = True,
@@ -51,7 +51,7 @@ class AtariEnvironment(GymEnvironment):
             name: Name of the environment. Follows standard gym syntax conventions.
             clone_seeds: Clone the random seed of the ALE emulator when reading/setting \
                         the state. False makes the environment stochastic.
-            min_dt: Number of times an action will be applied for each step \
+            frameskip: Number of times an action will be applied for each step \
                 in dt.
             obs_ram: Use ram as observations even though it is not specified in \
                     the ``name`` parameter.
@@ -69,7 +69,7 @@ class AtariEnvironment(GymEnvironment):
         """
         super(AtariEnvironment, self).__init__(
             name=name,
-            min_dt=min_dt,
+            frameskip=frameskip,
             episodic_live=episodic_live,
             autoreset=autoreset,
             wrappers=wrappers,
@@ -90,7 +90,7 @@ class AtariEnvironment(GymEnvironment):
         """Return a copy of the environment."""
         return AtariEnvironment(
             name=self.name,
-            min_dt=self.min_dt,
+            frameskip=self.frameskip,
             wrappers=self._wrappers,
             episodic_live=self.episodic_life,
             autoreset=self.autoreset,
@@ -143,7 +143,7 @@ class AtariEnvironment(GymEnvironment):
     ) -> tuple:
         """
         Take ``dt`` simulation steps and make the environment evolve in multiples \
-        of ``self.min_dt``.
+        of ``self.frameskip``.
 
         The info dictionary will contain a boolean called '`lost_live'` that will
         be ``True`` if a life was lost during the current step.

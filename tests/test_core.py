@@ -14,7 +14,7 @@ class DummyEnv(BaseEnvironment):
     action_space = gym.spaces.Discrete(2)
     observation_space = gym.spaces.Box(low=0, high=255, dtype=numpy.uint8, shape=(128,))
     dt = 1
-    min_dt = 1
+    frameskip = 1
 
     @property
     def obs_shape(self) -> Tuple[int]:

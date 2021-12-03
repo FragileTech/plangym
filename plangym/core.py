@@ -19,7 +19,7 @@ class BaseEnvironment(ABC):
     def __init__(
         self,
         name: str,
-        min_dt: int = 1,
+        frameskip: int = 1,
         autoreset: bool = True,
         delay_init: bool = False,
     ):
@@ -28,7 +28,7 @@ class BaseEnvironment(ABC):
 
         Args:
             name: Name of the environment.
-            min_dt: Number of times an action will be applied for each ``dt`` passed to ``step``.
+            frameskip: Number of times ``step`` will me called with the same action.
             autoreset: Automatically reset the environment when the OpenAI environment
                       returns ``end = True``.
             delay_init: If ``True`` do not initialize the ``gym.Environment`` \
@@ -36,7 +36,7 @@ class BaseEnvironment(ABC):
 
         """
         self._name = name
-        self.min_dt = min_dt
+        self.frameskip = frameskip
         self.autoreset = autoreset
         self.delay_init = delay_init
         if not delay_init:
@@ -84,7 +84,7 @@ class BaseEnvironment(ABC):
         Optionally set the state to the supplied state before stepping it.
 
         Take ``dt`` simulation steps and make the environment evolve in multiples \
-        of ``self.min_dt`` for a total of ``dt`` * ``self.min_dt`` steps.
+        of ``self.frameskip`` for a total of ``dt`` * ``self.frameskip`` steps.
 
         Args:
             action: Chosen action applied to the environment.
@@ -167,7 +167,7 @@ class BaseEnvironment(ABC):
     def step_with_dt(self, action: Union[numpy.ndarray, int, float], dt: int = 1) -> tuple:
         """
          Take ``dt`` simulation steps and make the environment evolve in multiples \
-        of ``self.min_dt`` for a total of ``dt`` * ``self.min_dt`` steps.
+        of ``self.frameskip`` for a total of ``dt`` * ``self.frameskip`` steps.
 
         Args:
             action: Chosen action applied to the environment.
@@ -240,7 +240,7 @@ class GymEnvironment(BaseEnvironment):
     def __init__(
         self,
         name: str,
-        min_dt: int = 1,
+        frameskip: int = 1,
         episodic_live: bool = False,
         autoreset: bool = True,
         wrappers: Iterable[wrap_callable] = None,
@@ -251,7 +251,7 @@ class GymEnvironment(BaseEnvironment):
 
         Args:
             name: Name of the environment. Follows standard gym syntax conventions.
-            min_dt: Number of times an action will be applied for each ``dt``.
+            frameskip: Number of times an action will be applied for each ``dt``.
             episodic_live: Return ``end = True`` when losing a live.
             autoreset: Automatically reset the environment when the OpenAI environment
                       returns ``end = True``.
@@ -271,7 +271,7 @@ class GymEnvironment(BaseEnvironment):
         self.metadata = None
         super(GymEnvironment, self).__init__(
             name=name,
-            min_dt=min_dt,
+            frameskip=frameskip,
             autoreset=autoreset,
             delay_init=delay_init,
         )
@@ -330,7 +330,7 @@ class GymEnvironment(BaseEnvironment):
     def step_with_dt(self, action: Union[numpy.ndarray, int, float], dt: int = 1):
         """
          Take ``dt`` simulation steps and make the environment evolve in multiples
-          of ``self.min_dt`` for a total of ``dt`` * ``self.min_dt`` steps.
+          of ``self.frameskip`` for a total of ``dt`` * ``self.frameskip`` steps.
 
         Args:
             action: Chosen action applied to the environment.
@@ -346,7 +346,7 @@ class GymEnvironment(BaseEnvironment):
         info = {"lives": -1}
         n_steps = 0
         for _ in range(int(dt)):
-            for _ in range(self.min_dt):
+            for _ in range(self.frameskip):
                 obs, _reward, _oob, _info = self.gym_env.step(action)
                 _info["lives"] = self.get_lives_from_info(_info)
                 lost_life = info["lives"] > _info["lives"] or lost_life
@@ -377,7 +377,7 @@ class GymEnvironment(BaseEnvironment):
         """Return a copy of the environment."""
         return GymEnvironment(
             name=self.name,
-            min_dt=self.min_dt,
+            frameskip=self.frameskip,
             wrappers=self._wrappers,
             episodic_live=self.episodic_life,
             autoreset=self.autoreset,
