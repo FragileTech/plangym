@@ -154,7 +154,7 @@ class RayEnv(BaseEnvironment):
         else:
             return states, observs, rewards, dones, infos
 
-    def _make_transitions(self, actions, states=None, dt: [np.ndarray, int] = None):
+    def _make_transitions(self, actions, states=None, dt: [np.ndarray, int] = 1):
         states = states if states is not None else [None] * len(actions)
         if dt is None:
             dt = np.array([None] * len(states))

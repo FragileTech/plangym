@@ -6,7 +6,7 @@ if sys.version in {(3, 6), (3, 7), (3, 8)}:
     import pytest
 
     from plangym.retro import ParallelRetro, RetroEnvironment
-    from tests.test_core import TestGymEnvironment
+    from tests.api_tests import batch_size, TestGymEnvironment
 
     def retro_airstrike():
         return RetroEnvironment(name="Airstriker-Genesis")

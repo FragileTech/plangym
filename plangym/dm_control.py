@@ -40,57 +40,57 @@ class DMControlEnv(GymEnvironment):
         visualize_reward: bool = True,
         dt: int = 1,
         custom_death: "CustomDeath" = None,
+        **kwargs,
     ):
+        self._visualize_reward = visualize_reward
+        self._custom_death = custom_death
 
+        super(DMControlEnv, self).__init__(name=name, dt=dt, **kwargs)
+
+    def init_gym_env(self):
         from dm_control import suite
 
-        domain_name, task_name = name.split("-")
-        super(DMControlEnv, self).__init__(name=name, dt=dt)
+        domain_name, task_name = self.name.split("-")
         self._render_i = 0
-        self._env = suite.load(
+        env = suite.load(
             domain_name=domain_name,
             task_name=task_name,
-            visualize_reward=visualize_reward,
+            visualize_reward=self._visualize_reward,
         )
-        self._name = name
         self.viewer = []
         self._last_time_step = None
 
         self._viewer = None if novideo_mode else rendering.SimpleImageViewer()
 
-        self._custom_death = custom_death
+        self._custom_death = self._custom_death
+        return env
+
+    def init_env(self):
+        """Initialize the target :class:`gym.Env` instance."""
+        self.gym_env = self.init_gym_env()
+        if self._wrappers is not None:
+            self.apply_wrappers(self._wrappers)
         shape = self.reset(return_state=False).shape
         self.observation_space = Box(low=-np.inf, high=np.inf, shape=shape, dtype=np.float32)
-
         self.action_space = Box(
             low=self.action_spec().minimum,
             high=self.action_spec().maximum,
             dtype=np.float32,
         )
 
-        self.reset()
-
-    def __getattr__(self, item):
-        return getattr(self._env, item)
-
     def action_spec(self):
-        return self.env.action_spec()
+        return self.gym_env.action_spec()
 
     def action_space(self):
-        return self.env.action_spec()
+        return self.gym_env.action_spec()
 
     @property
     def physics(self):
-        return self.env.physics
-
-    @property
-    def env(self):
-        """Access to the environment."""
-        return self._env
+        return self.gym_env.physics
 
     def set_seed(self, seed):
         np.random.seed(seed)
-        self.env.seed(seed)
+        self.gym_env.seed(seed)
 
     def render(self, mode="human"):
         """
@@ -105,7 +105,7 @@ class DMControlEnv(GymEnvironment):
         Returns:
             numpy.ndarray when mode == `rgb_array`. True when mode == `human`
         """
-        img = self.env.physics.render(camera_id=0)
+        img = self.gym_env.physics.render(camera_id=0)
         if mode == "rgb_array":
             return img
         elif mode == "human":
@@ -119,7 +119,7 @@ class DMControlEnv(GymEnvironment):
             self._viewer.imshow(img)
             time.sleep(sleep)
 
-    def reset(self, return_state: bool = False) -> [np.ndarray, tuple]:
+    def reset(self, return_state: bool = True) -> [np.ndarray, tuple]:
         """
         Resets the environment and returns the first observation, or the first
         (state, obs) tuple.
@@ -132,7 +132,7 @@ class DMControlEnv(GymEnvironment):
             return (state, obs) after reset.
         """
 
-        time_step = self._env.reset()
+        time_step = self.gym_env.reset()
         observed = self._time_step_to_obs(time_step)
         self._render_i = 0
         if not return_state:
@@ -140,7 +140,7 @@ class DMControlEnv(GymEnvironment):
         else:
             return self.get_state(), observed
 
-    def set_state(self, state: tuple):
+    def set_state(self, state: np.ndarray):
         """
         Sets the state of the simulator to the target State.
         I will be super grateful if someone shows me how to do this using Open Source code.
@@ -151,13 +151,14 @@ class DMControlEnv(GymEnvironment):
         Returns:
             None
         """
-        with self.env.physics.reset_context():
+        with self.gym_env.physics.reset_context():
             # mj_reset () is  called  upon  entering  the  context.
-            self.env.physics.data.qpos[:] = state[0]  # Set  position ,
-            self.env.physics.data.qvel[:] = state[1]  # velocity
-            self.env.physics.data.ctrl[:] = state[2]  # and  control.
+            self.gym_env.physics.set_state(state)
+            # self.env.physics.data.qpos[:] = state[0]  # Set  position ,
+            # self.env.physics.data.qvel[:] = state[1]  # velocity
+            # self.env.physics.data.ctrl[:] = state[2]  # and  control.
 
-    def get_state(self) -> tuple:
+    def get_state(self) -> np.ndarray:
         """
         Returns a tuple containing the three arrays that characterize the state
          of the system. Each tuple contains the position of the robot, its velocity
@@ -167,12 +168,12 @@ class DMControlEnv(GymEnvironment):
             Tuple of numpy arrays containing all the information needed to describe
             the current state of the simulation.
         """
-        state = (
-            np.array(self.env.physics.data.qpos),
-            np.array(self.env.physics.data.qvel),
-            np.array(self.env.physics.data.ctrl),
-        )
-        return state
+        # state = (
+        #    np.array(self.env.physics.data.qpos),
+        #    np.array(self.env.physics.data.qvel),
+        #    np.array(self.env.physics.data.ctrl),
+        # )
+        return self.gym_env.physics.get_state()
 
     def step(self, action: np.ndarray, state: np.ndarray = None, dt: int = None) -> tuple:
         """
@@ -198,9 +199,9 @@ class DMControlEnv(GymEnvironment):
         if state is not None:
             self.set_state(state)
         for _ in range(int(dt)):
-            time_step = self.env.step(action)
+            time_step = self.gym_env.step(action)
             end = end or time_step.last()
-            cum_reward += time_step.reward
+            cum_reward += time_step.reward if time_step.reward is not None else 0.0
             # The death condition is a super efficient way to discard huge chunks of the
             # state space at discretion of the programmer.
             if self._custom_death is not None:

@@ -2,7 +2,7 @@ import atexit
 import multiprocessing
 import sys
 import traceback
-from typing import Callable, Tuple, Union
+from typing import Callable, Tuple
 
 import numpy
 import numpy as np
@@ -487,25 +487,19 @@ class ParallelEnvironment(BaseEnvironment):
 
     def __init__(
         self,
-        name: str,
-        min_dt: int = 1,
-        autoreset: bool = True,
-        delay_init: bool = False,
+        name,
         env_class=None,
+        env_callable: Callable[..., BaseEnvironment] = None,
         n_workers: int = 8,
         blocking: bool = False,
+        *args,
         **kwargs,
     ):
         """
         Initialize a :class:`ParallelEnvironment`.
 
         Args:
-            name: Name of the environment.
-            min_dt: Number of times an action will be applied for each ``dt`` passed to ``step``.
-            autoreset: Ignored. Always set to True. Automatically reset the environment
-                      when the OpenAI environment returns ``end = True``.
-            delay_init: If ``True`` do not initialize the ``gym.Environment`` \
-                     and wait for ``init_env`` to be called later.
+            name:  Name of the Environment.
             env_class: Class of the environment to be wrapped.
             env_callable: Callable that returns an instance of the environment \
                          that will be parallelized.
@@ -515,68 +509,44 @@ class ParallelEnvironment(BaseEnvironment):
             **kwargs: Additional kwargs for the environment.
 
         """
-        kwargs["autoreset"] = True
-        self._env_class = env_class
-        self._n_workers = n_workers
-        self._blocking = blocking
-        self._env_kwargs = kwargs
-        super(ParallelEnvironment, self).__init__(
-            name=name,
-            min_dt=min_dt,
-            autoreset=True,
-            delay_init=delay_init,
-        )
+        # Noqa: D202
+        def _env_callable(name, env_class, *args, **kwargs):
+            def _dummy():
+                return env_class(name, *args, **kwargs)
+
+            return _dummy
+
+        if env_class is None and env_callable is None:
+            raise ValueError("env_callable and env_class cannot be both None.")
+        env_callable = _env_callable if env_callable is None else env_callable
+
+        super(ParallelEnvironment, self).__init__(name=name)
+        self.plangym_env = env_callable(name, env_class, *args, **kwargs)()
+        envs = [
+            ExternalProcess(constructor=env_callable(name, env_class, *args, **kwargs))
+            for _ in range(n_workers)
+        ]
+        self._batch_env = BatchEnv(envs, blocking)
+        self.action_space = self.plangym_env.action_space
+        self.observation_space = self.plangym_env.observation_space
 
     @property
-    def obs_shape(self) -> Tuple[int]:
+    def gym_env(self):
+        """Return the instance of the environment that is being wrapped by plangym."""
+        return self.plangym_env.gym_env
+
+    @property
+    def obs_shape(self) -> Tuple[int, ...]:
         """Tuple containing the shape of the observations returned by the Environment."""
-        return self.plangym_env.obs_shape
+        return self.plangym_env.observation_space.shape
 
     @property
-    def action_shape(self) -> Tuple[int]:
+    def action_shape(self) -> Tuple[int, ...]:
         """Tuple containing the shape of the actions applied to the Environment."""
-        return self.plangym_env.action_shape
-
-    @property
-    def n_workers(self) -> int:
-        return self._n_workers
-
-    @property
-    def blocking(self) -> bool:
-        return self._blocking
+        return self.plangym_env.action_space.shape
 
     def __getattr__(self, item):
         return getattr(self.plangym_env, item)
-
-    @classmethod
-    def __from_callable(
-        cls,
-        env_callable: Callable[..., BaseEnvironment],
-        n_workers,
-        blocking,
-    ) -> "ParallelEnvironment":
-        return env_callable()
-
-    def init_env(self):
-        """Run environment initialization and create the subprocesses for stepping in parallel."""
-
-        def create_env_callable(env_class, **kwargs):
-            def _inner():
-                return env_class(**kwargs)
-
-            return _inner
-
-        env_callable = create_env_callable(
-            name=self.name,
-            env_class=self._env_class,
-            min_dt=self.min_dt,
-            delay_init=False,
-            **self._env_kwargs,
-        )
-
-        self.plangym_env = env_callable()
-        envs = [ExternalProcess(constructor=env_callable) for _ in range(self.n_workers)]
-        self._batch_env = BatchEnv(envs, blocking=self._blocking)
 
     def step_batch(
         self,
@@ -639,7 +609,7 @@ class ParallelEnvironment(BaseEnvironment):
         """
         state, obs = self.plangym_env.reset(return_state=True)
         self.sync_states(state)
-        return (state, obs) if return_state else obs
+        return state, obs if return_state else obs
 
     def get_state(self):
         """
@@ -684,28 +654,7 @@ class ParallelEnvironment(BaseEnvironment):
         Square matrices are interpreted as a greyscale image. Three-dimensional arrays
          are interpreted as RGB images with channels (Height, Width, RGB)
         """
-        return self.plangym_env.get_image()
+        return self.plangym_env.render(mode="rgb_array")
 
     def clone(self) -> "BaseEnvironment":
-        env = ParallelEnvironment(
-            name=self.name,
-            min_dt=self.min_dt,
-            delay_init=self.delay_init,
-            env_class=self._env_class,
-            n_workers=self.n_workers,
-            blocking=self.blocking,
-            **self._env_kwargs,
-        )
-        return env
-
-    def step_with_dt(self, action: Union[numpy.ndarray, int, float], dt: int = 1) -> tuple:
-        return self.plangym_env.step_with_dt(action=action, dt=dt)
-
-    def sample_action(self):
-        """
-        Return a valid action that can be used to step the Environment.
-
-        Implementing this method is optional, and it's only intended to make the
-         testing process of the Environment easier.
-        """
-        return self.plangym_env.sample_action()
+        return self.plangym_env.clone()

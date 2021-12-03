@@ -61,7 +61,6 @@ class RetroEnvironment(GymEnvironment):
         self.width = width
         super(RetroEnvironment, self).__init__(
             name=name,
-            dt=dt,
             min_dt=min_dt,
             episodic_live=episodic_live,
             delay_init=True,
@@ -83,7 +82,6 @@ class RetroEnvironment(GymEnvironment):
         """Return a copy of the environment with its initialization delayed."""
         return RetroEnvironment(
             name=self.name,
-            dt=self.dt,
             min_dt=self.min_dt,
             wrappers=self._wrappers,
             episodic_live=self.episodic_life,
@@ -102,7 +100,7 @@ class RetroEnvironment(GymEnvironment):
         env = retro.make(self.name, **self.gym_env_kwargs).unwrapped
         if self._wrappers is not None:
             self.apply_wrappers(self._wrappers)
-        self.gym_env = env
+        self._gym_env = env
         self.action_space = self.gym_env.action_space
         self.observation_space = (
             self.gym_env.observation_space
@@ -393,7 +391,6 @@ class ParallelRetro(RetroEnvironment):
         envs = [
             ExternalRetro(
                 name=self.name,
-                dt=self.dt,
                 height=self.height,
                 width=self.width,
                 wrappers=self._wrappers,
