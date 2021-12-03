@@ -14,7 +14,7 @@ def batch_size() -> int:
 class TestBaseEnvironment:
     def test_init(self, env):
         assert hasattr(env, "_name")
-        assert hasattr(env, "min_dt")
+        assert hasattr(env, "frameskip")
         assert hasattr(env, "autoreset")
         assert hasattr(env, "delay_init")
         if env.delay_init:

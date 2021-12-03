@@ -488,7 +488,7 @@ class ParallelEnvironment(BaseEnvironment):
     def __init__(
         self,
         name: str,
-        min_dt: int = 1,
+        frameskip: int = 1,
         autoreset: bool = True,
         delay_init: bool = False,
         env_class=None,
@@ -501,7 +501,7 @@ class ParallelEnvironment(BaseEnvironment):
 
         Args:
             name: Name of the environment.
-            min_dt: Number of times an action will be applied for each ``dt`` passed to ``step``.
+            frameskip: Number of times ``step`` will me called with the same action.
             autoreset: Ignored. Always set to True. Automatically reset the environment
                       when the OpenAI environment returns ``end = True``.
             delay_init: If ``True`` do not initialize the ``gym.Environment`` \
@@ -522,7 +522,7 @@ class ParallelEnvironment(BaseEnvironment):
         self._env_kwargs = kwargs
         super(ParallelEnvironment, self).__init__(
             name=name,
-            min_dt=min_dt,
+            frameskip=frameskip,
             autoreset=True,
             delay_init=delay_init,
         )
@@ -569,7 +569,7 @@ class ParallelEnvironment(BaseEnvironment):
         env_callable = create_env_callable(
             name=self.name,
             env_class=self._env_class,
-            min_dt=self.min_dt,
+            frameskip=self.frameskip,
             delay_init=False,
             **self._env_kwargs,
         )
@@ -689,7 +689,7 @@ class ParallelEnvironment(BaseEnvironment):
     def clone(self) -> "BaseEnvironment":
         env = ParallelEnvironment(
             name=self.name,
-            min_dt=self.min_dt,
+            frameskip=self.frameskip,
             delay_init=self.delay_init,
             env_class=self._env_class,
             n_workers=self.n_workers,

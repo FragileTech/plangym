@@ -23,7 +23,7 @@ class RetroEnvironment(GymEnvironment):
         self,
         name: str,
         dt: int = 1,
-        min_dt: int = 1,
+        frameskip: int = 1,
         episodic_live: bool = False,
         autoreset: bool = True,
         height: int = 100,
@@ -39,7 +39,7 @@ class RetroEnvironment(GymEnvironment):
         Args:
             name: Name of the environment. Follows the retro syntax conventions.
             dt: Consecutive number of times a given action will be applied.
-            min_dt: Number of times an action will be applied for each ``dt``.
+            frameskip: Number of times an action will be applied for each ``dt``.
             episodic_live: Return ``end = True`` when losing a live.
             autoreset: Automatically reset the environment when the OpenAI environment
                       returns ``end = True``.
@@ -61,7 +61,7 @@ class RetroEnvironment(GymEnvironment):
         self.width = width
         super(RetroEnvironment, self).__init__(
             name=name,
-            min_dt=min_dt,
+            frameskip=frameskip,
             episodic_live=episodic_live,
             delay_init=True,
             wrappers=wrappers,
@@ -82,7 +82,7 @@ class RetroEnvironment(GymEnvironment):
         """Return a copy of the environment with its initialization delayed."""
         return RetroEnvironment(
             name=self.name,
-            min_dt=self.min_dt,
+            frameskip=self.frameskip,
             wrappers=self._wrappers,
             episodic_live=self.episodic_life,
             autoreset=self.autoreset,
@@ -137,7 +137,7 @@ class RetroEnvironment(GymEnvironment):
     ) -> tuple:
         """
         Take ``dt`` simulation steps and make the environment evolve in multiples \
-        of ``self.min_dt``.
+        of ``self.frameskip``.
 
         The info dictionary will contain a boolean called '`lost_live'` that will
         be ``True`` if a life was lost during the current step.

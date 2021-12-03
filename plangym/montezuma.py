@@ -584,7 +584,7 @@ class MyMontezuma:
 class Montezuma(AtariEnvironment):
     def __init__(
         self,
-        min_dt: int = 1,
+        frameskip: int = 1,
         episodic_live: bool = False,
         autoreset: bool = True,
         name=None,
@@ -595,7 +595,7 @@ class Montezuma(AtariEnvironment):
         super(Montezuma, self).__init__(
             name="MontezumaRevengeDeterministic-v4",
             clone_seeds=True,
-            min_dt=min_dt,
+            frameskip=frameskip,
             obs_ram=False,
         )
         self._gym_env = MyMontezuma(*args, **kwargs)
@@ -689,7 +689,7 @@ class Montezuma(AtariEnvironment):
         """
 
         Take dt simulation steps and make the environment evolve
-        in multiples of min_dt.
+        in multiples of frameskip.
         The info dictionary will contain a boolean called 'lost_live' that will
         be true if a life was lost during the current step.
 
@@ -710,7 +710,7 @@ class Montezuma(AtariEnvironment):
         terminal = False
         game_end = False
         for _ in range(int(dt)):
-            for _ in range(self.min_dt):
+            for _ in range(self.frameskip):
                 obs, _reward, _end, _info = self.gym_env.step(action)
                 _info["lives"] = _info.get("ale.lives", -1)
                 lost_live = info["lives"] > _info["lives"] or lost_live

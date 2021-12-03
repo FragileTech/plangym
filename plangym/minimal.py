@@ -94,7 +94,7 @@ class MinimalPacman(AtariEnvironment):
         super(MinimalPacman, self).__init__(name=name, *args, **kwargs)
         self._obs_shape = obs_shape
         # Im freezing this until proven wrong
-        self.min_dt = 4
+        self.frameskip = 4
         self.dt = 1
         self.observation_space = spaces.Box(low=0, high=1, dtype=np.float, shape=obs_shape)
 
@@ -125,7 +125,7 @@ class MinimalPacman(AtariEnvironment):
         for _ in range(dt):
             full_obs = np.zeros(self.observation_space.shape)
             obs_hist = []
-            for _ in range(self.min_dt):
+            for _ in range(self.frameskip):
                 obs, _reward, _end, _info = self.gym_env.step(action)
                 _info["lives"] = _info.get("ale.lives", -1)
                 _info["reward"] = float(info["reward"])
