@@ -1,11 +1,12 @@
+"""Implement the ``plangym`` API for ``gym`` classic control environments."""
 import copy
 
 import numpy as np
 
-from plangym.core import GymEnvironment
+from plangym.core import PlanEnvironment
 
 
-class ClassicControl(GymEnvironment):
+class ClassicControl(PlanEnvironment):
     """Environment for OpenAI gym classic control environments."""
 
     def get_state(self) -> np.ndarray:

@@ -1,12 +1,13 @@
-from collections import defaultdict
+"""Implementation of the montezuma environment adapted for planning problems."""
+import pickle
 import typing
 
 import cv2
 from gym.envs.registration import registry as gym_registry
 import numpy as np
-from PIL import Image
 
 from plangym.atari import AtariEnvironment
+from plangym.retro import resize_frame
 
 
 # ------------------------------------------------------------------------------
@@ -21,68 +22,60 @@ from plangym.atari import AtariEnvironment
 
 
 class MontezumaPosLevel:
+    """Contains the information of Panama Joe."""
+
     __slots__ = ["level", "score", "room", "x", "y", "tuple"]
 
     def __init__(self, level, score, room, x, y):
+        """Initialize a :class:`MontezumaPosLevel`."""
         self.level = level
         self.score = score
         self.room = room
         self.x = x
         self.y = y
-
+        self.tuple = None
         self.set_tuple()
 
     def set_tuple(self):
+        """Set the tuple values from the other attributes."""
         self.tuple = (self.level, self.score, self.room, self.x, self.y)
 
     def __hash__(self):
+        """Hash the current instance."""
         return hash(self.tuple)
 
     def __eq__(self, other):
+        """Compare equality between instances."""
         if not isinstance(other, MontezumaPosLevel):
             return False
         return self.tuple == other.tuple
 
     def __getstate__(self):
+        """Return the tuple containing the attributes."""
         return self.tuple
 
     def __setstate__(self, d):
+        """Set the class attributes using the provided tuple."""
         self.level, self.score, self.room, self.x, self.y = d
         self.tuple = d
 
     def __repr__(self):
+        """Print the attributes of the current instance."""
         return f"Level={self.level} Room={self.room} Objects={self.score} x={self.x} y={self.y}"
 
 
-def resize_frame(frame: np.ndarray, height: int, width: int, mode="RGB") -> np.ndarray:
-    """
-    Use PIL to resize an RGB frame to an specified height and width.
-
-    Args:
-        frame: Target numpy array representing the image that will be resized.
-        height: Height of the resized image.
-        width: Width of the resized image.
-        mode: Color mode of the resized image.
-
-    Returns:
-        The resized frame that matches the provided width and height.
-    """
-    frame = Image.fromarray(frame)
-    frame = frame.convert(mode).resize((height, width))
-    return np.array(frame)[:, :, None]
-
-
-def convert_state(state):
+def process_observation(obs):
+    """Resize and normalize the provided observation."""
     return (
         (
             resize_frame(
-                state,
-                height=MyMontezuma.TARGET_SHAPE[0],
-                width=MyMontezuma.TARGET_SHAPE[1],
+                obs,
+                height=CustomMontezuma.TARGET_SHAPE[0],
+                width=CustomMontezuma.TARGET_SHAPE[1],
             )
             / 255.0
         )
-        * MyMontezuma.MAX_PIX_VALUE
+        * CustomMontezuma.MAX_PIX_VALUE
     ).astype(np.uint8)
 
 
@@ -108,24 +101,9 @@ KNOWN_XY = [None] * 24
 KEY_BITS = 0x8 | 0x4 | 0x2
 
 
-def get_room_xy(room):
-    if KNOWN_XY[room] is None:
-        for y, l in enumerate(PYRAMID):
-            if room in l:
-                KNOWN_XY[room] = (l.index(room), y)
-                break
-    return KNOWN_XY[room]
+class CustomMontezuma:
+    """Montezuma environment that tracks the room and position of Panama Joe."""
 
-
-def clip(a, m, M):
-    if a < m:
-        return m
-    if a > M:
-        return M
-    return a
-
-
-class MyMontezuma:
     TARGET_SHAPE = (190, 210)
     MAX_PIX_VALUE = 255
 
@@ -139,6 +117,7 @@ class MyMontezuma:
         objects_remember_rooms=False,
         only_keys=False,
     ):  # TODO: version that also considers the room objects were found in
+        """Initialize a :class:`CustomMontezuma`."""
         spec = gym_registry.spec("MontezumaRevengeDeterministic-v4")
         # not actually needed, but we feel safer
         spec.max_episode_steps = None
@@ -166,9 +145,11 @@ class MyMontezuma:
         self.pos = MontezumaPosLevel(0, 0, 0, 0, 0)
 
     def __getattr__(self, e):
+        """Forward to gym environment."""
         return getattr(self.env, e)
 
     def reset(self) -> np.ndarray:
+        """Reset the environment."""
         unprocessed_state = self.env.reset()
         self.cur_lives = 5
         for _ in range(3):
@@ -190,10 +171,10 @@ class MyMontezuma:
         self.room_time = (self.get_pos().room, 0)
         if self.unprocessed_state:
             return unprocessed_state
-        # TODO: Return easy stuff
         return self.get_observation(unprocessed_state)
 
-    def pos_from_unprocessed_state(self, face_pixels, unprocessed_state):
+    def pos_from_unprocessed_state(self, face_pixels, unprocessed_state) -> MontezumaPosLevel:
+        """Extract the information of the position of Panama Joe."""
         face_pixels = [(y, x * self.x_repeat) for y, x in face_pixels]
         if len(face_pixels) == 0:
             assert self.pos is not None, "No face pixel and no previous pos"
@@ -209,8 +190,7 @@ class MyMontezuma:
             direction_x = np.clip(int((self.pos.x - x) / 50), -1, 1)
             direction_y = np.clip(int((self.pos.y - y) / 50), -1, 1)
             if direction_x != 0 or direction_y != 0:
-                # TODO(AE): shoudln't this call the static method?
-                room_x, room_y = get_room_xy(self.pos.room)
+                room_x, room_y = self.get_room_xy(self.pos.room)
                 if room == 15 and room_y + direction_y >= len(PYRAMID):
                     room = 1
                     level += 1
@@ -233,23 +213,10 @@ class MyMontezuma:
         return MontezumaPosLevel(level, score, room, x, y)
 
     def get_objects_from_pixels(self, unprocessed_state, room, old_objects):
+        """Extract the position of the objects in the provided observation."""
         object_part = (unprocessed_state[25:45, 55:110, 0] != 0).astype(np.uint8) * 255
         connected_components = cv2.connectedComponentsWithStats(object_part)
         pixel_areas = list(e[-1] for e in connected_components[2])[1:]
-
-        # Note: this "ground truth" logic is excluded because the RAM and the frames are
-        # not updated at the same time, so that the asserts would fail even in normal cases.
-        # Commented all related code and not just the asserts so that we don't waste time making
-        # checks that are impossible.
-
-        # expected = self.ram[65]
-        # if self.only_keys:
-        #     expected &= KEY_BITS
-        #
-        # ground_truth = defaultdict(int)
-        # for i, n_pixels in enumerate(OBJECT_PIXELS):
-        #     if (1 << i) & expected:
-        #         ground_truth[n_pixels] += 1
 
         if self.objects_remember_rooms:
             cur_object = []
@@ -258,8 +225,6 @@ class MyMontezuma:
                 if n_pixels != 40 and self.only_keys:
                     continue
                 if n_pixels in pixel_areas:
-                    # ground_truth[n_pixels] -= 1
-
                     pixel_areas.remove(n_pixels)
                     orig_types = [e[0] for e in old_objects]
                     if n_pixels in orig_types:
@@ -269,36 +234,41 @@ class MyMontezuma:
                     else:
                         cur_object.append((n_pixels, room))
 
-            # TODO: bring back these asserts. Unfortunately the ram and the frames aren't updated
-            # at the same time so these would normally fail :(
-            # assert all(e == 0 for e in ground_truth.values())
             return tuple(cur_object)
 
         else:
             cur_object = 0
             for i, n_pixels in enumerate(OBJECT_PIXELS):
                 if n_pixels in pixel_areas:
-                    # ground_truth[n_pixels] -= 1
-
                     pixel_areas.remove(n_pixels)
                     cur_object |= 1 << i
 
             if self.only_keys:
                 # These are the key bytes
                 cur_object &= KEY_BITS
-
-            # TODO: bring back these asserts. Unfortunately the ram and the frames aren't updated
-            # at the same time so these would normally fail :(
-            # assert all(e == 0 for e in ground_truth.values())
             return cur_object
 
     def get_observation(self, unprocessed_state) -> np.ndarray:
+        """Return an observation containing the position and the flattened screen of the game."""
         pos = np.array([self.pos.x, self.pos.y, self.pos.room])
         return np.concatenate([unprocessed_state.flatten(), pos])
 
+    def state_to_numpy(self):
+        """Return a numpy array containing the current state of the game."""
+        state = self.unwrapped.clone_state(include_rng=False)
+        state = np.frombuffer(pickle.dumps(state), dtype=np.uint8)
+        return state
+
+    def _restore_state(self, state):
+        """Restore the state of the game from the provided numpy array."""
+        state = pickle.loads(state.tobytes())
+        self.unwrapped.restore_state(state)
+        del state
+
     def get_restore(self):
+        """Return a tuple containing all the information needed to clone the state of the env."""
         return (
-            self.unwrapped.clone_full_state(),
+            self.state_to_numpy(),
             self.cur_score,
             self.cur_steps,
             self.pos,
@@ -309,6 +279,7 @@ class MyMontezuma:
         )
 
     def restore(self, data):
+        """Restore the state of the env from the provided tuple."""
         (
             full_state,
             score,
@@ -320,7 +291,7 @@ class MyMontezuma:
             self.cur_lives,
         ) = data
         self.env.reset()
-        self.unwrapped.restore_full_state(full_state)
+        self._restore_state(full_state)
         self.ram = self.env.unwrapped.ale.getRAM()
         self.cur_score = score
         self.cur_steps = steps
@@ -331,6 +302,7 @@ class MyMontezuma:
         return
 
     def is_transition_screen(self, unprocessed_state):
+        """Return True if the current observation corresponds to a transition between rooms."""
         unprocessed_state = unprocessed_state[50:, :, :]
         # The screen is a transition screen if it is all black or if its color is made
         # up only of black and (0, 28, 136), which is a color seen in the transition
@@ -344,11 +316,13 @@ class MyMontezuma:
         ) == unprocessed_state.size
 
     def get_face_pixels(self, unprocessed_state):
+        """Return the pixels containing the face of Paname Joe."""
         # TODO: double check that this color does not re-occur somewhere else
         # in the environment.
         return set(zip(*np.where(unprocessed_state[50:, :, 0] == 228)))
 
     def is_pixel_death(self, unprocessed_state, face_pixels):
+        """Return a death signal extracted from the observation of the environment."""
         # There are no face pixels and yet we are not in a transition screen. We
         # must be dead!
         if len(face_pixels) == 0:
@@ -369,11 +343,13 @@ class MyMontezuma:
         return True
 
     def is_ram_death(self):
+        """Return a death signal extracted from the ram of the environment."""
         if self.ram[58] > self.cur_lives:
             self.cur_lives = self.ram[58]
         return self.ram[55] != 0 or self.ram[58] < self.cur_lives
 
     def step(self, action) -> typing.Tuple[np.ndarray, float, bool, dict]:
+        """Step the environment."""
         unprocessed_state, reward, done, lol = self.env.step(action)
         self.ram = self.env.unwrapped.ale.getRAM()
         self.cur_steps += 1
@@ -406,158 +382,13 @@ class MyMontezuma:
         return observs, reward, done, lol
 
     def get_pos(self):
+        """Return the current pos."""
         assert self.pos is not None
         return self.pos
 
-    def render_with_known(
-        self,
-        known_positions,
-        resolution,
-        show=True,
-        filename=None,
-        combine_val=max,
-        get_val=lambda x: x.score,
-        minmax=None,
-    ):
-        import matplotlib.pyplot as plt
-
-        height, width = list(self.rooms.values())[0][1].shape[:2]
-
-        final_image = np.zeros((height * 4, width * 9, 3), dtype=np.uint8) + 255
-
-        positions = PYRAMID
-
-        def room_pos(room):
-            for height, l in enumerate(positions):
-                for width, r in enumerate(l):
-                    if r == room:
-                        return (height, width)
-            return None
-
-        points = defaultdict(int)
-
-        for room in range(24):
-            if room in self.rooms:
-                img = self.rooms[room][1]
-            else:
-                img = np.zeros((height, width, 3)) + 127
-            y_room, x_room = room_pos(room)
-            y_room *= height
-            x_room *= width
-            final_image[y_room : y_room + height, x_room : x_room + width, :] = img
-
-        plt.figure(figsize=(final_image.shape[1] // 30, final_image.shape[0] // 30))
-
-        for room in range(24):
-            y_room, x_room = room_pos(room)
-            y_room *= height
-            x_room *= width
-
-            for i in np.arange(resolution, img.shape[0], resolution):
-                cv2.line(
-                    final_image,
-                    (x_room, y_room + i),
-                    (x_room + img.shape[1], y_room + i),
-                    (127, 127, 127),
-                    1,
-                )
-                # plt.plot(
-                #     [x_room, x_room + img.shape[1]],
-                #     [y_room + i, y_room + i],
-                #     "--",
-                #     linewidth=1,
-                #     color="gray",
-                # )
-            for i in np.arange(resolution, img.shape[1], resolution):
-                cv2.line(
-                    final_image,
-                    (x_room + i, y_room),
-                    (x_room + i, y_room + img.shape[0]),
-                    (127, 127, 127),
-                    1,
-                )
-                # plt.plot(
-                #     [x_room + i, x_room + i],
-                #     [y_room, y_room + img.shape[0]],
-                #     "--",
-                #     linewidth=1,
-                #     color="gray",
-                # )
-
-            cv2.line(
-                final_image,
-                (x_room, y_room),
-                (x_room, y_room + img.shape[0]),
-                (255, 255, 255),
-                1,
-            )
-            cv2.line(
-                final_image,
-                (x_room, y_room),
-                (x_room + img.shape[1], y_room),
-                (255, 255, 255),
-                1,
-            )
-            cv2.line(
-                final_image,
-                (x_room + img.shape[1], y_room),
-                (x_room + img.shape[1], y_room + img.shape[0]),
-                (255, 255, 255),
-                1,
-            )
-            cv2.line(
-                final_image,
-                (x_room, y_room + img.shape[0]),
-                (x_room + img.shape[1], y_room + img.shape[0]),
-                (255, 255, 255),
-                1,
-            )
-
-            for k in known_positions:
-                if k.room != room:
-                    continue
-                x = x_room + (k.x * resolution + resolution / 2)
-                y = y_room + (k.y * resolution + resolution / 2)
-                points[(x, y)] = combine_val(points[(x, y)], get_val(k))
-
-        plt.imshow(final_image)
-        if minmax:
-            points[(0, 0)] = minmax[0]
-            points[(0, 1)] = minmax[1]
-
-        vals = list(points.values())
-        points = list(points.items())
-        plt.scatter(
-            [p[0][0] for p in points],
-            [p[0][1] for p in points],
-            c=[p[1] for p in points],
-            cmap="bwr",
-            s=(resolution) ** 2,
-            marker="*",
-        )
-        plt.legend()
-
-        import matplotlib.cm
-        import matplotlib.colors
-
-        mappable = matplotlib.cm.ScalarMappable(
-            norm=matplotlib.colors.Normalize(vmin=np.min(vals), vmax=np.max(vals)),
-            cmap="bwr",
-        )
-        mappable.set_array(vals)
-        matplotlib.rcParams.update({"font.size": 22})
-        plt.colorbar(mappable)
-
-        plt.axis("off")
-        if filename is not None:
-            plt.savefig(filename, bbox_inches="tight")
-        if show:
-            plt.show()
-        else:
-            plt.close()
-
     @staticmethod
     def get_room_xy(room):
+        """Get the tuple that encodes the provided room."""
         if KNOWN_XY[room] is None:
             for y, l in enumerate(PYRAMID):
                 if room in l:
@@ -567,58 +398,67 @@ class MyMontezuma:
 
     @staticmethod
     def get_room_out_of_bounds(room_x, room_y):
+        """Return a boolean indicating if the provided tuple represents and invalid room."""
         return room_y < 0 or room_x < 0 or room_y >= len(PYRAMID) or room_x >= len(PYRAMID[0])
 
     @staticmethod
     def get_room_from_xy(room_x, room_y):
+        """Return the number of the room from a tuple."""
         return PYRAMID[room_y][room_x]
 
     @staticmethod
     def make_pos(score, pos):
+        """Create a MontezumaPosLevel object using the provided data."""
         return MontezumaPosLevel(pos.level, score, pos.room, pos.x, pos.y)
+
+    def render(self, *args, **kwargs):
+        """Render the environment."""
+        return self.env.render()
 
 
 # ------------------------------------------------------------------------------
 
 
 class Montezuma(AtariEnvironment):
+    """Plangym implementation of the Montezuma environment optimized for planning."""
+
     def __init__(
         self,
         frameskip: int = 1,
         episodic_live: bool = False,
         autoreset: bool = True,
         name=None,
-        *args,
+        clone_seeds: bool = False,
         **kwargs,
     ):
-
+        """Initialize a :class:`Montezuma`."""
         super(Montezuma, self).__init__(
             name="MontezumaRevengeDeterministic-v4",
-            clone_seeds=True,
             frameskip=frameskip,
-            obs_ram=False,
+            autoreset=autoreset,
+            episodic_live=episodic_live,
+            clone_seeds=False,
+            **kwargs,
         )
-        self._gym_env = MyMontezuma(*args, **kwargs)
-        self.action_space = self.gym_env.action_space
-        self.observation_space = self.gym_env.observation_space
-        self.reward_range = self.gym_env.reward_range
-        self.metadata = self.gym_env.metadata
 
     def __getattr__(self, item):
+        """Forward to the wrapped environment."""
         return getattr(self.gym_env, item)
 
     @property
     def obs_shape(self) -> typing.Tuple[int, ...]:
+        """Return shape of observations (obj_memory, x_pos, y_pos, room)."""
         return (100803,)
 
-    @property
-    def n_actions(self):
-        return self.gym_env.action_space.n
+    def init_gym_env(self) -> CustomMontezuma:
+        """Initialize the :class:`gum.Env`` instance that the current clas is wrapping."""
+        return CustomMontezuma()
 
     def get_state(self) -> np.ndarray:
         """
-        Recover the internal state of the simulation. If clone seed is False the
-        environment will be stochastic.
+        Recover the internal state of the simulation.
+
+        If clone seed is False the environment will be stochastic.
         Cloning the full state ensures the environment is deterministic.
         """
         data = self.gym_env.get_restore()
@@ -687,9 +527,8 @@ class Montezuma(AtariEnvironment):
 
     def step(self, action: np.ndarray, state: np.ndarray = None, dt: int = 1) -> tuple:
         """
+        Take dt simulation steps and make the environment evolve in multiples of frameskip.
 
-        Take dt simulation steps and make the environment evolve
-        in multiples of frameskip.
         The info dictionary will contain a boolean called 'lost_live' that will
         be true if a life was lost during the current step.
 
@@ -736,6 +575,6 @@ class Montezuma(AtariEnvironment):
             self.gym_env.reset()
         return data
 
-    def render(self):
+    def render(self, *args, **kwargs):
         """Render the environment using OpenGL. This wraps the OpenAI render method."""
-        return self.gym_env.render()
+        return self.gym_env.render(*args, **kwargs)
