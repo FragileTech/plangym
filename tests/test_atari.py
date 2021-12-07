@@ -1,7 +1,7 @@
 import pytest
 
 from plangym.atari import AtariEnvironment
-from tests.api_tests import batch_size, TestGymEnvironment
+from tests.api_tests import batch_size, TestBaseEnvironment, TestGymEnvironment
 
 
 def pacman_obs():
@@ -13,10 +13,14 @@ def qbert_ram():
 
 
 def pong_obs_ram():
-    return AtariEnvironment(name="PongDeterministic-v4", obs_ram=True)
+    return AtariEnvironment(name="PongDeterministic-v4")
 
 
-environments = [pacman_obs, qbert_ram, pong_obs_ram]
+def qbert_new_ale():
+    return AtariEnvironment(name="ALE/Qbert-v5")
+
+
+environments = [pacman_obs, qbert_ram, pong_obs_ram, qbert_new_ale]
 
 
 @pytest.fixture(params=environments, scope="class")
