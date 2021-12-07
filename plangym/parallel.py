@@ -1,14 +1,44 @@
+"""Handle parallelization for ``plangym.Environment`` that allows vectorized steps."""
 import atexit
 import multiprocessing
 import sys
 import traceback
-from typing import Callable, Tuple, Union
+from typing import Generator, Union
 
 import numpy
-import numpy as np
 
-from plangym.core import BaseEnvironment
-from plangym.utils import split_similar_chunks
+from plangym.core import BaseEnvironment, VectorizedEnvironment
+
+
+def split_similar_chunks(
+    vector: Union[list, numpy.ndarray],
+    n_chunks: int,
+) -> Generator[Union[list, numpy.ndarray], None, None]:
+    """
+    Split an indexable object into similar chunks.
+
+    Args:
+        vector: Target object to be split.
+        n_chunks: Number of similar chunks.
+
+    Returns:
+        Generator that returns the chunks created after splitting the target object.
+
+    """
+    chunk_size = int(numpy.ceil(len(vector) / n_chunks))
+    for i in range(0, len(vector), chunk_size):
+        yield vector[i : i + chunk_size]
+
+
+def batch_step_data(actions, states, dt, batch_size):
+    """Make batches of step data to distribute across workers."""
+    no_states = states is None or states[0] is None
+    states = [None] * len(actions) if no_states else states
+    dt = dt if isinstance(dt, numpy.ndarray) else numpy.ones(len(states), dtype=int) * dt
+    states_chunks = split_similar_chunks(states, n_chunks=batch_size)
+    actions_chunks = split_similar_chunks(actions, n_chunks=batch_size)
+    dt_chunks = split_similar_chunks(dt, n_chunks=batch_size)
+    return states_chunks, actions_chunks, dt_chunks
 
 
 class ExternalProcess:
@@ -317,31 +347,7 @@ class BatchEnv:
         """
         return getattr(self._envs[0], name)
 
-    def _make_transitions(self, actions, states=None, dt: [numpy.ndarray, int] = 1):
-        no_states = states is None or states[0] is None
-        states = states if states is not None else [None] * len(actions)
-        if dt is None:
-            dt = numpy.array([None] * len(states))
-        dt = dt if isinstance(dt, numpy.ndarray) else numpy.ones(len(states), dtype=int) * dt
-        chunks = len(self._envs)
-        states_chunk = split_similar_chunks(states, n_chunks=chunks)
-        actions_chunk = split_similar_chunks(actions, n_chunks=chunks)
-        repeat_chunk = split_similar_chunks(dt, n_chunks=chunks)
-        results = []
-        for env, states_batch, actions_batch, dt in zip(
-            self._envs,
-            states_chunk,
-            actions_chunk,
-            repeat_chunk,
-        ):
-            result = env.step_batch(
-                actions=actions_batch,
-                states=states_batch,
-                dt=dt,
-                blocking=self._blocking,
-            )
-            results.append(result)
-
+    def _unpack_transitions(self, results, no_states):
         _states = []
         observs = []
         rewards = []
@@ -369,6 +375,31 @@ class BatchEnv:
         else:
             transitions = _states, observs, rewards, terminals, infos
         return transitions
+
+    def _make_transitions(self, actions, states=None, dt: [numpy.ndarray, int] = 1):
+
+        results = []
+        no_states = states is None or states[0] is None
+        states_chunks, actions_chunks, dt_chunks = batch_step_data(
+            actions=actions,
+            states=states,
+            dt=dt,
+            batch_size=len(self._envs),
+        )
+        for env, states_batch, actions_batch, dt in zip(
+            self._envs,
+            states_chunks,
+            actions_chunks,
+            dt_chunks,
+        ):
+            result = env.step_batch(
+                actions=actions_batch,
+                states=states_batch,
+                dt=dt,
+                blocking=self._blocking,
+            )
+            results.append(result)
+        return self._unpack_transitions(results=results, no_states=no_states)
 
     def step_batch(self, actions, states=None, dt: [numpy.ndarray, int] = 1):
         """
@@ -462,9 +493,11 @@ class BatchEnv:
                 env.close()
 
 
-class ParallelEnvironment(BaseEnvironment):
+class ParallelEnvironment(VectorizedEnvironment):
     """
-    Wrap any environment to be stepped in parallel when step_batch is called.
+    Allow any environment to be stepped in parallel when step_batch is called.
+
+    It creates a local instance of the target environment to call all other methods.
 
     Example::
 
@@ -487,11 +520,11 @@ class ParallelEnvironment(BaseEnvironment):
 
     def __init__(
         self,
+        env_class,
         name: str,
         frameskip: int = 1,
         autoreset: bool = True,
         delay_init: bool = False,
-        env_class=None,
         n_workers: int = 8,
         blocking: bool = False,
         **kwargs,
@@ -500,13 +533,13 @@ class ParallelEnvironment(BaseEnvironment):
         Initialize a :class:`ParallelEnvironment`.
 
         Args:
+            env_class: Class of the environment to be wrapped.
             name: Name of the environment.
             frameskip: Number of times ``step`` will me called with the same action.
             autoreset: Ignored. Always set to True. Automatically reset the environment
                       when the OpenAI environment returns ``end = True``.
             delay_init: If ``True`` do not initialize the ``gym.Environment`` \
                      and wait for ``init_env`` to be called later.
-            env_class: Class of the environment to be wrapped.
             env_callable: Callable that returns an instance of the environment \
                          that will be parallelized.
             n_workers:  Number of workers that will be used to step the env.
@@ -515,68 +548,34 @@ class ParallelEnvironment(BaseEnvironment):
             **kwargs: Additional kwargs for the environment.
 
         """
-        kwargs["autoreset"] = True
-        self._env_class = env_class
-        self._n_workers = n_workers
         self._blocking = blocking
-        self._env_kwargs = kwargs
+        self._batch_env = None
         super(ParallelEnvironment, self).__init__(
+            env_class=env_class,
             name=name,
             frameskip=frameskip,
-            autoreset=True,
+            autoreset=autoreset,
             delay_init=delay_init,
+            n_workers=n_workers,
+            **kwargs,
         )
-
-    @property
-    def obs_shape(self) -> Tuple[int]:
-        """Tuple containing the shape of the observations returned by the Environment."""
-        return self.plangym_env.obs_shape
-
-    @property
-    def action_shape(self) -> Tuple[int]:
-        """Tuple containing the shape of the actions applied to the Environment."""
-        return self.plangym_env.action_shape
-
-    @property
-    def n_workers(self) -> int:
-        return self._n_workers
 
     @property
     def blocking(self) -> bool:
+        """If True the steps are performed sequentially."""
         return self._blocking
-
-    def __getattr__(self, item):
-        return getattr(self.plangym_env, item)
-
-    @classmethod
-    def __from_callable(
-        cls,
-        env_callable: Callable[..., BaseEnvironment],
-        n_workers,
-        blocking,
-    ) -> "ParallelEnvironment":
-        return env_callable()
 
     def init_env(self):
         """Run environment initialization and create the subprocesses for stepping in parallel."""
-
-        def create_env_callable(env_class, **kwargs):
-            def _inner():
-                return env_class(**kwargs)
-
-            return _inner
-
-        env_callable = create_env_callable(
-            name=self.name,
-            env_class=self._env_class,
-            frameskip=self.frameskip,
-            delay_init=False,
-            **self._env_kwargs,
-        )
-
-        self.plangym_env = env_callable()
-        envs = [ExternalProcess(constructor=env_callable) for _ in range(self.n_workers)]
+        external_callable = self.create_env_callable(autoreset=True, delay_init=False)
+        envs = [ExternalProcess(constructor=external_callable) for _ in range(self.n_workers)]
         self._batch_env = BatchEnv(envs, blocking=self._blocking)
+        # Initialize local copy last to tolerate singletons better
+        super(ParallelEnvironment, self).init_env()
+
+    def clone(self) -> "BaseEnvironment":
+        """Return a copy of the environment."""
+        return super(ParallelEnvironment, self).clone(blocking=self.blocking)
 
     def step_batch(
         self,
@@ -587,8 +586,8 @@ class ParallelEnvironment(BaseEnvironment):
         """
         Vectorized version of the ``step`` method.
 
-        It allows to step a vector of states and actions. The signature and \
-        behaviour is the same as ``step``, but taking a list of states, actions \
+        It allows to step a vector of states and actions. The signature and
+        behaviour is the same as ``step``, but taking a list of states, actions
         and dts as input.
 
         Args:
@@ -603,109 +602,13 @@ class ParallelEnvironment(BaseEnvironment):
         """
         return self._batch_env.step_batch(actions=actions, states=states, dt=dt)
 
-    def step(self, action: numpy.ndarray, state: numpy.ndarray = None, dt: int = 1):
-        """
-        Step the environment applying a given action from an arbitrary state.
-
-        If is not provided the signature matches the one from OpenAI gym. It allows \
-        to apply arbitrary boundary conditions to define custom end states in case \
-        the env was initialized with a "CustomDeath' object.
-
-        Args:
-            action: Array containing the action to be applied.
-            state: State to be set before stepping the environment.
-            dt: Consecutive number of times to apply the given action.
-
-        Returns:
-            if states is None returns ``(observs, rewards, ends, infos) ``else \
-            ``(new_states, observs, rewards, ends, infos)``.
-
-        """
-        return self.plangym_env.step(action=action, state=state, dt=dt)
-
-    def reset(self, return_state: bool = True, blocking: bool = True):
-        """
-        Reset the environment and returns the first observation, or the first \
-        (state, obs) tuple.
-
-        Args:
-            return_state: If true return a also the initial state of the env.
-            blocking: If False, reset the environments asynchronously.
-
-        Returns:
-            Observation of the environment if `return_state` is False. Otherwise
-            return (state, obs) after reset.
-
-        """
-        state, obs = self.plangym_env.reset(return_state=True)
-        self.sync_states(state)
-        return (state, obs) if return_state else obs
-
-    def get_state(self):
-        """
-        Recover the internal state of the simulation.
-
-        An state completely describes the Environment at a given moment.
-
-        Returns:
-            State of the simulation.
-
-        """
-        return self.plangym_env.get_state()
-
-    def set_state(self, state):
-        """
-        Set the internal state of the simulation.
-
-        Args:
-            state: Target state to be set in the environment.
-
-        """
-        self.plangym_env.set_state(state)
-        self.sync_states(state)
-
     def sync_states(self, state: None):
         """
-        Set all the states of the different workers of the internal :class:`BatchEnv` \
-        to the same state as the internal :class:`Environment` used to apply the \
-        non-vectorized steps.
+        Synchronize all the copies of the wrapped environment.
+
+        Set all the states of the different workers of the internal :class:`BatchEnv`
+         to the same state as the internal :class:`Environment` used to apply the
+         non-vectorized steps.
         """
         state = self.get_state() if state is None else state
         self._batch_env.sync_states(state)
-
-    def render(self, mode="human"):
-        """Render the environment using OpenGL. This wraps the OpenAI render method."""
-        return self.plangym_env.render(mode)
-
-    def get_image(self) -> np.ndarray:
-        """
-        Return a numpy array containing the rendered view of the environment.
-
-        Square matrices are interpreted as a greyscale image. Three-dimensional arrays
-         are interpreted as RGB images with channels (Height, Width, RGB)
-        """
-        return self.plangym_env.get_image()
-
-    def clone(self) -> "BaseEnvironment":
-        env = ParallelEnvironment(
-            name=self.name,
-            frameskip=self.frameskip,
-            delay_init=self.delay_init,
-            env_class=self._env_class,
-            n_workers=self.n_workers,
-            blocking=self.blocking,
-            **self._env_kwargs,
-        )
-        return env
-
-    def step_with_dt(self, action: Union[numpy.ndarray, int, float], dt: int = 1) -> tuple:
-        return self.plangym_env.step_with_dt(action=action, dt=dt)
-
-    def sample_action(self):
-        """
-        Return a valid action that can be used to step the Environment.
-
-        Implementing this method is optional, and it's only intended to make the
-         testing process of the Environment easier.
-        """
-        return self.plangym_env.sample_action()
