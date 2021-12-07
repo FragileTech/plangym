@@ -18,7 +18,7 @@ extras = {
     "retro": ["gym-retro>=0.8.0"],
     "test": ["pytest>=5.3.5" "pyvirtualdisplay"],
     "ray": ["ray", "setproctitle"],
-    "box2s": ["gym[box2d]"]
+    "box2s": ["gym[box2d]"],
 }
 
 extras["all"] = [item for group in extras.values() for item in group]
