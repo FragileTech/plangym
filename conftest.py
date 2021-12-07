@@ -1,7 +1,54 @@
+import os
 import sys
 
 
-collect_ignore = ["setup.py", "plangym/ray.py"]
-if sys.version_info >= (3, 8):
+try:
+    import retro
+
+    SKIP_RETRO_TESTS = False
+except ImportError:
+    SKIP_RETRO_TESTS = True
+
+try:
+    import ray
+
+    SKIP_RAY_TESTS = False
+except ImportError:
+    SKIP_RAY_TESTS = True
+
+try:
+    from plangym.atari import AtariEnvironment
+
+    AtariEnvironment(name="MsPacman-v0", clone_seeds=True, autoreset=True)
+    SKIP_ATARI_TESTS = False
+except Exception:
+    SKIP_ATARI_TESTS = True
+
+try:
+    from plangym.dm_control import DMControlEnv
+
+    DMControlEnv(name="walker-run", frameskip=3)
+    SKIP_DM_CONTROL_TESTS = False
+except ImportError:
+    SKIP_DM_CONTROL_TESTS = True
+
+
+collect_ignore = ["setup.py"]
+if os.getenv("DISABLE_RAY", False):
+    collect_ignore.append("plangym/ray.py")
+    collect_ignore.append("tests/test_ray.py")
+if SKIP_RETRO_TESTS:
     collect_ignore.append("plangym/retro.py")
     collect_ignore.append("tests/test_retro.py")
+
+if SKIP_RAY_TESTS:
+    collect_ignore.append("plangym/ray.py")
+    # collect_ignore.append("tests/test_ray.py")
+
+if SKIP_ATARI_TESTS:
+    collect_ignore.append("plangym/atari.py")
+    collect_ignore.append("tests/test_atari.py")
+
+if SKIP_ATARI_TESTS:
+    collect_ignore.append("plangym/dm_control.py")
+    # collect_ignore.append("tests/test_atari.py")

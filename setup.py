@@ -14,7 +14,7 @@ with open(Path(__file__).with_name("README.md"), encoding="utf-8") as f:
     long_description = f.read()
 
 extras = {
-    "atari": ["atari-py==0.1.1"],
+    "atari": ["ale-py>=0.7.0", "gym[accept-rom-license]==0.21.0"],
     "retro": ["gym-retro>=0.8.0"],
     "test": ["pytest>=5.3.5"],
     "ray": ["ray", "setproctitle"],
@@ -38,7 +38,7 @@ setup(
     tests_require=["pytest>=5.3.5", "hypothesis>=5.6.0"],
     install_requires=[
         "numpy>=1.16.2",
-        "gym>=0.10.9,<=0.17.3",
+        "gym>=0.21.0",
         "pillow==8.4.0",
         "opencv-python>=4.2.0.32",
     ],
