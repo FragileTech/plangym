@@ -18,10 +18,20 @@ check:
 	pylint ${PROJECT}
 	black --check ${PROJECT}
 
+.PHONY: test-parallel
+test-parallel:
+	find -name "*.pyc" -delete
+	DISABLE_RAY=True pytest -n $n -s -o log_cli=true -o log_cli_level=info
+
+.PHONY: test-ray
+test-ray:
+	find -name "*.pyc" -delete
+	pytest tests/test_ray.py -n 1 -s -o log_cli=true -o log_cli_level=info
+
 .PHONY: test
 test:
-	find -name "*.pyc" -delete
-	pytest -n $n -s -o log_cli=true -o log_cli_level=info
+	make test-parallel
+	make test-ray
 
 .PHONY: test-codecov
 test-codecov:

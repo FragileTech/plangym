@@ -64,10 +64,10 @@ application_import_names = ["plangym"]
 extended_default_ignore=[]
 
 [tool.flakehell.plugins]
-"flake8*" = ["+*", "-D*"]
-pylint = ["+*", "-D*"]
-pyflakes = ["+*", "-D*"]
-pycodestyle = ["+*", "-E203" , "-D100", "-D104", "-D301", "-W503", "-W504", "-D*"]
+"flake8*" = ["+*"]
+pylint = ["+*"]
+pyflakes = ["+*"]
+pycodestyle = ["+*", "-E203" , "-D100", "-D104", "-D301", "-W503", "-W504"]
 
 [tool.flakehell.exceptions."**/__init__.py"]
 pyflakes = ["-F401"]
@@ -79,11 +79,17 @@ pycodestyle = ["-D*"]
 pylint = ["-D*"]
 pyflakes = ["-F401", "-F811"]
 
+[tool.flakehell.exceptions."**/wrappers/*"]
+pycodestyle = ["-D*"]
+"flake8*" = ["-D*"]
+pylint = ["-D*"]
+pyflakes = ["-D*", "-F401"]
+
 [tool.flakehell.exceptions."**/wrappers/README.md"]
 pycodestyle = ["-*"]
 "flake8*" = ["-*"]
 pylint = ["-*"]
-pyflakes = ["-*"]
+pyflakes = ["-*", "-F821"]
 
 [tool.pylint.master]
 ignore = 'tests'
