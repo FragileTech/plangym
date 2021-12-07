@@ -3,7 +3,14 @@ import copy
 import math
 from typing import Any, Dict, Iterable, Union
 
-from Box2D.b2 import contactListener, edgeShape, fixtureDef, polygonShape, revoluteJointDef
+from Box2D.b2 import (
+    circleShape,
+    contactListener,
+    edgeShape,
+    fixtureDef,
+    polygonShape,
+    revoluteJointDef,
+)
 from gym.envs.box2d.lunar_lander import LunarLander as GymLunarLander
 import numpy as np
 import numpy as numpy
@@ -300,6 +307,7 @@ class FastGymLunarLander(GymLunarLander):
         return numpy.array(state, dtype=numpy.float32), reward, done, {}
 
     def render(self, mode="human"):
+        """Render the environment."""
         from gym.envs.classic_control import rendering
 
         if self.viewer is None:
@@ -328,7 +336,11 @@ class FastGymLunarLander(GymLunarLander):
                     t = rendering.Transform(translation=trans * f.shape.pos)
                     self.viewer.draw_circle(f.shape.radius, 20, color=obj.color1).add_attr(t)
                     self.viewer.draw_circle(
-                        f.shape.radius, 20, color=obj.color2, filled=False, linewidth=2
+                        f.shape.radius,
+                        20,
+                        color=obj.color2,
+                        filled=False,
+                        linewidth=2,
                     ).add_attr(t)
                 else:
                     path = [trans * v for v in f.shape.vertices]
@@ -336,7 +348,7 @@ class FastGymLunarLander(GymLunarLander):
                     path.append(path[0])
                     self.viewer.draw_polyline(path, color=obj.color2, linewidth=2)
 
-        for x in []:#[self.helipad_x1, self.helipad_x2]:
+        for x in []:  # [self.helipad_x1, self.helipad_x2]:
             flagy1 = self.helipad_y
             flagy2 = flagy1 + 50 / SCALE
             self.viewer.draw_polyline([(x, flagy1), (x, flagy2)], color=(1, 1, 1))

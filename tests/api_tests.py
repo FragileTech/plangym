@@ -5,7 +5,6 @@ import warnings
 
 import numpy as np
 import pytest
-
 from pyvirtualdisplay import Display
 
 import plangym.atari
@@ -15,6 +14,7 @@ from plangym.core import VectorizedEnvironment
 @pytest.fixture(scope="class")
 def batch_size() -> int:
     return 10
+
 
 @pytest.fixture(scope="class")
 def display():
