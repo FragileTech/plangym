@@ -1,3 +1,4 @@
+"""Simplest version of some environments to allow for fast iteration of research projects."""
 import copy
 from typing import Tuple, Union
 
@@ -6,7 +7,7 @@ import numpy
 import numpy as np
 
 from plangym.atari import AtariEnvironment
-from plangym.utils import resize_frame
+from plangym.retro import resize_frame
 
 
 class MinimalPong(AtariEnvironment):
@@ -20,7 +21,7 @@ class MinimalPong(AtariEnvironment):
     def __init__(self, name="Pong-v4", *args, **kwargs):
         """Initialize a :class:`MinimalPong`."""
         super(MinimalPong, self).__init__(name=name, *args, **kwargs)
-        self.observation_space = spaces.Box(low=0, high=1, dtype=np.float, shape=(80, 80))
+        self.observation_space = spaces.Box(low=0, high=1, dtype=np.float32, shape=(80, 80))
         self.action_space = spaces.Discrete(2)
 
     @property
@@ -30,16 +31,20 @@ class MinimalPong(AtariEnvironment):
 
     @staticmethod
     def process_obs(obs):
-        """Preprocess 210x160x3 uint8 frame into 6400 (80x80) 1D float vector.
-        This was copied from Andrej Karpathy's blog."""
+        """
+        Preprocess 210x160x3 uint8 frame into 6400 (80x80) 1D float vector.
+
+        This was copied from Andrej Karpathy's blog.
+        """
         obs = obs[35:195]  # Crop
         obs = obs[::2, ::2, 0]  # Downsample by factor of 2
         obs[obs == 144] = 0  # Erase background (background type 1)
         obs[obs == 109] = 0  # Erase background (background type 2)
         obs[obs != 0] = 1  # Everything else (paddles, ball) just set to 1
-        return obs.astype(np.float)
+        return obs.astype(np.float32)
 
     def step(self, action: np.ndarray, state: np.ndarray = None, dt: int = None) -> tuple:
+        """Step the environment."""
         if state is not None:
             self.set_state(state)
         final_obs = np.zeros((80, 80, 2))
@@ -71,6 +76,7 @@ class MinimalPong(AtariEnvironment):
         return data
 
     def reset(self, return_state: bool = True):
+        """Reset the environment."""
         obs = self.gym_env.reset()
         if "ram" not in self.name:
             proc_obs = np.zeros((80, 80, 2))
@@ -84,9 +90,10 @@ class MinimalPong(AtariEnvironment):
 
 
 class MinimalPacman(AtariEnvironment):
-    """Minimal pacman environment"""
+    """Minimal pacman environment."""
 
     def __init__(self, name: str = "MsPacman-v4", *args, **kwargs):
+        """Initialize a :class:`MinimalPacman`."""
         obs_shape = kwargs.get("obs_shape", (80, 80, 2))
         # Do not pas obs_shape to AtariEnvironment
         if "obs_shape" in kwargs.keys():
@@ -96,7 +103,7 @@ class MinimalPacman(AtariEnvironment):
         # Im freezing this until proven wrong
         self.frameskip = 4
         self.dt = 1
-        self.observation_space = spaces.Box(low=0, high=1, dtype=np.float, shape=obs_shape)
+        self.observation_space = spaces.Box(low=0, high=1, dtype=np.float32, shape=obs_shape)
 
     @property
     def obs_shape(self) -> Tuple[int]:
@@ -105,6 +112,7 @@ class MinimalPacman(AtariEnvironment):
 
     @staticmethod
     def normalize_vector(vector):
+        """Normalize the provided vector."""
         std = vector.std(axis=0)
         std[std == 0] = 1
         standard = (vector - vector.mean(axis=0)) / np.minimum(1e-4, std)
@@ -113,12 +121,14 @@ class MinimalPacman(AtariEnvironment):
         return standard
 
     def reshape_frame(self, obs):
+        """Crop and reshape the observation."""
         height, width = self.obs_shape[0], self.obs_shape[1]
         cropped = obs[3:170, 7:-7]
         frame = resize_frame(cropped, width=width, height=height)
         return frame
 
     def step_with_dt(self, action: Union[numpy.ndarray, int, float], dt: int = 1):
+        """Step the underlying gym_env dt times."""
         reward = 0
         end, _end = False, False
         info = {"lives": -1, "reward": 0}
@@ -154,6 +164,7 @@ class MinimalPacman(AtariEnvironment):
         return full_obs, reward, end, info
 
     def reset(self, return_state: bool = True):
+        """Reset the environment."""
         full_obs = np.zeros(self.observation_space.shape)
         obs = self.reshape_frame(self.gym_env.reset())
         obs_hist = [copy.deepcopy(obs)]

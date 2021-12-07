@@ -8,7 +8,7 @@ environments = [
     "MountainCar-v0",
     "Acrobot-v1",
     "MountainCarContinuous-v0",
-    "Pendulum-v0",
+    "Pendulum-v1",
     "CartPole-v0",
 ]
 
