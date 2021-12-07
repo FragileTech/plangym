@@ -1,23 +1,42 @@
-import sys
 from typing import Union
 
+import pytest
 
-if sys.version in {(3, 6), (3, 7), (3, 8)}:
-    import pytest
+from plangym.parallel import ParallelEnvironment
+from plangym.retro import RetroEnvironment
+from tests.api_tests import batch_size, TestBaseEnvironment  # , TestGymEnvironment
 
-    from plangym.retro import ParallelRetro, RetroEnvironment
-    from tests.api_tests import batch_size, TestGymEnvironment
 
-    def retro_airstrike():
-        return RetroEnvironment(name="Airstriker-Genesis")
+def retro_airstrike():
+    return RetroEnvironment(name="Airstriker-Genesis")
 
-    def parallel_retro():
-        return ParallelRetro(name="Airstriker-Genesis", n_workers=2)
 
-    environments = [retro_airstrike, parallel_retro]
+def retro_sonic():
+    from plangym.wrappers.retro_wrappers import SonicDiscretizer
 
-    @pytest.fixture(params=environments, scope="class")
-    def env(request) -> Union[RetroEnvironment, ParallelRetro]:
-        env_ = request.param()
-        yield env_
-        env_.close()
+    return RetroEnvironment(
+        name="SonicTheHedgehog-Genesis",
+        state="GreenHillZone.Act3",
+        wrappers=[SonicDiscretizer],
+    )
+
+
+def parallel_retro():
+    return ParallelEnvironment(
+        name="Airstriker-Genesis",
+        env_class=RetroEnvironment,
+        n_workers=2,
+        delay_init=False,
+    )
+
+
+environments = [retro_airstrike, retro_sonic, parallel_retro]
+
+
+@pytest.fixture(params=environments, scope="class")
+def env(request) -> Union[RetroEnvironment, ParallelEnvironment]:
+    env_ = request.param()
+    if env_.delay_init and env_.gym_env is None:
+        env_.init_env()
+    yield env_
+    env_.close()
