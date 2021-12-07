@@ -1,7 +1,7 @@
 import pytest
 
 from plangym.minimal import AtariEnvironment, MinimalPacman, MinimalPong
-from tests.api_tests import batch_size, TestGymEnvironment
+from tests.api_tests import batch_size, display, TestBaseEnvironment, TestGymEnvironment
 
 
 def minimal_pacman():

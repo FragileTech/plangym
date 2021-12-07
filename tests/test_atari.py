@@ -1,7 +1,7 @@
 import pytest
 
 from plangym.atari import AtariEnvironment
-from tests.api_tests import batch_size, TestBaseEnvironment, TestGymEnvironment
+from tests.api_tests import batch_size, display, TestBaseEnvironment, TestGymEnvironment
 
 
 def pacman_obs():

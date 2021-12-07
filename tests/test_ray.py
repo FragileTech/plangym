@@ -6,7 +6,7 @@ import ray
 from plangym.atari import AtariEnvironment
 from plangym.classic_control import ClassicControl
 from plangym.ray import RayEnv
-from tests.api_tests import batch_size, TestBaseEnvironment, TestGymEnvironment
+from tests.api_tests import batch_size, display, TestBaseEnvironment, TestGymEnvironment
 
 
 def ray_cartpole():

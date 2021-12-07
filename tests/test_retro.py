@@ -4,7 +4,7 @@ import pytest
 
 from plangym.parallel import ParallelEnvironment
 from plangym.retro import RetroEnvironment
-from tests.api_tests import batch_size, TestBaseEnvironment  # , TestGymEnvironment
+from tests.api_tests import batch_size, display, TestBaseEnvironment, TestGymEnvironment
 
 
 def retro_airstrike():

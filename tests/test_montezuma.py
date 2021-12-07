@@ -2,7 +2,7 @@ import pytest
 
 from plangym.montezuma import Montezuma
 from plangym.parallel import ParallelEnvironment
-from tests.api_tests import batch_size, TestBaseEnvironment, TestGymEnvironment
+from tests.api_tests import batch_size, display, TestBaseEnvironment, TestGymEnvironment
 
 
 def montezuma():
