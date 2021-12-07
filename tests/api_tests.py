@@ -1,9 +1,13 @@
 import copy
 import os
 from typing import Iterable
+import warnings
 
 import numpy as np
 import pytest
+
+import plangym.atari
+from plangym.core import VectorizedEnvironment
 
 
 @pytest.fixture(scope="class")
@@ -17,8 +21,18 @@ class TestBaseEnvironment:
         assert hasattr(env, "frameskip")
         assert hasattr(env, "autoreset")
         assert hasattr(env, "delay_init")
-        if env.delay_init:
-            env.init_env()
+        assert hasattr(env, "SINGLETON")
+        assert hasattr(env, "STATE_IS_ARRAY")
+        assert hasattr(env, "RETURNS_GYM_TUPLE")
+
+    def test_api_kwargs(self, env):
+        if isinstance(env, VectorizedEnvironment):
+            return
+        cls = env.__class__
+        kwargs = {"name": env.name, "frameskip": 1, "autoreset": True, "delay_init": True}
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            cls(**kwargs)
 
     def test_unwrapped_does_not_crash(self, env):
         _ = env.unwrapped
@@ -27,14 +41,16 @@ class TestBaseEnvironment:
         obs = env.reset(return_state=False)
         assert isinstance(obs, (np.ndarray, Iterable))
         state, obs = env.reset(return_state=True)
-        assert isinstance(state, (np.ndarray, Iterable))
+        if env.STATE_IS_ARRAY:
+            assert isinstance(state, np.ndarray)
 
     def test_get_state(self, env):
         state_reset, obs = env.reset()
         state = env.get_state()
         if env.STATE_IS_ARRAY:
             assert isinstance(state, np.ndarray)
-            assert (state == state_reset).all()
+            if not env.SINGLETON:
+                assert (state == state_reset).all()
 
     def test_set_state(self, env):
         env.reset()
@@ -69,7 +85,8 @@ class TestBaseEnvironment:
         assert len(data) > 0
         if env.STATE_IS_ARRAY:
             assert isinstance(state, np.ndarray)
-            assert (state == env.get_state()).all()
+            if not env.SINGLETON:
+                assert (state == env.get_state()).all()
 
     @pytest.mark.parametrize("dt", [1, 3])
     def test_step_gym_tuple(self, env, dt):
@@ -117,15 +134,16 @@ class TestBaseEnvironment:
         assert len(data) == len(data_batch) - 1
 
     def test_clone_and_close(self, env):
-        clone = env.clone()
-        if clone.delay_init:
-            clone.init_env()
-        del clone
+        if not env.SINGLETON:
+            clone = env.clone()
+            if clone.delay_init:
+                clone.init_env()
+            del clone
 
-        clone = env.clone()
-        if clone.delay_init:
-            clone.init_env()
-        clone.close()
+            clone = env.clone()
+            if clone.delay_init:
+                clone.init_env()
+            clone.close()
 
     @pytest.mark.skipif(bool(os.getenv("CI", False)), reason="No display in CI.")
     def test_get_image(self, env):
@@ -138,8 +156,25 @@ class TestBaseEnvironment:
 class TestGymEnvironment(TestBaseEnvironment):
     def test_action_space(self, env):
         assert hasattr(env, "action_space")
-        action = env.action_space.sample()
-        assert action is not None
+        # Singleton / delayed envs may not be properly initialized. In that case test separately
+        if env.sample_action() is not None:
+            action = env.action_space.sample()
+            assert action is not None
+
+    def test_api_kwargs(self, env):
+        if isinstance(env, VectorizedEnvironment):
+            return
+        cls = env.__class__
+        kwargs = {
+            "name": env.name,
+            "frameskip": 1,
+            "autoreset": True,
+            "delay_init": True,
+            "wrappers": None,
+        }
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            cls(**kwargs)
 
     def test_obs_space(self, env):
         assert hasattr(env, "observation_space")
@@ -163,9 +198,9 @@ class TestGymEnvironment(TestBaseEnvironment):
 
     @pytest.mark.skipif(bool(os.getenv("CI", False)), reason="No display in CI.")
     def test_render(self, env):
-        if "pendulum" in env.name.lower():  # Bug in old version of gym
-            return
-        env.render()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            env.render()
 
     # TODO: add after finishing wrappers
     def _test_wrap_environment(self, env):

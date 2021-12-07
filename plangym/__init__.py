@@ -41,6 +41,19 @@ warnings.filterwarnings(
 )
 
 warnings.filterwarnings("ignore", message="Gdk.Cursor.new is deprecated")
+warnings.filterwarnings(
+    "ignore",
+    message=(
+        " `np.bool` is a deprecated alias for the builtin `bool`. "
+        "To silence this warning, use `bool` by itself. Doing this will not modify any "
+        "behavior and is safe. If you specifically wanted the numpy scalar type, "
+        "use `np.bool_` here."
+    ),
+)
+warnings.filterwarnings(
+    "ignore",
+    message=" WARN: Box bound precision lowered by casting to float32",
+)
 try:
     from plangym.atari import AtariEnvironment  # noqa: E402
     from plangym.classic_control import ClassicControl  # noqa: E402
