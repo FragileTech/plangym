@@ -3,16 +3,19 @@
 Wrappers are used to transform an environment in a modular way:
 
 ```python
-env = gym.make('Pong-v0')
-env = MyWrapper(env)
+import gym
+
+from plangym.wrappers import AtariPreprocessing
+env = gym.make("Pong-v0")
+env = AtariPreprocessing(env)
 ```
 
 Note that we may later restructure any of the files in this directory,
 but will keep the wrappers available at the wrappers' top-level
-folder. So for example, you should access `MyWrapper` as follows:
+folder. So for example, you should access `FireResetEnv` as follows:
 
 ```python
-from gym.wrappers import MyWrapper
+from plangym.wrappers import FireResetEnv  # noqa: I202
 ```
 
 ## Quick tips for writing your own wrapper

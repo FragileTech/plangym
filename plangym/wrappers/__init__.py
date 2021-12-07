@@ -18,7 +18,6 @@ from plangym.wrappers.atari_wrappers import (
 )
 from plangym.wrappers.clip_action import ClipAction
 from plangym.wrappers.filter_observation import FilterObservation
-from plangym.wrappers.flatten_observation import FlattenObservation
 from plangym.wrappers.frame_stack import FrameStack, LazyFrames
 from plangym.wrappers.gray_scale_observation import GrayScaleObservation
 from plangym.wrappers.record_episode_statistics import RecordEpisodeStatistics
