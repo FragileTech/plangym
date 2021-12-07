@@ -1,7 +1,7 @@
 import pytest
 
 from plangym.classic_control import ClassicControl
-from tests.api_tests import batch_size, TestGymEnvironment
+from tests.api_tests import batch_size, display, TestBaseEnvironment, TestGymEnvironment
 
 
 environments = [

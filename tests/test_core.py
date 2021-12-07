@@ -6,7 +6,7 @@ import numpy
 import pytest
 
 from plangym.core import BaseEnvironment
-from tests.api_tests import batch_size, TestBaseEnvironment
+from tests.api_tests import batch_size, display, TestBaseEnvironment
 
 
 class DummyEnv(BaseEnvironment):

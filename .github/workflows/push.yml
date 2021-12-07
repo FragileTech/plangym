@@ -153,14 +153,15 @@ jobs:
       - name: Install dependencies
         run: |
           set -x
+          apt-get install -y xvfb python-opengl ffmpeg
           python -m pip install dist/*.whl -r requirements-test.txt
-          python -m pip install atari-py==0.1.1
+          #python -m pip install atari-py==0.1.1
 
       - name: Test package
         run: |
           set -x
           rm -rf $PROJECT_DIR
-          CI=True make test
+          make test
 
   bump-version:
     name: Bump package version
