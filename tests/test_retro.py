@@ -21,6 +21,7 @@ def retro_sonic():
     )
 
 
+# retro.make("Airstriker-Genesis")
 def parallel_retro():
     return ParallelEnvironment(
         name="Airstriker-Genesis",
@@ -30,7 +31,7 @@ def parallel_retro():
     )
 
 
-environments = [retro_airstrike, retro_sonic, parallel_retro]
+environments = [retro_airstrike]  # , retro_sonic, parallel_retro]
 
 
 @pytest.fixture(params=environments, scope="class")

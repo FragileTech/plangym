@@ -56,14 +56,13 @@ warnings.filterwarnings(
 )
 try:
     from plangym.atari import AtariEnvironment  # noqa: E402
-    from plangym.classic_control import ClassicControl  # noqa: E402
-    from plangym.core import BaseEnvironment  # noqa: E402
-    from plangym.dm_control import DMControlEnv, ParallelDMControl  # noqa: E402
-    from plangym.minimal import MinimalPacman, MinimalPong  # noqa: E402
-    from plangym.montezuma import Montezuma  # noqa: E402
-    from plangym.parallel import ParallelEnvironment  # noqa: E402
-    from plangym.retro import ParallelRetro, RetroEnvironment  # noqa: E402
-
 except ImportError as e:
     warnings.warn("Failed to import module in plangym.__init__.py: %s" % str(e))
+from plangym.classic_control import ClassicControl  # noqa: E402
+from plangym.core import BaseEnvironment  # noqa: E402
+from plangym.dm_control import DMControlEnv  # noqa: E402
+from plangym.minimal import MinimalPacman, MinimalPong  # noqa: E402
+from plangym.montezuma import Montezuma  # noqa: E402
+from plangym.parallel import ParallelEnvironment  # noqa: E402
+from plangym.retro import RetroEnvironment  # noqa: E402
 from plangym.version import __version__  # noqa: E402

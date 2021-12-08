@@ -15,7 +15,7 @@ install-common-dependencies:
 		libffi-dev libjpeg-turbo-progs libjpeg8-dev libjpeg-turbo8 libjpeg-turbo8-dev gnupg2 \
 		libpng-dev libpng16-16 libglib2.0-0 bison gfortran lsb-release \
 		libsm6 libxext6 libxrender1 libfontconfig1 libhdf5-dev libopenblas-base libopenblas-dev \
-		libfreetype6 libfreetype6-dev zlib1g-dev zlib1g xvfb python-opengl ffmpeg libhdf5-dev && \
+		libfreetype6 libfreetype6-dev zlib1g-dev zlib1g xvfb python-opengl ffmpeg libhdf5-dev unzip && \
 	ln -s /usr/lib/x86_64-linux-gnu/libz.so /lib/ && \
 	ln -s /usr/lib/x86_64-linux-gnu/libjpeg.so /lib/ && \
 	echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
@@ -77,3 +77,10 @@ install-python-libs:
 	pip3 install --no-cache-dir setuptools wheel cython pipenv && \
 	pip3 install --no-cache-dir matplotlib && \
 	python3 -c "import matplotlib; matplotlib.use('Agg'); import matplotlib.pyplot"
+
+.PHONY: install-env-deps
+install-env-deps:
+	apt-get update
+	apt-get install -y --no-install-suggests --no-install-recommends \
+		libglfw3 libglew-dev libgl1-mesa-glx libosmesa6 xvfb swig
+

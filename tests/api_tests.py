@@ -5,7 +5,6 @@ import warnings
 
 import numpy as np
 import pytest
-from pyvirtualdisplay import Display
 
 import plangym.atari
 from plangym.core import VectorizedEnvironment
@@ -18,6 +17,9 @@ def batch_size() -> int:
 
 @pytest.fixture(scope="class")
 def display():
+    return None
+    from pyvirtualdisplay import Display
+
     display = Display(visible=0, size=(400, 400))
     display.start()
     yield display

@@ -9,6 +9,7 @@ from plangym.core import PlanEnvironment, wrap_callable
 
 try:
     import retro
+
 except ModuleNotFoundError:
     print("Please install OpenAI retro")
 
