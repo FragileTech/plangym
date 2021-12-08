@@ -1,6 +1,6 @@
 FROM ubuntu:20.04
 ARG JUPYTER_PASSWORD="plangym"
-ARG ROM_PASSWORD="FragileTech-2021"
+ARG ROM_PASSWORD=""
 
 ENV BROWSER=/browser \
     LC_ALL=en_US.UTF-8 \

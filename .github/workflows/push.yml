@@ -216,7 +216,7 @@ jobs:
         run: |
           set -x
           CONTAINER_VERSION=v$(grep __version__ $VERSION_FILE | cut -d\" -f2)
-          make docker-build VERSION=$CONTAINER_VERSION PROJECT=$PROJECT_NAME DOCKER_ORG=$DOCKER_ORG
+          ROM_PASSWORD=${{ secrets.ROM_PASSWORD }} make docker-build VERSION=$CONTAINER_VERSION PROJECT=$PROJECT_NAME DOCKER_ORG=$DOCKER_ORG
       - name: Push images
 
         run: |
