@@ -19,6 +19,7 @@ def _check_zipfile(f, process_f):
 
 def main():
     from retro.data import EMU_EXTENSIONS
+
     # This avoids a bug when loading the emu_extensions.
 
     emu_extensions = {

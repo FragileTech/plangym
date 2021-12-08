@@ -88,8 +88,8 @@ docker-build:
 .PHONY: docker-test
 docker-test:
 	find -name "*.pyc" -delete
-	docker run --rm --network host -w /${PROJECT} -e CI=True -e DISABLE_RAY=True --entrypoint python3 ${DOCKER_ORG}/${PROJECT}:${VERSION} -m pytest -n $n -s -o log_cli=true -o log_cli_level=info
-	docker run --rm --network host -w /${PROJECT} -e CI=True -e DISABLE_RAY=False --entrypoint python3 ${DOCKER_ORG}/${PROJECT}:${VERSION} -m pytest tests/test_ray.py -n 1 -s -o log_cli=true -o log_cli_level=info
+	docker run --rm --network host -w /${PROJECT} -e SKIP_RENDER=True -e DISABLE_RAY=True --entrypoint python3 ${DOCKER_ORG}/${PROJECT}:${VERSION} -m pytest -n $n -s -o log_cli=true -o log_cli_level=info
+	docker run --rm --network host -w /${PROJECT} -e SKIP_RENDER=True -e DISABLE_RAY=False --entrypoint python3 ${DOCKER_ORG}/${PROJECT}:${VERSION} -m pytest tests/test_ray.py -n 1 -s -o log_cli=true -o log_cli_level=info
 
 .PHONY: docker-push
 docker-push:
