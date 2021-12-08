@@ -134,16 +134,3 @@ class Box2DEnv(PlanEnvironment):
         """
         # loaded_state = pickle.loads(state[:])
         Box2DState.set_env_state(self.gym_env, state[0])
-
-    def _lunar_lander_end(self, obs):
-        if self.gym_env.game_over or abs(obs[0]) >= 1.0:
-            return True
-        elif not self.gym_env.lander.awake:
-            return True
-        return False
-
-    def _step_with_dt(self, action, dt):
-        obs, reward, _, info = super(Box2DEnv, self)._step_with_dt(action, dt)
-        terminal = self._lunar_lander_end(obs)
-        info["oob"] = terminal
-        return obs, reward, terminal, info

@@ -5,8 +5,8 @@ import warnings
 
 import numpy as np
 import pytest
+from pyvirtualdisplay import Display
 
-import plangym.atari
 from plangym.core import VectorizedEnvironment
 
 
@@ -17,9 +17,6 @@ def batch_size() -> int:
 
 @pytest.fixture(scope="class")
 def display():
-    return None
-    from pyvirtualdisplay import Display
-
     display = Display(visible=0, size=(400, 400))
     display.start()
     yield display
@@ -156,7 +153,7 @@ class TestBaseEnvironment:
                 clone.init_env()
             clone.close()
 
-    @pytest.mark.skipif(bool(os.getenv("CI", False)), reason="No display in CI.")
+    @pytest.mark.skipif(bool(os.getenv("SKIP_RENDER", False)), reason="No display in CI.")
     def test_get_image(self, env):
         img = env.get_image()
         if img is not None:
@@ -207,7 +204,7 @@ class TestGymEnvironment(TestBaseEnvironment):
         env.seed()
         env.seed(1)
 
-    @pytest.mark.skipif(bool(os.getenv("CI", False)), reason="No display in CI.")
+    @pytest.mark.skipif(bool(os.getenv("SKIP_RENDER", False)), reason="No display in CI.")
     def test_render(self, env, display):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")

@@ -171,15 +171,12 @@ class RayEnv(VectorizedEnvironment):
             observs, rewards, dones, infos = self._make_transitions(actions, None, dt)
         else:
             states, observs, rewards, dones, infos = self._make_transitions(actions, states, dt)
-        try:
-            observ = np.stack(observs)
-            reward = np.stack(rewards)
-            done = np.stack(dones)
-            infos = np.stack(infos)
-        except BaseException as e:  # Lets be overconfident for once TODO: remove this.
-            print(e)
-            for obs in observs:
-                print(obs.shape)
+
+        observ = np.stack(observs)
+        reward = np.stack(rewards)
+        done = np.stack(dones)
+        infos = np.stack(infos)
+
         if states is None:
             return observ, reward, done, infos
         else:
