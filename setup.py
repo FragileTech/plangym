@@ -16,9 +16,9 @@ with open(Path(__file__).with_name("README.md"), encoding="utf-8") as f:
 extras = {
     "atari": ["ale-py>=0.7.0", "gym[accept-rom-license]==0.21.0"],
     "retro": ["gym-retro>=0.8.0"],
-    "test": ["pytest>=5.3.5" "pyvirtualdisplay"],
+    "test": ["pytest>=5.3.5" "pyvirtualdisplay>=1.3.2"],
     "ray": ["ray", "setproctitle"],
-    "box2s": ["gym[box2d]"],
+    "box2d": ["box2d-py==2.3.5", "pyglet>=1.4.0"],
 }
 
 extras["all"] = [item for group in extras.values() for item in group]

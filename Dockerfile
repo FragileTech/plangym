@@ -1,24 +1,29 @@
 FROM ubuntu:20.04
 ARG JUPYTER_PASSWORD="plangym"
+ARG ROM_PASSWORD="FragileTech-2021"
+
 ENV BROWSER=/browser \
     LC_ALL=en_US.UTF-8 \
     LANG=en_US.UTF-8
 COPY Makefile.docker Makefile
-COPY . plangym/
 
 RUN apt-get update && \
 	apt-get install -y --no-install-suggests --no-install-recommends make cmake && \
     make install-python3.8 && \
     make install-common-dependencies && \
-    make install-python-libs
+    make install-python-libs && \
+    make install-env-deps
 
-RUN cd plangym \
-    && python3 -m pip install -U pip \
-    && pip3 install -r requirements-lint.txt  \
-    && pip3 install -r requirements-test.txt  \
-    && pip3 install -r requirements.txt  \
-    && pip install ipython jupyter \
-    && pip3 install -e . \
+COPY . plangym/
+
+RUN cd plangym  \
+    && make install-mujoco \
+    && python3 -m pip install -r requirements-lint.txt \
+    && python3 -m pip install -r requirements-test.txt \
+    && python3 -m pip install -r requirements.txt \
+    && python3 -m pip install ipython jupyter \
+    && python3 -m pip install -e . \
+    && ROM_PASSWORD=${ROM_PASSWORD} make import-roms \
     && git config --global init.defaultBranch master \
     && git config --global user.name "Whoever" \
     && git config --global user.email "whoever@fragile.tech"

@@ -72,14 +72,15 @@ jobs:
     - name: Install test and package dependencies
       run: |
         set -x
+        sudo MUJOCO_PATH=/home/runner/.mujoco/ make install-envs
         pip install -r requirements-test.txt -r requirements.txt
-        python -m pip install atari-py==0.1.1
+        ROM_PASSWORD=${{ secrets.ROM_PASSWORD }} make import-roms
         pip install .
 
     - name: Test with pytest
       run: |
         set -x
-        CI=True make test-codecov
+        make test-codecov
 
     - name: Upload coverage report
       if: ${{ matrix.python-version=='3.8' }}
@@ -94,7 +95,7 @@ jobs:
     - name: Build container
       run: |
         set -x
-        make docker-build
+        ROM_PASSWORD=${{ secrets.ROM_PASSWORD }} make docker-build
     - name: Run tests
       run: |
         set -x
@@ -150,12 +151,14 @@ jobs:
           repository_url: https://test.pypi.org/legacy/
           skip_existing: true
 
+        # apt-get install -y xvfb python-opengl ffmpeg
       - name: Install dependencies
         run: |
           set -x
-          apt-get install -y xvfb python-opengl ffmpeg
-          python -m pip install dist/*.whl -r requirements-test.txt
-          #python -m pip install atari-py==0.1.1
+          sudo MUJOCO_PATH=/home/runner/.mujoco/ make install-envs
+          pip install -r requirements-test.txt -r requirements.txt
+          ROM_PASSWORD=${{ secrets.ROM_PASSWORD }} make import-roms
+          python -m pip install dist/*.whl
 
       - name: Test package
         run: |

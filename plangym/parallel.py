@@ -278,16 +278,19 @@ class ExternalProcess:
         except Exception:  # pylint: disable=broad-except
             import logging
 
-            import tensorflow as tf
-
             stacktrace = "".join(traceback.format_exception(*sys.exc_info()))
-            message = f"Error in environment process: {stacktrace}"
-            if hasattr(tf, "logging"):
-                tf.logging.error(message)
-            else:
-                logger = tf.get_logger()
-                logger.setLevel(logging.ERROR)
-                logger.error(message)
+            try:
+                import tensorflow as tf
+
+                message = f"Error in environment process: {stacktrace}"
+                if hasattr(tf, "logging"):
+                    tf.logging.error(message)
+                else:
+                    logger = tf.get_logger()
+                    logger.setLevel(logging.ERROR)
+                    logger.error(message)
+            except ImportError:
+                pass
             conn.send((self._EXCEPTION, stacktrace))
             conn.close()
 
