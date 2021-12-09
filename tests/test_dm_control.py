@@ -1,3 +1,5 @@
+import os
+
 import numpy
 import pytest
 
@@ -28,11 +30,14 @@ class TestDMControl:
         assert hasattr(env, "action_spec")
         assert hasattr(env, "action_space")
 
+    @pytest.mark.skipif(bool(os.getenv("SKIP_RENDER", False)), reason="No display in CI.")
     def test_render(self, env):
         env.reset()
         obs_rgb = env.render(mode="rgb_array")
         assert isinstance(obs_rgb, numpy.ndarray)
         old_len = len(env.viewer)
-        env.step(env.sample_action())
+        asp = env.action_space
+        action = env.sample_action()
+        env.step(action)
         env.render(mode="human")
         assert len(env.viewer) > old_len

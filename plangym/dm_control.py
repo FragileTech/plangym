@@ -2,7 +2,7 @@
 from typing import Iterable, Union
 import warnings
 
-from gym.spaces import Box
+from gym.spaces import Box, Space
 import numpy as np
 
 from plangym.core import PlanEnvironment, wrap_callable
@@ -73,6 +73,16 @@ class DMControlEnv(PlanEnvironment):
         )
 
     @property
+    def action_space(self) -> Space:
+        """Return the action_space of the environment."""
+        return self._action_space
+
+    @property
+    def observation_space(self) -> Space:
+        """Return the observation_space of the environment."""
+        return self._observation_space
+
+    @property
     def physics(self):
         """Alias for gym_env.physics."""
         return self.gym_env.physics
@@ -107,6 +117,10 @@ class DMControlEnv(PlanEnvironment):
         name = "-".join([domain_name, task_name])
         return name, domain_name, task_name
 
+    def sample_action(self) -> Union[int, np.ndarray]:
+        """Return a valid action that can be used to step the Environment."""
+        return self.action_space.sample()
+
     def init_gym_env(self):
         """Initialize the environment instance that the current class is wrapping."""
         from dm_control import suite
@@ -130,18 +144,14 @@ class DMControlEnv(PlanEnvironment):
             if self._wrappers is not None:
                 self.apply_wrappers(self._wrappers)
             shape = self.reset(return_state=False).shape
-            self.observation_space = Box(low=-np.inf, high=np.inf, shape=shape, dtype=np.float32)
-            self.action_space = Box(
+            self._observation_space = Box(low=-np.inf, high=np.inf, shape=shape, dtype=np.float32)
+            self._action_space = Box(
                 low=self.action_spec().minimum,
                 high=self.action_spec().maximum,
                 dtype=np.float32,
             )
 
     def action_spec(self):
-        """Alias for the environment's ``action_spec``."""
-        return self.gym_env.action_spec()
-
-    def action_space(self):
         """Alias for the environment's ``action_spec``."""
         return self.gym_env.action_spec()
 

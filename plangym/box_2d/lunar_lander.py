@@ -382,10 +382,6 @@ class LunarLander(PlanEnvironment):
         self._gym_env.reset()
         if self._wrappers is not None:
             self.apply_wrappers(self._wrappers)
-        self.action_space = self.gym_env.action_space
-        self.observation_space = self.gym_env.observation_space
-        self.reward_range = self.gym_env.reward_range
-        self.metadata = self.gym_env.metadata
 
     def get_state(self) -> numpy.ndarray:
         """

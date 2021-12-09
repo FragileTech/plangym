@@ -1,9 +1,10 @@
 """Plangym API implementation."""
 from abc import ABC
-from typing import Any, Callable, Dict, Generator, Iterable, Tuple, Union
+from typing import Any, Callable, Dict, Generator, Iterable, Optional, Tuple, Union
 
 import gym
 from gym.envs.registration import registry as gym_registry
+from gym.spaces import Space
 import numpy
 import numpy as np
 
@@ -247,6 +248,7 @@ class PlanEnvironment(BaseEnvironment):
         autoreset: bool = True,
         wrappers: Iterable[wrap_callable] = None,
         delay_init: bool = False,
+        remove_time_limit=True,
     ):
         """
         Initialize a :class:`PlanEnvironment`.
@@ -262,15 +264,13 @@ class PlanEnvironment(BaseEnvironment):
                      or a tuple containing ``(gym.Wrapper, kwargs)``.
             delay_init: If ``True`` do not initialize the ``gym.Environment`` \
                      and wait for ``init_env`` to be called later.
+            remove_time_limit: If True, remove the time limit from the environment.
 
         """
-        self._wrappers = wrappers
-        self.episodic_life = episodic_live
         self._gym_env = None
-        self.action_space = None
-        self.observation_space = None
-        self.reward_range = None
-        self.metadata = None
+        self.episodic_life = episodic_live
+        self.remove_time_limit = remove_time_limit
+        self._wrappers = wrappers
         super(PlanEnvironment, self).__init__(
             name=name,
             frameskip=frameskip,
@@ -295,15 +295,33 @@ class PlanEnvironment(BaseEnvironment):
         """Tuple containing the shape of the actions applied to the Environment."""
         return self.action_space.shape
 
+    @property
+    def action_space(self) -> Space:
+        """Return the action_space of the environment."""
+        return self.gym_env.action_space
+
+    @property
+    def observation_space(self) -> Space:
+        """Return the observation_space of the environment."""
+        return self.gym_env.observation_space
+
+    @property
+    def reward_range(self):
+        """Return the reward_range of the environment."""
+        if hasattr(self.gym_env, "reward_range"):
+            return self.gym_env.reward_range
+
+    @property
+    def metadata(self):
+        """Return the metadata of the environment."""
+        if hasattr(self.gym_env, "metadata"):
+            return self.gym_env.metadata
+
     def init_env(self):
         """Initialize the target :class:`gym.Env` instance."""
         self._gym_env = self.init_gym_env()
         if self._wrappers is not None:
             self.apply_wrappers(self._wrappers)
-        self.action_space = self.gym_env.action_space
-        self.observation_space = self.gym_env.observation_space
-        self.reward_range = self.gym_env.reward_range
-        self.metadata = self.gym_env.metadata
 
     def get_image(self) -> np.ndarray:
         """
@@ -394,17 +412,18 @@ class PlanEnvironment(BaseEnvironment):
 
     def close(self):
         """Close the underlying :class:`gym.Env`."""
-        if hasattr(self.gym_env, "close"):
-            return self.gym_env.close()
+        if hasattr(self, "_gym_env") and hasattr(self._gym_env, "close"):
+            return self._gym_env.close()
 
     def init_gym_env(self) -> gym.Env:
         """Initialize the :class:`gym.Env`` instance that the current class is wrapping."""
         # Remove any undocumented wrappers
         spec = gym_registry.spec(self.name)
-        if hasattr(spec, "max_episode_steps"):
-            spec._max_episode_steps = spec.max_episode_steps
-        if hasattr(spec, "max_episode_time"):
-            spec._max_episode_time = spec.max_episode_time
+        if self.remove_time_limit:
+            if hasattr(spec, "max_episode_steps"):
+                spec._max_episode_steps = spec.max_episode_steps
+            if hasattr(spec, "max_episode_time"):
+                spec._max_episode_time = spec.max_episode_time
         spec.max_episode_steps = None
         spec.max_episode_time = None
         gym_env: gym.Env = spec.make()
@@ -448,6 +467,137 @@ class PlanEnvironment(BaseEnvironment):
         """Render the environment using OpenGL. This wraps the OpenAI render method."""
         if hasattr(self.gym_env, "render"):
             return self.gym_env.render(mode=mode)
+
+
+class VideogameEnvironment(PlanEnvironment):
+    """Common interface for working with Atari Environments."""
+
+    def __init__(
+        self,
+        name: str,
+        frameskip: int = 5,
+        episodic_live: bool = False,
+        autoreset: bool = True,
+        delay_init: bool = False,
+        remove_time_limit: bool = True,
+        obs_type: str = "rgb",  # ram | rgb | grayscale
+        mode: int = 0,  # game mode, see Machado et al. 2018
+        difficulty: int = 0,  # game difficulty, see Machado et al. 2018
+        repeat_action_probability: float = 0.0,  # Sticky action probability
+        full_action_space: bool = False,  # Use all actions
+        render_mode: Optional[str] = None,  # None | human | rgb_array
+        possible_to_win: bool = False,
+        wrappers: Iterable[wrap_callable] = None,
+    ):
+        """
+        Initialize a :class:`AtariEnvironment`.
+
+        Args:
+            name: Name of the environment. Follows standard gym syntax conventions.
+            frameskip: Number of times an action will be applied for each step \
+                in dt.
+            episodic_live: Return ``end = True`` when losing a life.
+            autoreset: Restart environment when reaching a terminal state.
+            delay_init: If ``True`` do not initialize the ``gym.Environment`` \
+                     and wait for ``init_env`` to be called later.
+            remove_time_limit: If True, remove the time limit from the environment.
+            obs_type: One of {"rgb", "ram", "gryscale"}.
+            mode: Integer or string indicating the game mode, when available.
+            difficulty: Difficulty level of the game, when available.
+            repeat_action_probability: Repeat the last action with this probability.
+            full_action_space: Wheter to use the full range of possible actions \
+                              or only those available in the game.
+            render_mode: One of {None, "human", "rgb_aray"}.
+            possible_to_win: It is possible to finish the Atari game without \
+                            getting a terminal state that is not out of bounds \
+                            or doest not involve losing a life.
+            wrappers: Wrappers that will be applied to the underlying OpenAI env. \
+                     Every element of the iterable can be either a :class:`gym.Wrapper` \
+                     or a tuple containing ``(gym.Wrapper, kwargs)``.
+
+        """
+        self._remove_time_limit = remove_time_limit
+        self.possible_to_win = possible_to_win
+        self._obs_type = obs_type
+        self._mode = mode
+        self._difficulty = difficulty
+        self._repeat_action_probability = repeat_action_probability
+        self._full_action_space = full_action_space
+        self._render_mode = render_mode
+        super(VideogameEnvironment, self).__init__(
+            name=name,
+            frameskip=frameskip,
+            episodic_live=episodic_live,
+            autoreset=autoreset,
+            wrappers=wrappers,
+            delay_init=delay_init,
+        )
+
+    @property
+    def obs_type(self) -> str:
+        """Return the type of observation returned by the environment."""
+        return self._obs_type
+
+    @property
+    def mode(self) -> int:
+        """Return the selected game mode for the current environment."""
+        return self._mode
+
+    @property
+    def difficulty(self) -> int:
+        """Return the selected difficulty for the current environment."""
+        return self._difficulty
+
+    @property
+    def repeat_action_probability(self) -> float:
+        """Probability of repeating the same action after input."""
+        return self._repeat_action_probability
+
+    @property
+    def full_action_space(self) -> bool:
+        """If True the action space correspond to all possible actions in the Atari emulator."""
+        return self._full_action_space
+
+    @property
+    def render_mode(self) -> str:
+        """Return how the game will be rendered. Values: None | human | rgb_array."""
+        return self._render_mode
+
+    @property
+    def has_time_limit(self) -> bool:
+        """Return True if the Environment can only be stepped for a limited number of times."""
+        return self._remove_time_limit
+
+    @property
+    def n_actions(self) -> int:
+        """Return the number of actions available."""
+        return self.gym_env.action_space.n
+
+    def clone(self, **kwargs) -> "VideogameEnvironment":
+        """Return a copy of the environment."""
+        params = dict(
+            name=self.name,
+            frameskip=self.frameskip,
+            wrappers=self._wrappers,
+            episodic_live=self.episodic_life,
+            autoreset=self.autoreset,
+            delay_init=self.delay_init,
+            possible_to_win=self.possible_to_win,
+            clone_seeds=self.clone_seeds,
+            mode=self.mode,
+            difficulty=self.difficulty,
+            obs_type=self.obs_type,
+            repeat_action_probability=self.repeat_action_probability,
+            full_action_space=self.full_action_space,
+            render_mode=self.render_mode,
+            remove_time_limit=self._remove_time_limit,
+        )
+        params.update(**kwargs)
+        return self.__class__(**params)
+
+    def get_ram(self) -> np.ndarray:
+        """Return the ram of the emulator as a numpy array."""
+        raise NotImplementedError()
 
 
 class VectorizedEnvironment(BaseEnvironment, ABC):

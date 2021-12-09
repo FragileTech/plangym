@@ -207,7 +207,7 @@ class TestGymEnvironment(TestBaseEnvironment):
     def test_terminal(self, env):
         if env.autoreset:
             env.reset()
-            env.step_with_dt(env.sample_action(), dt=10000)
+            env.step_with_dt(env.sample_action(), dt=1000)
 
     @pytest.mark.skipif(bool(os.getenv("SKIP_RENDER", False)), reason="No display in CI.")
     def test_render(self, env, display):

@@ -8,7 +8,7 @@ from tests.api_tests import batch_size, display, TestBaseEnvironment, TestGymEnv
 
 
 def retro_airstrike():
-    return RetroEnvironment(name="Airstriker-Genesis")
+    return RetroEnvironment(name="Airstriker-Genesis", obs_type="ram")
 
 
 def retro_sonic():
@@ -31,7 +31,7 @@ def parallel_retro():
     )
 
 
-environments = [retro_airstrike]  # , retro_sonic, parallel_retro]
+environments = [retro_airstrike, retro_sonic, parallel_retro]
 
 
 @pytest.fixture(params=environments, scope="class")
