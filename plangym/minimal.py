@@ -18,8 +18,9 @@ class MinimalPong(AtariEnvironment):
     has been reduced to 2, and it returns an observation that is 80x80x1 pixels.
     """
 
-    def __init__(self, name="Pong-v4", *args, **kwargs):
+    def __init__(self, name="MinimalPong-v0", *args, **kwargs):
         """Initialize a :class:`MinimalPong`."""
+        name = "Pong-v4" if name == "MinimalPong-v0" else name
         super(MinimalPong, self).__init__(name=name, *args, **kwargs)
         self._observation_space = spaces.Box(low=0, high=1, dtype=np.float32, shape=(80, 80, 2))
         self._action_space = spaces.Discrete(2)
@@ -102,8 +103,9 @@ class MinimalPong(AtariEnvironment):
 class MinimalPacman(AtariEnvironment):
     """Minimal pacman environment."""
 
-    def __init__(self, name: str = "MsPacman-v4", *args, **kwargs):
+    def __init__(self, name: str = "MinimalPacman-v0", *args, **kwargs):
         """Initialize a :class:`MinimalPacman`."""
+        name = "MsPacman-v4" if name == "MinimalPacman-v0" else name
         obs_shape = kwargs.get("obs_shape", (80, 80, 2))
         # Do not pas obs_shape to AtariEnvironment
         if "obs_shape" in kwargs.keys():

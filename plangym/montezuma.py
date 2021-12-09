@@ -427,7 +427,7 @@ class Montezuma(AtariEnvironment):
         frameskip: int = 1,
         episodic_live: bool = False,
         autoreset: bool = True,
-        name=None,
+        name="PlanMontezuma-v0",
         clone_seeds: bool = False,
         **kwargs,
     ):
