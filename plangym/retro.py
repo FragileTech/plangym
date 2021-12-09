@@ -1,10 +1,11 @@
 """Implement the ``plangym`` API for retro environments."""
-from typing import Any, Dict, Iterable, Tuple, Union
+from typing import Any, Dict, Iterable, Optional, Tuple, Union
 
+from gym import spaces
 import numpy
 from PIL import Image
 
-from plangym.core import PlanEnvironment, wrap_callable
+from plangym.core import VideogameEnvironment, wrap_callable
 
 
 try:
@@ -38,7 +39,7 @@ def resize_frame(
     return numpy.array(frame)
 
 
-class RetroEnvironment(PlanEnvironment):
+class RetroEnvironment(VideogameEnvironment):
     """Environment for playing ``gym-retro`` games."""
 
     SINGLETON = True
@@ -46,12 +47,21 @@ class RetroEnvironment(PlanEnvironment):
     def __init__(
         self,
         name: str,
-        frameskip: int = 1,
+        frameskip: int = 5,
         episodic_live: bool = False,
         autoreset: bool = True,
-        wrappers: Iterable[wrap_callable] = None,
         delay_init: bool = False,
+        remove_time_limit: bool = True,
         obs_type: str = "rgb",  # ram | rgb | grayscale
+        mode: int = 0,  # game mode, see Machado et al. 2018
+        difficulty: int = 0,  # game difficulty, see Machado et al. 2018
+        repeat_action_probability: float = 0.0,  # Sticky action probability
+        full_action_space: bool = False,  # Use all actions
+        render_mode: Optional[str] = None,  # None | human | rgb_array
+        possible_to_win: bool = False,
+        wrappers: Iterable[wrap_callable] = None,
+        array_state: bool = True,
+        clone_seeds: bool = False,
         height: int = None,  # 100,
         width: int = None,  # 100,
         **kwargs,
@@ -74,22 +84,25 @@ class RetroEnvironment(PlanEnvironment):
             width: Resize the observations to have this width.
             **kwargs: Passed to ``retro.make``.
         """
-        self._wrappers = wrappers
-        self.episodic_life = episodic_live
-        self._gym_env = None
-        self.action_space = None
-        self.observation_space = None
-        self.reward_range = None
-        self.metadata = None
         self.gym_env_kwargs = kwargs
         self.height = height
         self.width = width
-        self.obs_type = obs_type
-        super(PlanEnvironment, self).__init__(
+        self._obs_space = None
+        super(RetroEnvironment, self).__init__(
             name=name,
             frameskip=frameskip,
+            episodic_live=episodic_live,
             autoreset=autoreset,
             delay_init=delay_init,
+            remove_time_limit=remove_time_limit,
+            obs_type=obs_type,  # ram | rgb | grayscale
+            mode=mode,  # game mode, see Machado et al. 2018
+            difficulty=difficulty,  # game difficulty, see Machado et al. 2018
+            repeat_action_probability=repeat_action_probability,  # Sticky action probability
+            full_action_space=full_action_space,  # Use all actions
+            render_mode=render_mode,  # None | human | rgb_array
+            possible_to_win=possible_to_win,
+            wrappers=wrappers,
         )
 
     @property
@@ -98,9 +111,18 @@ class RetroEnvironment(PlanEnvironment):
         return self.observation_space.shape if self.gym_env is not None else ()
 
     @property
+    def observation_space(self):
+        """Return the observation_space of the environment."""
+        return self._obs_space
+
+    @property
     def action_shape(self) -> Tuple[int, ...]:
         """Tuple containing the shape of the actions applied to the Environment."""
         return self.action_space.shape if self.gym_env is not None else ()
+
+    def get_ram(self) -> numpy.ndarray:
+        """Return the ram of the emulator as a numpy array."""
+        return self.get_state().copy()
 
     def clone(self) -> "RetroEnvironment":
         """Return a copy of the environment with its initialization delayed."""
@@ -118,23 +140,16 @@ class RetroEnvironment(PlanEnvironment):
 
     def init_env(self):
         """Initialize the internal retro environment and its class attributes."""
+        if self._gym_env is not None:
+            self._gym_env.close()
         env = retro.make(self.name, **self.gym_env_kwargs).unwrapped
         if self._wrappers is not None:
             self.apply_wrappers(self._wrappers)
         self._gym_env = env
-        self.action_space = self.gym_env.action_space
-        self.observation_space = (
-            self.gym_env.observation_space
-            if self.observation_space is None
-            else self.observation_space
-        )
-        self.action_space = (
-            self.gym_env.action_space if self.action_space is None else self.action_space
-        )
-        self.reward_range = (
-            self.gym_env.reward_range if self.reward_range is None else self.reward_range
-        )
-        self.metadata = self.gym_env.metadata if self.metadata is None else self.metadata
+        if self.obs_type == "ram":
+            ram_size = self.get_ram().shape
+            self._obs_space = spaces.Box(low=0, high=255, dtype=numpy.uint8, shape=ram_size)
+        self._obs_space = self._obs_space or self.gym_env.observation_space
 
     def __getattr__(self, item):
         """Forward getattr to self.gym_env."""
@@ -178,7 +193,7 @@ class RetroEnvironment(PlanEnvironment):
         ram_obs = self.obs_type == "ram"
         if state is None:
             observ, reward, terminal, info = data
-            observ = self.get_state().copy() if ram_obs else self.process_obs(observ)
+            observ = self.get_ram() if ram_obs else self.process_obs(observ)
             return observ, reward, terminal, info
         else:
             state, observ, reward, terminal, info = data

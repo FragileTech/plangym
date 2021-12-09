@@ -21,13 +21,23 @@ class MinimalPong(AtariEnvironment):
     def __init__(self, name="Pong-v4", *args, **kwargs):
         """Initialize a :class:`MinimalPong`."""
         super(MinimalPong, self).__init__(name=name, *args, **kwargs)
-        self.observation_space = spaces.Box(low=0, high=1, dtype=np.float32, shape=(80, 80))
-        self.action_space = spaces.Discrete(2)
+        self._observation_space = spaces.Box(low=0, high=1, dtype=np.float32, shape=(80, 80, 2))
+        self._action_space = spaces.Discrete(2)
 
     @property
     def obs_shape(self) -> Tuple[int, ...]:
         """Tuple containing the shape of the observations returned by the Environment."""
         return 80, 80, 2
+
+    @property
+    def action_space(self) -> spaces.Space:
+        """Return the action_space of the environment."""
+        return self._action_space
+
+    @property
+    def observation_space(self) -> spaces.Space:
+        """Return the observation_space of the environment."""
+        return self._observation_space
 
     @staticmethod
     def process_obs(obs):
@@ -103,12 +113,17 @@ class MinimalPacman(AtariEnvironment):
         # Im freezing this until proven wrong
         self.frameskip = 4
         self.dt = 1
-        self.observation_space = spaces.Box(low=0, high=1, dtype=np.float32, shape=obs_shape)
+        self._observation_space = spaces.Box(low=0, high=1, dtype=np.float32, shape=obs_shape)
 
     @property
     def obs_shape(self) -> Tuple[int]:
         """Tuple containing the shape of the observations returned by the Environment."""
         return self._obs_shape
+
+    @property
+    def observation_space(self) -> spaces.Space:
+        """Return the observation_space of the environment."""
+        return self._observation_space
 
     @staticmethod
     def normalize_vector(vector):

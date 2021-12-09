@@ -1,3 +1,5 @@
+from itertools import product
+
 import pytest
 
 from plangym.classic_control import ClassicControl
@@ -15,4 +17,5 @@ environments = [
 
 @pytest.fixture(params=environments, scope="class")
 def env(request) -> ClassicControl:
-    return ClassicControl(name=request.param)
+    name = request.param
+    return ClassicControl(name=name, delay_init=name == "CartPole-v0")
