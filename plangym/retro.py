@@ -61,29 +61,38 @@ class RetroEnvironment(VideogameEnvironment):
         possible_to_win: bool = False,
         wrappers: Iterable[wrap_callable] = None,
         array_state: bool = True,
-        clone_seeds: bool = False,
         height: int = None,  # 100,
         width: int = None,  # 100,
         **kwargs,
     ):
         """
-        Initialize a :class:`PlanEnvironment`.
+        Initialize a :class:`RetroEnvironment`.
 
         Args:
             name: Name of the environment. Follows standard gym syntax conventions.
-            frameskip: Number of times an action will be applied for each ``dt``.
-            episodic_live: Return ``end = True`` when losing a live.
-            autoreset: Automatically reset the environment when the OpenAI environment
-                      returns ``end = True``.
+            frameskip: Number of times an action will be applied for each step \
+                in dt.
+            episodic_live: Return ``end = True`` when losing a life.
+            autoreset: Restart environment when reaching a terminal state.
+            delay_init: If ``True`` do not initialize the ``gym.Environment`` \
+                     and wait for ``init_env`` to be called later.
+            remove_time_limit: If True, remove the time limit from the environment.
+            obs_type: One of {"rgb", "ram", "gryscale"}.
+            mode: Alias for state. Passed to retro.make().
+            difficulty: Difficulty level of the game, when available.
+            repeat_action_probability: Repeat the last action with this probability.
+            full_action_space: Wheter to use the full range of possible actions \
+                              or only those available in the game.
+            render_mode: One of {None, "human", "rgb_aray"}.
+            possible_to_win: It is possible to finish the Atari game without \
+                            getting a terminal state that is not out of bounds \
+                            or doest not involve losing a life.
             wrappers: Wrappers that will be applied to the underlying OpenAI env. \
                      Every element of the iterable can be either a :class:`gym.Wrapper` \
                      or a tuple containing ``(gym.Wrapper, kwargs)``.
-            delay_init: If ``True`` do not initialize the ``gym.Environment`` \
-                     and wait for ``init_env`` to be called later.
-            height: Resize the observation to have this height.
-            width: Resize the observations to have this width.
-            **kwargs: Passed to ``retro.make``.
+            array_state: Whether to return the state of the environment as a numpy array.
         """
+        kwargs["state"] = kwargs.get("state", mode)
         self.gym_env_kwargs = kwargs
         self.height = height
         self.width = width

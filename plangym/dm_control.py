@@ -250,7 +250,7 @@ class DMControlEnv(PlanEnvironment):
 
         """
         reward = 0
-        obs, lost_live, terminal, oob = None, False, False, False
+        obs, lost_live, terminal = None, False, False
         info = {"lives": -1}
         n_steps = 0
 
@@ -261,7 +261,7 @@ class DMControlEnv(PlanEnvironment):
                 end = end or time_step.last()
                 reward += time_step.reward if time_step.reward is not None else 0.0
                 custom_terminal = self.custom_terminal_condition(info, {}, end)
-                terminal = terminal or oob or custom_terminal
+                terminal = terminal or end or custom_terminal
                 terminal = (terminal or lost_live) if self.episodic_life else terminal
                 n_steps += 1
                 if terminal:
@@ -272,7 +272,7 @@ class DMControlEnv(PlanEnvironment):
         # This allows to get the original values even when using an episodic life environment
         info["terminal"] = terminal
         info["lost_live"] = lost_live
-        info["oob"] = oob
+        info["oob"] = terminal
         info["win"] = self.get_win_condition(info)
         info["n_steps"] = n_steps
         return obs, reward, terminal, info

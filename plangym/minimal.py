@@ -73,15 +73,15 @@ class MinimalPong(AtariEnvironment):
             end = _end or end or info["lives"] > _info["lives"]
             info = _info.copy()
             reward += _reward
-            if _end:
+            if end:
                 break
-        info["terminal"] = _end
+        info["terminal"] = end
         if state is not None:
             new_state = self.get_state()
             data = new_state, final_obs, reward, end, info
         else:
             data = final_obs, reward, end, info
-        if _end:
+        if end:
             self.gym_env.reset()
         return data
 
@@ -162,7 +162,7 @@ class MinimalPacman(AtariEnvironment):
                 info = _info.copy()
                 info["reward"] += _reward
                 reward += _reward
-                if _end:
+                if end:
                     break
                 proced = self.reshape_frame(obs)
                 obs_hist.append(proced)
@@ -173,7 +173,7 @@ class MinimalPacman(AtariEnvironment):
                 filtered = self.normalize_vector(np.array(obs_hist))
                 full_obs[:, :, 1] = filtered[-1][:, :, 0]
 
-            if _end:
+            if end:
                 break
         info["terminal"] = _end
         return full_obs, reward, end, info
@@ -195,7 +195,7 @@ class MinimalPacman(AtariEnvironment):
                 reward -= 1000
             info = _info.copy()
             reward += _reward
-            if _end:
+            if end:
                 break
             proced = self.reshape_frame(obs)
             obs_hist.append(proced)

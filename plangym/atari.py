@@ -110,37 +110,6 @@ class AtariEnvironment(VideogameEnvironment):
         """Return the ``ale`` interface of the underlying :class:`gym.Env`.."""
         return self.gym_env.unwrapped.ale
 
-    def step(
-        self,
-        action: Union[numpy.ndarray, int],
-        state: numpy.ndarray = None,
-        dt: int = 1,
-    ) -> tuple:
-        """
-        Take ``dt`` simulation steps and make the environment evolve in multiples \
-        of ``self.frameskip``.
-
-        The info dictionary will contain a boolean called '`lost_live'` that will
-        be ``True`` if a life was lost during the current step.
-
-        Args:
-            action: Chosen action applied to the environment.
-            state: Set the environment to the given state before stepping it.
-            dt: Consecutive number of times that the action will be applied.
-
-        Returns:
-            if states is None returns ``(observs, rewards, ends, infos)``
-            else returns ``(new_states, observs, rewards, ends, infos)``
-
-        """
-        data = super().step(action=action, state=state, dt=dt)
-        if state is None:
-            observ, reward, terminal, info = data
-            return observ, reward, terminal, info
-        else:
-            state, observ, reward, terminal, info = data
-            return state, observ, reward, terminal, info
-
     def get_lives_from_info(self, info: Dict[str, Any]) -> int:
         """Return the number of lives remaining in the current game."""
         val = super().get_lives_from_info(info)
@@ -151,22 +120,6 @@ class AtariEnvironment(VideogameEnvironment):
         if not self.possible_to_win:
             return False
         return not info["lost_live"] and info["terminal"]
-
-    def reset(self, return_state: bool = True) -> [numpy.ndarray, tuple]:
-        """
-        Reset the environment and return the first ``observation``, or the first \
-        ``(state, obs)`` tuple.
-
-        Args:
-            return_state: If ``True`` return a also the initial state of the env.
-
-        Returns:
-            ``Observation`` of the environment if `return_state` is ``False``. \
-            Otherwise return ``(state, obs)`` after reset.
-
-        """
-        obs = self.gym_env.reset()
-        return (self.get_state(), obs) if return_state else obs
 
     def get_image(self) -> numpy.ndarray:
         """

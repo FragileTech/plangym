@@ -7,16 +7,6 @@ import numpy
 from plangym.core import PlanEnvironment
 
 
-BOX_2D_ENVS = [
-    "LunarLander-v2",
-    "LunarLanderContinuous-v2",
-    "BipedalWalker-v3",
-    "BipedalWalkerHardcore-v3",
-    "CarRacing-v0",
-    "FastLunarLander-v0",
-]
-
-
 class Box2DState:
     """Extract state information from Box2D environments."""
 
