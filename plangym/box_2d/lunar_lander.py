@@ -440,7 +440,7 @@ class LunarLander(PlanEnvironment):
         Returns:
             tuple containing ``(observs, reward, terminal, info)``.
         """
-        obs, reward, _, info = super(LunarLander, self).step_with_dt(action, dt)
-        terminal = self._lunar_lander_end(obs)
+        obs, reward, terminal, info = super(LunarLander, self).step_with_dt(action, dt)
+        terminal = terminal or self._lunar_lander_end(obs)
         info["oob"] = terminal
         return obs, reward, terminal, info
