@@ -7,6 +7,16 @@ import numpy
 from plangym.core import PlanEnvironment
 
 
+BOX_2D_ENVS = [
+    "LunarLander-v2",
+    "LunarLanderContinuous-v2",
+    "BipedalWalker-v3",
+    "BipedalWalkerHardcore-v3",
+    "CarRacing-v0",
+    "FastLunarLander-v0",
+]
+
+
 class Box2DState:
     """Extract state information from Box2D environments."""
 
@@ -113,13 +123,8 @@ class Box2DEnv(PlanEnvironment):
 
         An state must completely describe the Environment at a given moment.
         """
-        state = Box2DState.get_env_state(self.gym_env)  # pickle.dumps(get_env_state(self.gym_env))
-
-        # state_vector = numpy.zeros(200, dtype=object)
-        # state_vector[: len(state)] = tuple(state[:])[:]
-        # if len(state.shape) == 1:
-        #    state = state[numpy.newaxis, :]
-        return numpy.array((state, None), dtype=object)  # "S250000")
+        state = Box2DState.get_env_state(self.gym_env)
+        return numpy.array((state, None), dtype=object)
 
     def set_state(self, state: numpy.ndarray) -> None:
         """
@@ -132,5 +137,4 @@ class Box2DEnv(PlanEnvironment):
             None
 
         """
-        # loaded_state = pickle.loads(state[:])
         Box2DState.set_env_state(self.gym_env, state[0])
