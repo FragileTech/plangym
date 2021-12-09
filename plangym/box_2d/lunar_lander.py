@@ -3,13 +3,7 @@ import copy
 import math
 from typing import Any, Dict, Iterable, Union
 
-from Box2D.b2 import (
-    circleShape,
-    edgeShape,
-    fixtureDef,
-    polygonShape,
-    revoluteJointDef,
-)
+from Box2D.b2 import edgeShape, fixtureDef, polygonShape, revoluteJointDef
 from gym.envs.box2d.lunar_lander import ContactDetector, LunarLander as GymLunarLander
 import numpy as np
 import numpy as numpy
@@ -322,21 +316,10 @@ class FastGymLunarLander(GymLunarLander):
         for obj in self.drawlist:
             for f in obj.fixtures:
                 trans = f.body.transform
-                if type(f.shape) is circleShape:
-                    t = rendering.Transform(translation=trans * f.shape.pos)
-                    self.viewer.draw_circle(f.shape.radius, 20, color=obj.color1).add_attr(t)
-                    self.viewer.draw_circle(
-                        f.shape.radius,
-                        20,
-                        color=obj.color2,
-                        filled=False,
-                        linewidth=2,
-                    ).add_attr(t)
-                else:
-                    path = [trans * v for v in f.shape.vertices]
-                    self.viewer.draw_polygon(path, color=obj.color1)
-                    path.append(path[0])
-                    self.viewer.draw_polyline(path, color=obj.color2, linewidth=2)
+                path = [trans * v for v in f.shape.vertices]
+                self.viewer.draw_polygon(path, color=obj.color1)
+                path.append(path[0])
+                self.viewer.draw_polyline(path, color=obj.color2, linewidth=2)
 
         for x in [self.helipad_x1, self.helipad_x2]:
             flagy1 = self.helipad_y
@@ -447,11 +430,7 @@ class LunarLander(PlanEnvironment):
         return False
 
     def _lunar_lander_end(self, obs):
-        if self.gym_env.game_over or abs(obs[0]) >= 1.0:
-            return True
-        elif not self.gym_env.lander.awake:
-            return True
-        return False
+        return self.gym_env.game_over or abs(obs[0]) >= 1.0 or not self.gym_env.lander.awake
 
     def step_with_dt(self, action: Union[numpy.ndarray, int, float], dt: int = 1) -> tuple:
         """

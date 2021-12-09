@@ -22,23 +22,14 @@ def lunar_lander_random_continuous():
     return LunarLander(autoreset=False, deterministic=False, continuous=True)
 
 
-lunar_lander_envs = [
+environments = [
+    bipedal_walker,
     lunar_lander_det_discrete,
     lunar_lander_random_discrete,
     lunar_lander_random_continuous,
 ]
 
-environments = [bipedal_walker] + lunar_lander_envs
-
 
 @pytest.fixture(params=environments, scope="class")
 def env(request) -> Union[Box2DEnv, LunarLander]:
     return request.param()
-
-
-class TestLunarLander:
-    def test_lunar_lander_death(self):
-        env = lunar_lander_random_discrete()
-        env.reset()
-        for i in range(50):
-            env.step(env.sample_action())

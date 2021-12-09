@@ -6,6 +6,15 @@ import numpy as np
 from plangym.core import PlanEnvironment
 
 
+CLASSIC_CONTROL_ENVS = [
+    "CartPole-v0",
+    "CartPole-v1",
+    "MountainCarContinuous-v0",
+    "Pendulum-v1",
+    "Acrobot-v1",
+]
+
+
 class ClassicControl(PlanEnvironment):
     """Environment for OpenAI gym classic control environments."""
 

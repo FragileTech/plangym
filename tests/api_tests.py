@@ -145,7 +145,7 @@ class TestBaseEnvironment:
         if not env.SINGLETON:
             clone = env.clone()
             if clone.delay_init:
-                clone.init_env()
+                clone.reset()
             del clone
 
             clone = env.clone()
@@ -203,6 +203,11 @@ class TestGymEnvironment(TestBaseEnvironment):
     def test_seed(self, env):
         env.seed()
         env.seed(1)
+
+    def test_terminal(self, env):
+        if env.autoreset:
+            env.reset()
+            env.step_with_dt(env.sample_action(), dt=10000)
 
     @pytest.mark.skipif(bool(os.getenv("SKIP_RENDER", False)), reason="No display in CI.")
     def test_render(self, env, display):
