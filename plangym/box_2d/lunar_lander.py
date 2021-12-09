@@ -5,13 +5,12 @@ from typing import Any, Dict, Iterable, Union
 
 from Box2D.b2 import (
     circleShape,
-    contactListener,
     edgeShape,
     fixtureDef,
     polygonShape,
     revoluteJointDef,
 )
-from gym.envs.box2d.lunar_lander import LunarLander as GymLunarLander
+from gym.envs.box2d.lunar_lander import ContactDetector, LunarLander as GymLunarLander
 import numpy as np
 import numpy as numpy
 
@@ -70,55 +69,53 @@ VIEWPORT_W = 600
 VIEWPORT_H = 400
 
 
-class ContactDetector(contactListener):
-    """Detect contact between the legs of the LunarLander and the ground."""
-
-    def __init__(self, env):
-        """Initialize a :class:`ContactDetector`."""
-        contactListener.__init__(self)
-        self.env = env
-
-    def BeginContact(self, contact):
-        """Run to start calculating the contacts."""
-        if self.env.lander == contact.fixtureA.body or self.env.lander == contact.fixtureB.body:
-            self.env.game_over = True
-        for i in range(2):
-            if self.env.legs[i] in [contact.fixtureA.body, contact.fixtureB.body]:
-                self.env.legs[i].ground_contact = True
-
-    def EndContact(self, contact):
-        """Run to start finish the contacts."""
-        for i in range(2):
-            if self.env.legs[i] in [contact.fixtureA.body, contact.fixtureB.body]:
-                self.env.legs[i].ground_contact = False
-
-
 class FastGymLunarLander(GymLunarLander):
     """Faster implementation of the LunarLander without bells and whistles."""
 
-    def __init__(self, deterministic: bool = False):
+    FPS = FPS
+
+    def __init__(self, deterministic: bool = False, continuous: bool = False):
         """Initialize a :class:`FastGymLunarLander``."""
         self.deterministic = deterministic
+        self.game_over = False
+        self.prev_shaping = None
+        self.helipad_x1 = None
+        self.helipad_x2 = None
+        self.helipad_y = None
+        self.moon = None
+        self.sky_polys = None
+        self.lander = None
+        self.legs = None
+        self.drawlist = None
+        self.viewer = None
+        self.moon = None
+        self.lander = None
+        self.particles = None
+        self.prev_reward = None
+        self.observation_space = None
+        self.action_space = None
+        self.continuous = continuous
         super(FastGymLunarLander, self).__init__()
 
     def reset(self) -> tuple:
         """Reset the environment to its initial state."""
+        # Reset environment data
         self._destroy()
         self.world.contactListener_keepref = ContactDetector(self)
         self.world.contactListener = self.world.contactListener_keepref
         self.game_over = False
         self.prev_shaping = None
-
+        # Define environment bodies
         W = VIEWPORT_W / SCALE
         H = VIEWPORT_H / SCALE
-
-        # terrain
+        # terrain shape
         CHUNKS = 11
         height = (
             np.ones(CHUNKS + 1) * H / 4
             if self.deterministic
             else self.np_random.uniform(0, H / 2, size=(CHUNKS + 1,))
         )
+        # Define helipad
         chunk_x = [W / (CHUNKS - 1) * i for i in range(CHUNKS)]
         self.helipad_x1 = chunk_x[CHUNKS // 2 - 1]
         self.helipad_x2 = chunk_x[CHUNKS // 2 + 1]
@@ -129,7 +126,7 @@ class FastGymLunarLander(GymLunarLander):
         height[CHUNKS // 2 + 1] = self.helipad_y
         height[CHUNKS // 2 + 2] = self.helipad_y
         smooth_y = [0.33 * (height[i - 1] + height[i + 0] + height[i + 1]) for i in range(CHUNKS)]
-
+        # Define moon
         self.moon = self.world.CreateStaticBody(shapes=edgeShape(vertices=[(0, 0), (W, 0)]))
         self.sky_polys = []
         for i in range(CHUNKS - 1):
@@ -137,10 +134,9 @@ class FastGymLunarLander(GymLunarLander):
             p2 = (chunk_x[i + 1], smooth_y[i + 1])
             self.moon.CreateEdgeFixture(vertices=[p1, p2], density=0, friction=0.1)
             self.sky_polys.append([p1, p2, (p2[0], H), (p1[0], H)])
-
         self.moon.color1 = (0.0, 0.0, 0.0)
         self.moon.color2 = (0.0, 0.0, 0.0)
-
+        # Define lander body and initial position
         initial_y = VIEWPORT_H / SCALE
         self.lander = self.world.CreateDynamicBody(
             position=(VIEWPORT_W / SCALE / 2, initial_y),
@@ -156,6 +152,7 @@ class FastGymLunarLander(GymLunarLander):
         )
         self.lander.color1 = (0.5, 0.4, 0.9)
         self.lander.color2 = (0.3, 0.3, 0.5)
+        # Unlike in the original LunarLander, the initial force can be deterministic.
         init_force_x = (
             0.0 if self.deterministic else self.np_random.uniform(-INITIAL_RANDOM, INITIAL_RANDOM)
         )
@@ -163,7 +160,6 @@ class FastGymLunarLander(GymLunarLander):
             0.0 if self.deterministic else self.np_random.uniform(-INITIAL_RANDOM, INITIAL_RANDOM)
         )
         self.lander.ApplyForceToCenter((init_force_x, init_force_y), True)
-
         self.legs = []
         for i in [-1, +1]:
             leg = self.world.CreateDynamicBody(
@@ -191,16 +187,14 @@ class FastGymLunarLander(GymLunarLander):
                 motorSpeed=+0.3 * i,  # low enough not to jump back into the sky
             )
             if i == -1:
-                rjd.lowerAngle = (
-                    +0.9 - 0.5
-                )  # Yes, the most esoteric numbers here, angles legs have freedom to travel within
+                # Yes, the most esoteric numbers here, angles legs have freedom to travel within
+                rjd.lowerAngle = +0.9 - 0.5
                 rjd.upperAngle = +0.9
             else:
                 rjd.lowerAngle = -0.9
                 rjd.upperAngle = -0.9 + 0.5
             leg.joint = self.world.CreateJoint(rjd)
             self.legs.append(leg)
-
         self.drawlist = [self.lander] + self.legs
 
         return self.step(np.array([0, 0]) if self.continuous else 0)[0]
@@ -215,11 +209,18 @@ class FastGymLunarLander(GymLunarLander):
         # Engines
         tip = (math.sin(self.lander.angle), math.cos(self.lander.angle))
         side = (-tip[1], tip[0])
-        dispersion = [0, 0]
-        # if self.deterministic else [self.np_random.uniform(-1.0, +1.0) / SCALE for _ in range(2)]
+        dispersion = (
+            [0, 0]
+            if self.deterministic
+            else [self.np_random.uniform(-1.0, +1.0) / SCALE for _ in range(2)]
+        )
+        # Main engine
         m_power = 0.0
-        if (self.continuous and action[0] > 0.0) or (not self.continuous and action == 2):
-            # Main engine
+        fire_me_continuous = self.continuous and action[0] > 0.0
+        fire_me_discrete = not self.continuous and action == 2
+        fire_main_engine = fire_me_continuous or fire_me_discrete
+        if fire_main_engine:
+
             if self.continuous:
                 m_power = (numpy.clip(action[0], 0.0, 1.0) + 1.0) * 0.5  # 0.5..1.0
                 assert m_power >= 0.5 and m_power <= 1.0
@@ -230,17 +231,18 @@ class FastGymLunarLander(GymLunarLander):
             )  # 4 is move a bit downwards, +-2 for randomness
             oy = -tip[1] * (4 / SCALE + 2 * dispersion[0]) - side[1] * dispersion[1]
             impulse_pos = (self.lander.position[0] + ox, self.lander.position[1] + oy)
+            # We do not create any decorative particle.
             self.lander.ApplyLinearImpulse(
                 (-ox * MAIN_ENGINE_POWER * m_power, -oy * MAIN_ENGINE_POWER * m_power),
                 impulse_pos,
                 True,
             )
-
+        # Orientation engines
         s_power = 0.0
-        if (self.continuous and numpy.abs(action[1]) > 0.5) or (
-            not self.continuous and action in [1, 3]
-        ):
-            # Orientation engines
+        fire_oe_continuous = self.continuous and numpy.abs(action[1]) > 0.5
+        fire_oe_discrete = not self.continuous and action in [1, 3]
+        fire_orientation_engine = fire_oe_continuous or fire_oe_discrete
+        if fire_orientation_engine:
             if self.continuous:
                 direction = numpy.sign(action[1])
                 s_power = numpy.clip(numpy.abs(action[1]), 0.5, 1.0)
@@ -314,22 +316,10 @@ class FastGymLunarLander(GymLunarLander):
             self.viewer = rendering.Viewer(VIEWPORT_W, VIEWPORT_H)
             self.viewer.set_bounds(0, VIEWPORT_W / SCALE, 0, VIEWPORT_H / SCALE)
 
-        for obj in self.particles:
-            obj.ttl -= 0.15
-            obj.color1 = (
-                max(0.2, 0.2 + obj.ttl),
-                max(0.2, 0.5 * obj.ttl),
-                max(0.2, 0.5 * obj.ttl),
-            )
-            obj.color2 = (
-                max(0.2, 0.2 + obj.ttl),
-                max(0.2, 0.5 * obj.ttl),
-                max(0.2, 0.5 * obj.ttl),
-            )
+        for p in self.sky_polys:
+            self.viewer.draw_polygon(p, color=(0, 0, 0))
 
-        self._clean_particles(False)
-
-        for obj in self.particles:
+        for obj in self.drawlist:
             for f in obj.fixtures:
                 trans = f.body.transform
                 if type(f.shape) is circleShape:
@@ -348,7 +338,7 @@ class FastGymLunarLander(GymLunarLander):
                     path.append(path[0])
                     self.viewer.draw_polyline(path, color=obj.color2, linewidth=2)
 
-        for x in []:  # [self.helipad_x1, self.helipad_x2]:
+        for x in [self.helipad_x1, self.helipad_x2]:
             flagy1 = self.helipad_y
             flagy2 = flagy1 + 50 / SCALE
             self.viewer.draw_polyline([(x, flagy1), (x, flagy2)], color=(1, 1, 1))
@@ -376,9 +366,11 @@ class LunarLander(PlanEnvironment):
         wrappers: Iterable[wrap_callable] = None,
         delay_init: bool = False,
         deterministic: bool = False,
+        continuous: bool = False,
     ):
         """Initialize a :class:`LunarLander`."""
-        self.deterministic = deterministic
+        self._deterministic = deterministic
+        self._continuous = continuous
         super(LunarLander, self).__init__(
             name="LunarLander-plangym",
             frameskip=frameskip,
@@ -388,9 +380,23 @@ class LunarLander(PlanEnvironment):
             delay_init=delay_init,
         )
 
+    @property
+    def deterministic(self) -> bool:
+        """Return true if the LunarLander simulation is deterministic."""
+        return self._deterministic
+
+    @property
+    def continuous(self) -> bool:
+        """Return true if the LunarLander agent takes continuous actions as input."""
+        return self._continuous
+
     def init_env(self):
         """Initialize the target :class:`gym.Env` instance."""
-        self._gym_env = FastGymLunarLander(deterministic=self.deterministic)
+        self._gym_env = FastGymLunarLander(
+            deterministic=self.deterministic,
+            continuous=self.continuous,
+        )
+        self._gym_env.reset()
         if self._wrappers is not None:
             self.apply_wrappers(self._wrappers)
         self.action_space = self.gym_env.action_space
