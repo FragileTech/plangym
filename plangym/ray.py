@@ -5,7 +5,6 @@ import numpy as np
 import ray
 
 from plangym.core import BaseEnvironment, VectorizedEnvironment
-from plangym.parallel import batch_step_data
 
 
 @ray.remote
@@ -208,7 +207,7 @@ class RayEnv(VectorizedEnvironment):
 
     def _make_transitions(self, actions, states=None, dt: [np.ndarray, int] = 1):
         no_states = states is None or states[0] is None
-        states_chunks, actions_chunks, dt_chunks = batch_step_data(
+        states_chunks, actions_chunks, dt_chunks = self.batch_step_data(
             actions=actions,
             states=states,
             dt=dt,

@@ -353,7 +353,7 @@ class AtariEnvironment(BaseAtariEnvironment):
                 break
         # This allows to get the original values even when using an episodic life environment
         info["terminal"] = terminal
-        info["lost_life"] = lost_life
+        info["lost_live"] = lost_life
         info["oob"] = oob
         info["win"] = self.get_win_condition(info)
         info["n_steps"] = n_steps
