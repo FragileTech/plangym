@@ -66,7 +66,7 @@ class SonicDiscretizer(gym.ActionWrapper):
             for button in action:
                 arr[buttons.index(button)] = True
             self._actions.append(arr)
-        self.action_space = gym.spaces.Discrete(len(self._actions))
+        self.action_space = spaces.Discrete(len(self._actions))
 
     def action(self, a):  # pylint: disable=W0221
         """Return the corresponding action in the emulator's format."""

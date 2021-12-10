@@ -504,19 +504,19 @@ class ParallelEnvironment(VectorizedEnvironment):
 
     Example::
 
+        >>> from plangym import AtariEnvironment
         >>> env = ParallelEnvironment(env_class=AtariEnvironment,
-        >>>                           name="MsPacman-v0",
-        >>>                           clone_seeds=True,
-        >>>                           autoreset=True,
-        >>>                           blocking=False)
+        ...                           name="MsPacman-v0",
+        ...                           clone_seeds=True,
+        ...                           autoreset=True,
+        ...                           blocking=False)
         >>>
         >>> state, obs = env.reset()
         >>>
         >>> states = [state.copy() for _ in range(10)]
-        >>> actions = [env.action_space.sample() for _ in range(10)]
+        >>> actions = [env.sample_action() for _ in range(10)]
         >>>
-        >>> data =  env.step_batch(states=states,
-        >>>                        actions=actions)
+        >>> data =  env.step_batch(states=states, actions=actions)
         >>> new_states, observs, rewards, ends, infos = data
 
     """

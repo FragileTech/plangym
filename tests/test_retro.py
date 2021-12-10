@@ -3,7 +3,7 @@ from typing import Union
 import pytest
 
 from plangym.parallel import ParallelEnvironment
-from plangym.retro import RetroEnvironment
+from plangym.retro import RetroEnvironment, SonicDiscretizer
 
 
 pytest.importorskip("retro")
@@ -15,7 +15,6 @@ def retro_airstrike():
 
 
 def retro_sonic():
-    from plangym.wrappers.retro_wrappers import SonicDiscretizer
 
     return RetroEnvironment(
         name="SonicTheHedgehog-Genesis",
