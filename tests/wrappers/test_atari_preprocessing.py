@@ -3,9 +3,7 @@ import numpy
 import pytest
 
 from plangym.wrappers import AtariPreprocessing
-
-
-pytest.importorskip("atari_py")
+from tests import SKIP_ATARI_TESTS
 
 
 @pytest.fixture(scope="module")
@@ -13,6 +11,7 @@ def env_fn():
     return lambda: gym.make("PongNoFrameskip-v4")
 
 
+@pytest.mark.skipif(SKIP_ATARI_TESTS, reason="Only run this test when atari_py is installed")
 def test_atari_preprocessing_grayscale(env_fn):
     import cv2
 
@@ -44,6 +43,7 @@ def test_atari_preprocessing_grayscale(env_fn):
     env3.close()
 
 
+@pytest.mark.skipif(SKIP_ATARI_TESTS, reason="Only run this test when atari_py is installed")
 def test_atari_preprocessing_scale(env_fn):
     # arbitrarily chosen number for stepping into env. and ensuring all observations are in the required range
     max_test_steps = 10

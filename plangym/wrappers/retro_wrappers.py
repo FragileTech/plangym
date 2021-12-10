@@ -2,10 +2,10 @@ from collections import deque
 
 import cv2
 import gym
+from gym.wrappers import TimeLimit
 import numpy
 
 from plangym.wrappers.atari_wrappers import ClipRewardEnv, FrameStack, ScaledFloatFrame, WarpFrame
-from plangym.wrappers.time_limit import TimeLimit
 
 
 cv2.ocl.setUseOpenCL(False)

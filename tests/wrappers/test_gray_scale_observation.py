@@ -3,12 +3,13 @@ import numpy as np
 import pytest
 
 from plangym.wrappers import AtariPreprocessing, GrayScaleObservation
+from tests import SKIP_ATARI_TESTS
 
 
-pytest.importorskip("atari_py")
 pytest.importorskip("cv2")
 
 
+@pytest.mark.skipif(SKIP_ATARI_TESTS, reason="Only run this test when atari_py is installed")
 @pytest.mark.parametrize("env_id", ["PongNoFrameskip-v0", "SpaceInvadersNoFrameskip-v0"])
 @pytest.mark.parametrize("keep_dim", [True, False])
 def test_gray_scale_observation(env_id, keep_dim):

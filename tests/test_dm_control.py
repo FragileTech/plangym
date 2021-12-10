@@ -3,6 +3,8 @@ import os
 import numpy
 import pytest
 
+
+pytest.importorskip("dm_control")
 from plangym.dm_control import DMControlEnv
 from tests.api_tests import batch_size, display, TestBaseEnvironment, TestGymEnvironment
 
