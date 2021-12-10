@@ -5,10 +5,10 @@ import os
 import cv2
 import gym
 from gym.spaces import Box
+from gym.wrappers import TimeLimit
 import numpy
 
 from plangym.wrappers.frame_stack import FrameStack
-from plangym.wrappers.time_limit import TimeLimit
 
 
 os.environ.setdefault("PATH", "")

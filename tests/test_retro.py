@@ -4,6 +4,9 @@ import pytest
 
 from plangym.parallel import ParallelEnvironment
 from plangym.retro import RetroEnvironment
+
+
+pytest.importorskip("retro")
 from tests.api_tests import batch_size, display, TestBaseEnvironment, TestGymEnvironment
 
 
@@ -41,3 +44,20 @@ def env(request) -> Union[RetroEnvironment, ParallelEnvironment]:
         env_.init_env()
     yield env_
     env_.close()
+
+
+class TestRetro:
+    def test_init_env(self):
+        env = retro_airstrike()
+        env.reset()
+        env.init_env()
+
+    def test_getattribute(self):
+        env = retro_airstrike()
+        env.em.get_state()
+
+    def test_clone(self):
+        env = RetroEnvironment(name="Airstriker-Genesis", obs_type="ram", delay_init=True)
+        new_env = env.clone()
+        del env
+        new_env.reset()

@@ -1,10 +1,6 @@
-import pytest
-
-
-pytest.importorskip("atari_py")
-
 import gym
 import numpy as np
+import pytest
 
 from plangym.wrappers import FrameStack
 

@@ -1,3 +1,4 @@
+import os
 import warnings
 
 import pytest
@@ -6,6 +7,11 @@ import ray
 from plangym.atari import AtariEnvironment
 from plangym.classic_control import ClassicControl
 from plangym.ray import RayEnv
+
+
+pytest.importorskip("ray")
+if bool(os.getenv("DISABLE_RAY", False)):
+    pytest.skip("Atari not installed, skipping", allow_module_level=True)
 from tests.api_tests import batch_size, display, TestBaseEnvironment, TestGymEnvironment
 
 

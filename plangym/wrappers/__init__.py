@@ -37,6 +37,5 @@ from plangym.wrappers.retro_wrappers import (
     StochasticFrameSkip,
     wrap_deepmind_retro,
 )
-from plangym.wrappers.time_limit import TimeLimit
 from plangym.wrappers.transform_observation import TransformObservation
 from plangym.wrappers.transform_reward import TransformReward
