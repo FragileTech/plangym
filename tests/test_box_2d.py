@@ -2,6 +2,8 @@ from typing import Union
 
 import pytest
 
+
+pytest.importorskip("Box2D")
 from plangym.box_2d import Box2DEnv, LunarLander
 from tests.api_tests import batch_size, display, TestBaseEnvironment, TestGymEnvironment
 

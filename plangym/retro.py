@@ -11,7 +11,7 @@ from plangym.core import VideogameEnvironment, wrap_callable
 try:
     import retro
 
-except ModuleNotFoundError:
+except ImportError:
     print("Please install OpenAI retro")
 
 

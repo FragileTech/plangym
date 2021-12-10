@@ -1,17 +1,18 @@
 import os
 import warnings
 
+import numpy
 import pytest
 import ray
 
 from plangym.atari import AtariEnvironment
 from plangym.classic_control import ClassicControl
-from plangym.ray import RayEnv
+from plangym.ray import RayEnv, RemoteEnv
 
 
 pytest.importorskip("ray")
-if bool(os.getenv("DISABLE_RAY", False)):
-    pytest.skip("Atari not installed, skipping", allow_module_level=True)
+if os.getenv("DISABLE_RAY", False) and str(os.getenv("DISABLE_RAY", False)).lower() != "false":
+    pytest.skip("Ray not installed, skipping", allow_module_level=True)
 from tests.api_tests import batch_size, display, TestBaseEnvironment, TestGymEnvironment
 
 
@@ -42,3 +43,19 @@ def env(request) -> AtariEnvironment:
         ray.init(ignore_reinit_error=True, local_mode=local)
     yield env_call()
     ray.shutdown()
+
+
+def test_remote_actor():
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        ray.init(ignore_reinit_error=True, local_mode=True)
+
+    def create_cartpole():
+        return ClassicControl(name="CartPole-v0")
+
+    env = RemoteEnv.remote(create_cartpole)
+    ray.get(env.init_env.remote())
+    ray.get(env.reset.remote())
+    ray.get(env.step.remote(0))
+    state = ray.get(env.get_state.remote())
+    assert isinstance(state, numpy.ndarray)
