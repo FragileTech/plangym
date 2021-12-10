@@ -22,7 +22,6 @@ from plangym.wrappers.frame_stack import FrameStack, LazyFrames
 from plangym.wrappers.gray_scale_observation import GrayScaleObservation
 from plangym.wrappers.record_episode_statistics import RecordEpisodeStatistics
 from plangym.wrappers.rescale_action import RescaleAction
-from plangym.wrappers.resize_observation import ResizeObservation
 from plangym.wrappers.retro_wrappers import (
     AllowBacktracking,
     AppendTimeout,

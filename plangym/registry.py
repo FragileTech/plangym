@@ -21,8 +21,6 @@ def get_planenv_class(name, domain_name, state):
         return Montezuma
     elif state is not None or name in set(RETRO):
         return RetroEnvironment
-    elif domain_name is not None or any(x[0] in name for x in DM_CONTROL):
-        return DMControlEnv
     elif name in set(CLASSIC_CONTROL):
         return ClassicControl
     elif name in set(BOX_2D):
@@ -31,6 +29,8 @@ def get_planenv_class(name, domain_name, state):
         return Box2DEnv
     elif name in ATARI:
         return AtariEnvironment
+    elif domain_name is not None or any(x[0] in name for x in DM_CONTROL):
+        return DMControlEnv
 
 
 def get_environment_class(

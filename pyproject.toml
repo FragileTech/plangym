@@ -43,9 +43,10 @@ source = ["plangym"]
 [tool.coverage.report]
 exclude_lines =["no cover",
     'raise NotImplementedError',
+    'except ImportError:',
     'if __name__ == "__main__":']
 ignore_errors = true
-omit = ["tests/*"]
+omit = ["tests/*", "setup.py", "import_retro_roms.py"]
 
 # Flakehell config
 [tool.flakehell]

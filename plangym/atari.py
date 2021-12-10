@@ -142,16 +142,19 @@ class AtariEnvironment(VideogameEnvironment):
     def init_gym_env(self) -> gym.Env:
         """Initialize the :class:`gum.Env`` instance that the current clas is wrapping."""
         # Remove any undocumented wrappers
-        gym_env = gym.make(
-            self.name,
-            obs_type=self.obs_type,  # ram | rgb | grayscale
-            frameskip=self.frameskip,  # frame skip
-            mode=self._mode,  # game mode, see Machado et al. 2018
-            difficulty=self.difficulty,  # game difficulty, see Machado et al. 2018
-            repeat_action_probability=self.repeat_action_probability,  # Sticky action probability
-            full_action_space=self.full_action_space,  # Use all actions
-            render_mode=self.render_mode,  # None | human | rgb_array
-        )
+        try:
+            gym_env = gym.make(
+                self.name,
+                obs_type=self.obs_type,  # ram | rgb | grayscale
+                frameskip=self.frameskip,  # frame skip
+                mode=self._mode,  # game mode, see Machado et al. 2018
+                difficulty=self.difficulty,  # game difficulty, see Machado et al. 2018
+                repeat_action_probability=self.repeat_action_probability,  # Sticky action prob
+                full_action_space=self.full_action_space,  # Use all actions
+                render_mode=self.render_mode,  # None | human | rgb_array
+            )
+        except RuntimeError:
+            gym_env = gym.make(self.name)
         remove_time_limit = (
             self.has_time_limit
             and hasattr(gym_env, "_max_episode_steps")
