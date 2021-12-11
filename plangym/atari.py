@@ -297,7 +297,7 @@ class AtariEnvironment(VideogameEnvironment):
 class AtariPyEnvironment(AtariEnvironment):
     """Create an environment to play OpenAI gym Atari Games that uses AtariPy as the emulator."""
 
-    def get_state(self) -> numpy.ndarray:
+    def get_state(self) -> numpy.ndarray:  # pragma: no cover
         """
         Recover the internal state of the simulation.
 
@@ -309,7 +309,7 @@ class AtariPyEnvironment(AtariEnvironment):
         else:
             return self.gym_env.unwrapped.clone_state()
 
-    def set_state(self, state: numpy.ndarray) -> None:
+    def set_state(self, state: numpy.ndarray) -> None:  # pragma: no cover
         """
         Set the internal state of the simulation.
 
@@ -331,7 +331,7 @@ class AtariPyEnvironment(AtariEnvironment):
         action: Union[numpy.ndarray, int],
         state: numpy.ndarray = None,
         dt: int = 1,
-    ) -> tuple:
+    ) -> tuple:  # pragma: no cover
         """
         Take ``dt`` simulation steps and make the environment evolve in multiples \
         of ``self.frameskip``.

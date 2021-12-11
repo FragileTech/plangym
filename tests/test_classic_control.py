@@ -1,5 +1,3 @@
-from itertools import product
-
 from gym.wrappers import TimeLimit
 import pytest
 

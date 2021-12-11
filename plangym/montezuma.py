@@ -174,7 +174,7 @@ class CustomMontezuma:
             old_objects = self.pos.score
             direction_x = np.clip(int((self.pos.x - x) / 50), -1, 1)
             direction_y = np.clip(int((self.pos.y - y) / 50), -1, 1)
-            if direction_x != 0 or direction_y != 0:
+            if direction_x != 0 or direction_y != 0:  # pragma: no cover
                 room_x, room_y = self.get_room_xy(self.pos.room)
                 if room == 15 and room_y + direction_y >= len(PYRAMID):
                     room = 1
@@ -207,9 +207,9 @@ class CustomMontezuma:
             cur_object = []
             old_objects = list(old_objects)
             for _, n_pixels in enumerate(OBJECT_PIXELS):
-                if n_pixels != 40 and self.only_keys:
+                if n_pixels != 40 and self.only_keys:  # pragma: no cover
                     continue
-                if n_pixels in pixel_areas:
+                if n_pixels in pixel_areas:  # pragma: no cover
                     pixel_areas.remove(n_pixels)
                     orig_types = [e[0] for e in old_objects]
                     if n_pixels in orig_types:
