@@ -330,5 +330,6 @@ class RetroEnvironment(VideogameEnvironment):
         """Close the underlying :class:`gym.Env`."""
         if hasattr(self, "_gym_env") and hasattr(self._gym_env, "close"):
             import gc
+
             self._gym_env.close()
             gc.collect()

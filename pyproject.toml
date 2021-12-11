@@ -45,6 +45,7 @@ exclude_lines =["no cover",
     'raise NotImplementedError',
     'except ImportError as e:',
     'except ImportError',
+    'except exception',  # Novideo_mode flag in dm_control
     'if __name__ == "__main__":']
 ignore_errors = true
 omit = ["tests/*", "setup.py", "import_retro_roms.py"]
