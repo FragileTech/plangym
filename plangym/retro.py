@@ -221,13 +221,16 @@ class RetroEnvironment(VideogameEnvironment):
         if self._gym_env is not None:
             self._gym_env.close()
         env = retro.make(self.name, **self.gym_env_kwargs).unwrapped
+        self._gym_env = env
         if self._wrappers is not None:
             self.apply_wrappers(self._wrappers)
-        self._gym_env = env
         if self.obs_type == "ram":
             ram_size = self.get_ram().shape
             self._obs_space = spaces.Box(low=0, high=255, dtype=numpy.uint8, shape=ram_size)
-        self._obs_space = self._obs_space or self.gym_env.observation_space
+        elif self.obs_type == "grayscale":
+            self._gym_env = Rgb2gray(self._gym_env)
+
+        self._obs_space = self._obs_space or self._gym_env.observation_space
 
     def __getattr__(self, item):
         """Forward getattr to self.gym_env."""
@@ -322,3 +325,10 @@ class RetroEnvironment(VideogameEnvironment):
             return obs
         else:
             return self.get_state(), obs
+
+    def close(self):
+        """Close the underlying :class:`gym.Env`."""
+        if hasattr(self, "_gym_env") and hasattr(self._gym_env, "close"):
+            import gc
+            self._gym_env.close()
+            gc.collect()

@@ -235,11 +235,6 @@ class BaseEnvironment(ABC):
 class PlanEnvironment(BaseEnvironment):
     """Base class for implementing OpenAI ``gym`` environments in ``plangym``."""
 
-    action_space = None
-    observation_space = None
-    reward_range = None
-    metadata = None
-
     def __init__(
         self,
         name: str,

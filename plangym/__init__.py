@@ -73,4 +73,5 @@ from plangym.montezuma import Montezuma  # noqa: E402
 from plangym.parallel import ParallelEnvironment  # noqa: E402
 from plangym.ray import RayEnv  # noqa: E402
 from plangym.retro import RetroEnvironment  # noqa: E402
+from plangym.registry import make  # noqa: E402
 from plangym.version import __version__  # noqa: E402

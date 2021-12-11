@@ -22,7 +22,7 @@ class AtariEnvironment(VideogameEnvironment):
 
     Example::
 
-        >>> env = AtariEnvironment(name="ALE/MsPacman-v5", difficulty=2, mode=1)
+        >>> env = plangym.make(name="ALE/MsPacman-v5", difficulty=2, mode=1)
         >>> state, obs = env.reset()
         >>>
         >>> states = [state.copy() for _ in range(10)]

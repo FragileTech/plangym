@@ -49,6 +49,10 @@ test-ray:
 	find -name "*.pyc" -delete
 	pytest tests/test_ray.py -n 1 -s -o log_cli=true -o log_cli_level=info
 
+.PHONY: doctest
+doctest:
+	DISABLE_RAY=True xvfb-run -s "-screen 0 1400x900x24" pytest plangym --doctest-modules -n $n -s -o log_cli=true -o log_cli_level=info
+
 .PHONY: test
 test:
 	xvfb-run -s "-screen 0 1400x900x24" make test-parallel test-ray
