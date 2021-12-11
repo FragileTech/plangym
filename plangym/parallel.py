@@ -177,7 +177,7 @@ class ExternalProcess:
         else:
             return promise
 
-    def step(self, action, state=None, dt: int = None, blocking=True):
+    def step(self, action, state=None, dt: int = 1, blocking=True):
         """
         Step the environment.
 
@@ -211,7 +211,7 @@ class ExternalProcess:
           observation.
 
         """
-        promise = self.call("reset", return_states=return_states)
+        promise = self.call("reset", return_state=return_states)
         if blocking:
             return promise()
         else:
@@ -425,15 +425,10 @@ class BatchEnv:
             observs, rewards, dones, infos = self._make_transitions(actions, states, dt)
         else:
             states, observs, rewards, dones, infos = self._make_transitions(actions, states, dt)
-        try:
-            observ = numpy.stack(observs)
-            reward = numpy.stack(rewards)
-            done = numpy.stack(dones)
-            infos = numpy.stack(infos)
-        except BaseException as e:  # Lets be overconfident for once TODO: remove this.
-            print(e)
-            for obs in observs:
-                print(obs.shape)
+        observ = numpy.stack(observs)
+        reward = numpy.stack(rewards)
+        done = numpy.stack(dones)
+        infos = numpy.stack(infos)
         if no_states:
             return observ, reward, done, infos
         else:
@@ -474,20 +469,17 @@ class BatchEnv:
         """
         if indices is None:
             indices = numpy.arange(len(self._envs))
-        if self._blocking:
-            observs = [self._envs[index].reset(return_states=return_states) for index in indices]
-        else:
-            transitions = [
-                self._envs[index].reset(blocking=False, return_states=return_states)
-                for index in indices
-            ]
-            transitions = [trans() for trans in transitions]
-            states, observs = zip(*transitions)
-
-        observ = numpy.stack(observs)
+        trans = [
+            self._envs[index].reset(return_states=return_states, blocking=self._blocking)
+            for index in indices
+        ]
+        if not self._blocking:
+            trans = [trans() for trans in trans]
         if return_states:
-            return numpy.array(states), observ
-        return observ
+            states, obs = zip(*trans)
+            states, obs = numpy.array(states), numpy.stack(obs)
+            return states, obs
+        return numpy.stack(trans)
 
     def close(self):
         """Send close messages to the external process and join them."""
@@ -615,3 +607,9 @@ class ParallelEnvironment(VectorizedEnvironment):
         """
         state = self.get_state() if state is None else state
         self._batch_env.sync_states(state)
+
+    def close(self) -> None:
+        """Close the environment and the spawned processes."""
+        if hasattr(self._batch_env, "close"):
+            self._batch_env.close()
+        self.gym_env.close()

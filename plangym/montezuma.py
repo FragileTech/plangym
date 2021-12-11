@@ -7,6 +7,7 @@ from gym.envs.registration import registry as gym_registry
 import numpy as np
 
 from plangym.atari import AtariEnvironment
+from plangym.core import wrap_callable
 
 
 # ------------------------------------------------------------------------------
@@ -408,21 +409,43 @@ class Montezuma(AtariEnvironment):
 
     def __init__(
         self,
+        name="PlanMontezuma-v0",
         frameskip: int = 1,
         episodic_live: bool = False,
         autoreset: bool = True,
-        name="PlanMontezuma-v0",
+        delay_init: bool = False,
+        remove_time_limit: bool = True,
+        obs_type: str = "rgb",  # ram | rgb | grayscale
+        mode: int = 0,  # game mode, see Machado et al. 2018
+        difficulty: int = 0,  # game difficulty, see Machado et al. 2018
+        repeat_action_probability: float = 0.0,  # Sticky action probability
+        full_action_space: bool = False,  # Use all actions
+        render_mode: typing.Optional[str] = None,  # None | human | rgb_array
+        possible_to_win: bool = True,
+        wrappers: typing.Iterable[wrap_callable] = None,
+        array_state: bool = True,
         clone_seeds: bool = False,
         **kwargs,
     ):
         """Initialize a :class:`Montezuma`."""
+        self._env_kwargs = kwargs
         super(Montezuma, self).__init__(
             name="MontezumaRevengeDeterministic-v4",
             frameskip=frameskip,
             autoreset=autoreset,
             episodic_live=episodic_live,
             clone_seeds=False,
-            **kwargs,
+            delay_init=delay_init,
+            remove_time_limit=remove_time_limit,
+            obs_type=obs_type,
+            mode=mode,
+            difficulty=difficulty,
+            repeat_action_probability=repeat_action_probability,
+            full_action_space=full_action_space,
+            render_mode=render_mode,
+            possible_to_win=possible_to_win,
+            wrappers=wrappers,
+            array_state=array_state,
         )
 
     def __getattr__(self, item):
@@ -432,11 +455,11 @@ class Montezuma(AtariEnvironment):
     @property
     def obs_shape(self) -> typing.Tuple[int, ...]:
         """Return shape of observations (obj_memory, x_pos, y_pos, room)."""
-        return (100803,)
+        return (210, 160, 3) if self._env_kwargs.get("unprocessed_state") else (100803,)
 
     def init_gym_env(self) -> CustomMontezuma:
         """Initialize the :class:`gum.Env`` instance that the current clas is wrapping."""
-        return CustomMontezuma()
+        return CustomMontezuma(**self._env_kwargs)
 
     def get_state(self) -> np.ndarray:
         """

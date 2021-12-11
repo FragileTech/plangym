@@ -9,8 +9,19 @@ from plangym.dm_control import DMControlEnv
 from tests.api_tests import batch_size, display, TestBaseEnvironment, TestGymEnvironment
 
 
+class DummyTimeLimit:
+    def __init__(self, env, max_episode_steps=None):
+        self._max_episode_steps = max_episode_steps
+        self._elapsed_steps = None
+        self.env = env
+
+    def __getattr__(self, item):
+        return getattr(self.env, item)
+
+
 def walker_run():
-    return DMControlEnv(name="walker-run", frameskip=3)
+    timelimit = [(DummyTimeLimit, {"max_episode_steps": 1000})]
+    return DMControlEnv(name="walker-run", frameskip=3, wrappers=timelimit)
 
 
 def parallel_dm():
