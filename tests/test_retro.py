@@ -3,7 +3,7 @@ from typing import Union
 import pytest
 
 from plangym.parallel import ParallelEnvironment
-from plangym.retro import RetroEnvironment
+from plangym.retro import Downsample, RetroEnvironment, SonicDiscretizer
 
 
 pytest.importorskip("retro")
@@ -11,26 +11,26 @@ from tests.api_tests import batch_size, display, TestBaseEnvironment, TestGymEnv
 
 
 def retro_airstrike():
-    return RetroEnvironment(name="Airstriker-Genesis", obs_type="ram")
+    return RetroEnvironment(name="Airstriker-Genesis", wrappers=[(Downsample, {"ratio": 2})])
 
 
 def retro_sonic():
-    from plangym.wrappers.retro_wrappers import SonicDiscretizer
 
     return RetroEnvironment(
         name="SonicTheHedgehog-Genesis",
         state="GreenHillZone.Act3",
         wrappers=[SonicDiscretizer],
+        obs_type="grayscale",
     )
 
 
-# retro.make("Airstriker-Genesis")
 def parallel_retro():
     return ParallelEnvironment(
         name="Airstriker-Genesis",
         env_class=RetroEnvironment,
         n_workers=2,
-        delay_init=False,
+        obs_type="ram",
+        wrappers=[SonicDiscretizer],
     )
 
 

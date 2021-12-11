@@ -12,7 +12,7 @@ from plangym.ray import RayEnv, RemoteEnv
 
 pytest.importorskip("ray")
 if os.getenv("DISABLE_RAY", False) and str(os.getenv("DISABLE_RAY", False)).lower() != "false":
-    pytest.skip("Ray not installed, skipping", allow_module_level=True)
+    pytest.skip("Ray not installed or disabled", allow_module_level=True)
 from tests.api_tests import batch_size, display, TestBaseEnvironment, TestGymEnvironment
 
 

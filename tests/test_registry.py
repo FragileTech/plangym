@@ -1,3 +1,6 @@
+import os
+import warnings
+
 import pytest
 
 from plangym.classic_control import ClassicControl
@@ -49,7 +52,11 @@ class TestMake:
         if name == "FastLunarLander-v0":
             _test_env_class(name, LunarLander)
             return
-        _test_env_class(name, Box2DEnv)
+        elif name == "CarRacing-v0" and os.getenv("SKIP_RENDER", False):
+            return
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            _test_env_class(name, Box2DEnv)
 
     @pytest.mark.skipif(SKIP_RETRO_TESTS, reason="Retro not installed")
     @pytest.mark.parametrize("name", RETRO[::10])
@@ -58,6 +65,20 @@ class TestMake:
 
         try:
             _test_env_class(name, RetroEnvironment)
+        except FileNotFoundError:
+            pass
+
+    @pytest.mark.skipif(SKIP_RETRO_TESTS, reason="Retro not installed")
+    def test_retro_make_with_state(self):
+        from plangym.retro import RetroEnvironment, SonicDiscretizer
+
+        try:
+            _test_env_class(
+                "SonicTheHedgehog-Genesis",
+                RetroEnvironment,
+                state="GreenHillZone.Act3",
+                wrappers=[SonicDiscretizer],
+            )
         except FileNotFoundError:
             pass
 
@@ -80,3 +101,20 @@ class TestMake:
             _test_env_class(domain_name, DMControlEnv, task_name=task_name)
         else:
             _test_env_class(domain_name, DMControlEnv)
+
+    @pytest.mark.skipif(SKIP_DM_CONTROL_TESTS, reason="dm_control not installed")
+    @pytest.mark.parametrize("name", DM_CONTROL)
+    def test_dmcontrol_domain_name_make(self, name):
+        from plangym.dm_control import DMControlEnv
+
+        domain_name, task_name = name
+        if task_name is not None:
+            _test_env_class(
+                name=None, domain_name=domain_name, cls=DMControlEnv, task_name=task_name
+            )
+        else:
+            _test_env_class(name=None, domain_name=domain_name, cls=DMControlEnv)
+
+    def test_invalid_name(self):
+        with pytest.raises(ValueError):
+            make(name="Miaudb")

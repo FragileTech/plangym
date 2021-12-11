@@ -2,7 +2,12 @@
 from typing import List
 
 import numpy as np
-import ray
+
+
+try:
+    import ray
+except ImportError:
+    pass
 
 from plangym.core import BaseEnvironment, VectorizedEnvironment
 
@@ -143,6 +148,8 @@ class RayEnv(VectorizedEnvironment):
 
     def init_env(self):
         """Run environment initialization and create the subprocesses for stepping in parallel."""
+        import ray
+
         env_callable = self.create_env_callable(autoreset=True, delay_init=False)
         workers = [RemoteEnv.remote(env_callable=env_callable) for _ in range(self.n_workers)]
         ray.get([w.init_env.remote() for w in workers])

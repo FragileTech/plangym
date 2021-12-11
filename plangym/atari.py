@@ -22,8 +22,7 @@ class AtariEnvironment(VideogameEnvironment):
 
     Example::
 
-        >>> env = AtariEnvironment(name="MsPacman-v0",
-        >>>                        clone_seeds=True, autoreset=True)
+        >>> env = plangym.make(name="ALE/MsPacman-v5", difficulty=2, mode=1)
         >>> state, obs = env.reset()
         >>>
         >>> states = [state.copy() for _ in range(10)]
@@ -84,6 +83,15 @@ class AtariEnvironment(VideogameEnvironment):
             clone_seeds: Clone the random seed of the ALE emulator when reading/setting \
                         the state. False makes the environment stochastic.
 
+        Example::
+
+            >>> env = AtariEnvironment(name="ALE/MsPacman-v5", difficulty=2, mode=1)
+            >>> type(env.gym_env)
+            <class 'gym.envs.atari.environment.AtariEnv'>
+            >>> state, obs = env.reset()
+            >>> type(state)
+            <class 'numpy.ndarray'>
+
         """
         self._gym_env = None
         self.clone_seeds = clone_seeds
@@ -107,7 +115,17 @@ class AtariEnvironment(VideogameEnvironment):
 
     @property
     def ale(self):
-        """Return the ``ale`` interface of the underlying :class:`gym.Env`.."""
+        """
+        Return the ``ale`` interface of the underlying :class:`gym.Env`.
+
+        Example::
+
+            >>> env = AtariEnvironment(name="ALE/MsPacman-v5", obs_type="ram")
+            >>> type(env.ale)
+            <class 'ale_py._ale_py.ALEInterface'>
+
+
+        """
         return self.gym_env.unwrapped.ale
 
     def get_lives_from_info(self, info: Dict[str, Any]) -> int:
@@ -126,7 +144,15 @@ class AtariEnvironment(VideogameEnvironment):
         Return a numpy array containing the rendered view of the environment.
 
         Returns a three-dimensional array interpreted as an RGB image with
-         channels (Height, Width, RGB).
+         channels (Height, Width, RGB). Ignores wrappers as it loads the
+         screen directly from the emulator.
+
+        Example::
+
+            >>> env = AtariEnvironment(name="ALE/MsPacman-v5", obs_type="ram")
+            >>> img = env.get_image()
+            >>> img.shape
+            (210, 160, 3)
         """
         return self.gym_env.ale.getScreenRGB()
 
@@ -136,6 +162,13 @@ class AtariEnvironment(VideogameEnvironment):
 
         Returns a three-dimensional array interpreted as an RGB image with
          channels (Height, Width, RGB).
+
+         Example::
+
+            >>> env = AtariEnvironment(name="ALE/MsPacman-v5", obs_type="grayscale")
+            >>> ram = env.get_ram()
+            >>> ram.shape, ram.dtype
+            ((128,), dtype('uint8'))
         """
         return self.gym_env.ale.getRAM()
 
@@ -175,6 +208,16 @@ class AtariEnvironment(VideogameEnvironment):
 
         If clone seed is False the environment will be stochastic.
         Cloning the full state ensures the environment is deterministic.
+
+        Example::
+            >>> env = AtariEnvironment(name="Qbert-v0")
+            >>> env.get_state()
+            array([128,   4, 149, ..., 148,  98,  46], dtype=uint8)
+
+            >>> env = AtariEnvironment(name="Qbert-v0", array_state=False)
+            >>> env.get_state() #doctest: +ELLIPSIS
+            <ale_py._ale_py.ALEState object at 0x...>
+
         """
         state = self.gym_env.unwrapped.clone_state(include_rng=self.clone_seeds)
         if self.STATE_IS_ARRAY:
@@ -191,6 +234,14 @@ class AtariEnvironment(VideogameEnvironment):
         Returns:
             None
 
+        Example::
+            >>> env = AtariEnvironment(name="Qbert-v0")
+            >>> state, obs = env.reset()
+            >>> new_state, obs, reward, end, info = env.step(env.sample_action(), state=state)
+            >>> assert not (state == new_state).all()
+            >>> env.set_state(state)
+            >>> (state == env.get_state()).all()
+            True
         """
         if self.STATE_IS_ARRAY:
             state = pickle.loads(state.tobytes())
@@ -209,6 +260,12 @@ class AtariEnvironment(VideogameEnvironment):
         Returns:
             if state is None returns ``(observs, reward, terminal, info)``
             else returns ``(new_state, observs, reward, terminal, info)``
+
+        Example::
+            >>> env = AtariEnvironment(name="Pong-v0")
+            >>> obs = env.reset(return_state=False)
+            >>> obs, reward, end, info = env.step_with_dt(env.sample_action(), dt=7)
+            >>> assert info["n_steps"] == 7
 
         """
         reward = 0

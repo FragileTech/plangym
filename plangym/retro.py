@@ -1,18 +1,17 @@
 """Implement the ``plangym`` API for retro environments."""
 from typing import Any, Dict, Iterable, Optional, Tuple, Union
 
+import cv2
+import gym
 from gym import spaces
 import numpy
+import numpy as np
 from PIL import Image
 
 from plangym.core import VideogameEnvironment, wrap_callable
 
 
-try:
-    import retro
-
-except ImportError:
-    print("Please install OpenAI retro")
+cv2.ocl.setUseOpenCL(False)
 
 
 def resize_frame(
@@ -37,6 +36,74 @@ def resize_frame(
     frame = Image.fromarray(frame)
     frame = frame.convert(mode).resize(size=(width, height))
     return numpy.array(frame)
+
+
+class SonicDiscretizer(gym.ActionWrapper):
+    """Wrap a gym-retro environment and make it use discrete actions for the Sonic game."""
+
+    def __init__(self, env):
+        """Initialize a :class`SonicDiscretizer`."""
+        super(SonicDiscretizer, self).__init__(env)
+        buttons = ["B", "A", "MODE", "START", "UP", "DOWN", "LEFT", "RIGHT", "C", "Y", "X", "Z"]
+        actions = [
+            ["LEFT"],
+            ["RIGHT"],
+            ["LEFT", "DOWN"],
+            ["RIGHT", "DOWN"],
+            ["DOWN"],
+            ["DOWN", "B"],
+            ["B"],
+        ]
+        self._actions = []
+        for action in actions:
+            arr = numpy.array([False] * 12)
+            for button in action:
+                arr[buttons.index(button)] = True
+            self._actions.append(arr)
+        self.action_space = spaces.Discrete(len(self._actions))
+
+    def action(self, a):  # pylint: disable=W0221
+        """Return the corresponding action in the emulator's format."""
+        return self._actions[a].copy()
+
+
+class Downsample(gym.ObservationWrapper):
+    """Downsample observation by a factor of ratio."""
+
+    def __init__(self, env: gym.Env, ratio: Union[int, float]):
+        """Downsample images by a factor of ratio."""
+        gym.ObservationWrapper.__init__(self, env)
+        (oldh, oldw, oldc) = env.observation_space.shape
+        newshape = (oldh // ratio, oldw // ratio, oldc)
+        self.observation_space = gym.spaces.Box(low=0, high=255, shape=newshape, dtype=numpy.uint8)
+
+    def observation(self, frame: np.ndarray) -> np.ndarray:
+        """Return the downsampled observation."""
+        height, width, _ = self.observation_space.shape
+        frame = cv2.resize(frame, (width, height), interpolation=cv2.INTER_AREA)
+        if frame.ndim == 2:
+            frame = frame[:, :, None]
+        return frame
+
+
+class Rgb2gray(gym.ObservationWrapper):
+    """Transform RGB images to greyscale."""
+
+    def __init__(self, env):
+        """Transform RGB images to greyscale."""
+        gym.ObservationWrapper.__init__(self, env)
+        (oldh, oldw, _oldc) = env.observation_space.shape
+        self.observation_space = gym.spaces.Box(
+            low=0,
+            high=255,
+            shape=(oldh, oldw, 1),
+            dtype=numpy.uint8,
+        )
+
+    def observation(self, frame: np.ndarray) -> np.ndarray:
+        """Return observation as a greyscale image."""
+        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
+        return frame[:, :, None]
 
 
 class RetroEnvironment(VideogameEnvironment):
@@ -149,16 +216,21 @@ class RetroEnvironment(VideogameEnvironment):
 
     def init_env(self):
         """Initialize the internal retro environment and its class attributes."""
+        import retro
+
         if self._gym_env is not None:
             self._gym_env.close()
         env = retro.make(self.name, **self.gym_env_kwargs).unwrapped
+        self._gym_env = env
         if self._wrappers is not None:
             self.apply_wrappers(self._wrappers)
-        self._gym_env = env
         if self.obs_type == "ram":
             ram_size = self.get_ram().shape
             self._obs_space = spaces.Box(low=0, high=255, dtype=numpy.uint8, shape=ram_size)
-        self._obs_space = self._obs_space or self.gym_env.observation_space
+        elif self.obs_type == "grayscale":
+            self._gym_env = Rgb2gray(self._gym_env)
+
+        self._obs_space = self._obs_space or self._gym_env.observation_space
 
     def __getattr__(self, item):
         """Forward getattr to self.gym_env."""
@@ -253,3 +325,11 @@ class RetroEnvironment(VideogameEnvironment):
             return obs
         else:
             return self.get_state(), obs
+
+    def close(self):
+        """Close the underlying :class:`gym.Env`."""
+        if hasattr(self, "_gym_env") and hasattr(self._gym_env, "close"):
+            import gc
+
+            self._gym_env.close()
+            gc.collect()

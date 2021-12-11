@@ -22,13 +22,12 @@ class MinimalPong(AtariEnvironment):
         """Initialize a :class:`MinimalPong`."""
         name = "Pong-v4" if name == "MinimalPong-v0" else name
         super(MinimalPong, self).__init__(name=name, *args, **kwargs)
-        self._observation_space = spaces.Box(low=0, high=1, dtype=np.float32, shape=(80, 80, 2))
+        if "ram" not in name:
+            shape = (80, 80, 2)
+            self._observation_space = spaces.Box(low=0, high=1, dtype=np.float32, shape=shape)
+        else:
+            self._observation_space = spaces.Box(low=0, high=255, dtype=np.uint8, shape=(128,))
         self._action_space = spaces.Discrete(2)
-
-    @property
-    def obs_shape(self) -> Tuple[int, ...]:
-        """Tuple containing the shape of the observations returned by the Environment."""
-        return 80, 80, 2
 
     @property
     def action_space(self) -> spaces.Space:
@@ -54,22 +53,21 @@ class MinimalPong(AtariEnvironment):
         obs[obs != 0] = 1  # Everything else (paddles, ball) just set to 1
         return obs.astype(np.float32)
 
-    def step(self, action: np.ndarray, state: np.ndarray = None, dt: int = None) -> tuple:
+    def step_with_dt(self, action: np.ndarray, state: np.ndarray = None, dt: int = 2) -> tuple:
         """Step the environment."""
-        if state is not None:
-            self.set_state(state)
         final_obs = np.zeros((80, 80, 2))
         action = 2 if action == 0 else 3
         reward = 0
         end, _end = False, False
         info = {"lives": -1}
-        for i in range(2):
+        for i in range(dt):
             obs, _reward, _end, _info = self.gym_env.step(action)
             if "ram" not in self.name:
-                cur_x = self.process_obs(obs)
-                final_obs[:, :, i] = cur_x.copy()
+                if i > dt - 2:
+                    cur_x = self.process_obs(obs)
+                    final_obs[:, :, dt - i] = cur_x.copy()
             else:
-                final_obs = obs
+                final_obs = self.get_ram()
             _info["lives"] = _info.get("ale.lives", -1)
             end = _end or end or info["lives"] > _info["lives"]
             info = _info.copy()
@@ -77,14 +75,7 @@ class MinimalPong(AtariEnvironment):
             if end:
                 break
         info["terminal"] = end
-        if state is not None:
-            new_state = self.get_state()
-            data = new_state, final_obs, reward, end, info
-        else:
-            data = final_obs, reward, end, info
-        if end:
-            self.gym_env.reset()
-        return data
+        return final_obs, reward, end, info
 
     def reset(self, return_state: bool = True):
         """Reset the environment."""
@@ -93,7 +84,7 @@ class MinimalPong(AtariEnvironment):
             proc_obs = np.zeros((80, 80, 2))
             proc_obs[:, :, 0] = self.process_obs(obs)
         else:
-            proc_obs = obs
+            proc_obs = self.get_ram()
         if not return_state:
             return proc_obs
         else:
@@ -189,16 +180,11 @@ class MinimalPacman(AtariEnvironment):
         end = False
         info = {"lives": -1}
         for _ in range(3):
-
             obs, _reward, _end, _info = self.gym_env.step(0)
             _info["lives"] = _info.get("ale.lives", -1)
             end = _end or end or info["lives"] > _info["lives"]
-            if end:
-                reward -= 1000
             info = _info.copy()
             reward += _reward
-            if end:
-                break
             proced = self.reshape_frame(obs)
             obs_hist.append(proced)
 

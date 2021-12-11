@@ -3,14 +3,20 @@ import copy
 import math
 from typing import Any, Dict, Iterable, Union
 
-from Box2D.b2 import edgeShape, fixtureDef, polygonShape, revoluteJointDef
-from gym.envs.box2d.lunar_lander import ContactDetector, LunarLander as GymLunarLander
 import numpy as np
 import numpy as numpy
 
 from plangym.box_2d.env import Box2DState
 from plangym.core import PlanEnvironment, wrap_callable
 
+
+try:
+    from Box2D.b2 import edgeShape, fixtureDef, polygonShape, revoluteJointDef
+    from gym.envs.box2d.lunar_lander import ContactDetector, LunarLander as GymLunarLander
+
+    import_error = None
+except ImportError as e:
+    import_error = e
 
 # Rocket trajectory optimization is a classic topic in Optimal Control.
 #
@@ -375,6 +381,8 @@ class LunarLander(PlanEnvironment):
 
     def init_env(self):
         """Initialize the target :class:`gym.Env` instance."""
+        if import_error is not None:
+            raise import_error
         self._gym_env = FastGymLunarLander(
             deterministic=self.deterministic,
             continuous=self.continuous,

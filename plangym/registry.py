@@ -31,6 +31,7 @@ def get_planenv_class(name, domain_name, state):
         return AtariEnvironment
     elif domain_name is not None or any(x[0] in name for x in DM_CONTROL):
         return DMControlEnv
+    raise ValueError(f"Environment {name} is not supported.")
 
 
 def get_environment_class(

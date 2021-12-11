@@ -7,7 +7,6 @@ from gym.envs.registration import registry as gym_registry
 import numpy as np
 
 from plangym.atari import AtariEnvironment
-from plangym.retro import resize_frame
 
 
 # ------------------------------------------------------------------------------
@@ -62,21 +61,6 @@ class MontezumaPosLevel:
     def __repr__(self):
         """Print the attributes of the current instance."""
         return f"Level={self.level} Room={self.room} Objects={self.score} x={self.x} y={self.y}"
-
-
-def process_observation(obs):
-    """Resize and normalize the provided observation."""
-    return (
-        (
-            resize_frame(
-                obs,
-                height=CustomMontezuma.TARGET_SHAPE[0],
-                width=CustomMontezuma.TARGET_SHAPE[1],
-            )
-            / 255.0
-        )
-        * CustomMontezuma.MAX_PIX_VALUE
-    ).astype(np.uint8)
 
 
 PYRAMID = [

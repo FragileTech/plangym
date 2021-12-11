@@ -153,7 +153,7 @@ class TestBaseEnvironment:
                 clone.init_env()
             clone.close()
 
-    @pytest.mark.skipif(bool(os.getenv("SKIP_RENDER", False)), reason="No display in CI.")
+    @pytest.mark.skipif(os.getenv("SKIP_RENDER", False), reason="No display in CI.")
     def test_get_image(self, env):
         img = env.get_image()
         if img is not None:
@@ -209,7 +209,7 @@ class TestGymEnvironment(TestBaseEnvironment):
             env.reset()
             env.step_with_dt(env.sample_action(), dt=1000)
 
-    @pytest.mark.skipif(bool(os.getenv("SKIP_RENDER", False)), reason="No display in CI.")
+    @pytest.mark.skipif(os.getenv("SKIP_RENDER", False), reason="No display in CI.")
     def test_render(self, env, display):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
