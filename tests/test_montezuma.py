@@ -1,6 +1,6 @@
 import pytest
 
-from plangym.montezuma import Montezuma, MontezumaPosLevel
+from plangym.montezuma import CustomMontezuma, Montezuma, MontezumaPosLevel
 from plangym.parallel import ParallelEnvironment
 from tests import SKIP_ATARI_TESTS
 
@@ -14,11 +14,15 @@ def montezuma():
     return Montezuma(clone_seeds=True, autoreset=True)
 
 
+def montezuma_unproc():
+    return Montezuma(unprocessed_state=True, autoreset=True)
+
+
 def parallel_montezuma():
     return ParallelEnvironment(env_class=Montezuma, frameskip=5, name="")
 
 
-environments = [montezuma, parallel_montezuma]
+environments = [montezuma, parallel_montezuma, montezuma_unproc]
 
 
 @pytest.fixture(params=environments, scope="class")
@@ -36,7 +40,7 @@ class TestMontezumaPosLevel:
         assert isinstance(hash(pos_level), int)
 
     def test_compate(self, pos_level):
-        assert pos_level == MontezumaPosLevel(1, 100, 2, 30, 16)
+        assert pos_level.__eq__(MontezumaPosLevel(*pos_level.tuple))
 
     def test_get_state(self, pos_level):
         assert pos_level.__getstate__() == pos_level.tuple
@@ -48,3 +52,39 @@ class TestMontezumaPosLevel:
 
     def test_repr(self, pos_level):
         assert isinstance(pos_level.__repr__(), str)
+
+
+class TestCustomMontezuma:
+    def test_make_pos(self, env):
+        assert isinstance(env.gym_env.make_pos(1000, env.gym_env.pos), MontezumaPosLevel)
+
+    def test_get_room(self):
+        env = CustomMontezuma()
+        env.get_room_xy(3)
+        env.get_room_from_xy(0, 3)
+        assert env.get_room_out_of_bounds(99, 99)
+        assert not env.get_room_out_of_bounds(0, 0)
+
+    def test_pos_from_unproc_state(self):
+        env = CustomMontezuma(unprocessed_state=True)
+        obs = env.reset()
+        for i in range(20):
+            obs, *_ = env.step(0)
+        facepix = env.get_face_pixels(obs)
+        pos = env.pos_from_unprocessed_state(face_pixels=facepix, unprocessed_state=obs)
+        assert isinstance(pos, MontezumaPosLevel)
+
+    def test_get_objects_from_pixel(self):
+        env = CustomMontezuma(unprocessed_state=True)
+        obs = env.reset()
+        for i in range(20):
+            obs, *_ = env.step(0)
+        ob = env.get_objects_from_pixels(room=0, unprocessed_state=obs, old_objects=[])
+        assert isinstance(ob, int)
+
+        env = CustomMontezuma(unprocessed_state=True, objects_remember_rooms=True)
+        obs = env.reset()
+        for i in range(20):
+            obs, *_ = env.step(0)
+        tup = env.get_objects_from_pixels(room=0, unprocessed_state=obs, old_objects=[])
+        assert isinstance(tup, tuple)

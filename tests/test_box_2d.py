@@ -1,5 +1,6 @@
 from typing import Union
 
+from gym.wrappers import TimeLimit
 import pytest
 
 
@@ -9,7 +10,8 @@ from tests.api_tests import batch_size, display, TestBaseEnvironment, TestGymEnv
 
 
 def bipedal_walker():
-    return Box2DEnv(name="BipedalWalker-v3", autoreset=True)
+    timelimit = [(TimeLimit, {"max_episode_steps": 1000})]
+    return Box2DEnv(name="BipedalWalker-v3", autoreset=True, wrappers=timelimit)
 
 
 def lunar_lander_det_discrete():
@@ -21,7 +23,11 @@ def lunar_lander_random_discrete():
 
 
 def lunar_lander_random_continuous():
-    return LunarLander(autoreset=False, deterministic=False, continuous=True)
+    return LunarLander(
+        autoreset=False,
+        deterministic=False,
+        continuous=True,
+    )
 
 
 environments = [

@@ -201,7 +201,7 @@ class BaseEnvironment(ABC):
         """
         Recover the internal state of the simulation.
 
-        An state must completely describe the Environment at a given moment.
+        A state must completely describe the Environment at a given moment.
         """
         raise NotImplementedError()
 

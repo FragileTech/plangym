@@ -306,6 +306,7 @@ class FastGymLunarLander(GymLunarLander):
             done = True
             reward = +100
         self.prev_reward = reward
+        self.game_over = done or self.game_over
         return numpy.array(state, dtype=numpy.float32), reward, done, {}
 
     def render(self, mode="human"):

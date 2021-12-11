@@ -1,5 +1,6 @@
 from itertools import product
 
+from gym.wrappers import TimeLimit
 import pytest
 
 from plangym.classic_control import ClassicControl
@@ -18,4 +19,5 @@ environments = [
 @pytest.fixture(params=environments, scope="class")
 def env(request) -> ClassicControl:
     name = request.param
-    return ClassicControl(name=name, delay_init=name == "CartPole-v0")
+    timelimit = [(TimeLimit, {"max_episode_steps": 1000})]
+    return ClassicControl(name=name, delay_init=name == "CartPole-v0", wrappers=timelimit)

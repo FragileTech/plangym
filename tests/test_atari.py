@@ -1,3 +1,4 @@
+from gym.wrappers import TimeLimit
 import numpy
 import numpy as np
 import pytest
@@ -20,8 +21,12 @@ def qbert_ram():
 
 
 def pong_obs_ram():
+    timelimit = [(TimeLimit, {"max_episode_steps": 1000})]
     return AtariEnvironment(
-        name="PongDeterministic-v4", remove_time_limit=False, possible_to_win=True
+        name="PongDeterministic-v4",
+        remove_time_limit=True,
+        possible_to_win=True,
+        wrappers=timelimit,
     )
 
 
