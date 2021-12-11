@@ -600,12 +600,12 @@ class VectorizedEnvironment(BaseEnvironment, ABC):
     Base class that defines the API for working with vectorized environments.
 
     A vectorized environment allows to step several copies of the environment in parallel
-     when calling ``step_batch``.
+    when calling ``step_batch``.
 
     It creates a local copy of the environment that is the target of all the other
-     methods of :class:`BaseEnvironment`. In practise, a :class:`VectorizedEnvironment`
-     acts as a wrapper of an environment initialized with the provided parameters when calling
-     __init__.
+    methods of :class:`BaseEnvironment`. In practise, a :class:`VectorizedEnvironment`
+    acts as a wrapper of an environment initialized with the provided parameters when calling
+    __init__.
 
     """
 
@@ -756,8 +756,8 @@ class VectorizedEnvironment(BaseEnvironment, ABC):
             dt: Consecutive number of times to apply the given action.
 
         Returns:
-            if states is None returns ``(observs, rewards, ends, infos) ``else \
-            ``(new_states, observs, rewards, ends, infos)``.
+            if states is None returns `(observs, rewards, ends, infos) `else \
+            `(new_states, observs, rewards, ends, infos)`.
 
         """
         return self.plangym_env.step(action=action, state=state, dt=dt)
@@ -771,7 +771,7 @@ class VectorizedEnvironment(BaseEnvironment, ABC):
             return_state: If true return a also the initial state of the env.
 
         Returns:
-            Observation of the environment if `return_state` is False. Otherwise
+            Observation of the environment if `return_state` is False. Otherwise,
             return (state, obs) after reset.
 
         """

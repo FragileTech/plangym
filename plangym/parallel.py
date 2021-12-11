@@ -232,11 +232,11 @@ class ExternalProcess:
         message, payload = self._conn.recv()
         # Re-raise exceptions in the main process.
         if message == self._EXCEPTION:
-            stacktrace = payload
-            raise Exception(stacktrace)
+            stacktrace = payload  # pragma: no cover
+            raise Exception(stacktrace)  # pragma: no cover
         if message == self._RESULT:
             return payload
-        raise KeyError("Received message of unexpected type {}".format(message))
+        raise KeyError("Received unexpected message {}".format(message))  # pragma: no cover
 
     def _worker(self, constructor, conn):
         """
@@ -273,9 +273,11 @@ class ExternalProcess:
                     continue
                 if message == self._CLOSE:
                     assert payload is None
-                    break
-                raise KeyError("Received message of unknown type {}".format(message))
-        except Exception:  # pylint: disable=broad-except
+                    break  # pragma: no cover
+                raise KeyError(
+                    "Received message of unknown type {}".format(message)
+                )  # pragma: no cover
+        except Exception:  # pragma: no cover # pylint: disable=broad-except
             import logging
 
             stacktrace = "".join(traceback.format_exception(*sys.exc_info()))
