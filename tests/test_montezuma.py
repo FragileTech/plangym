@@ -11,7 +11,7 @@ from tests.api_tests import batch_size, display, TestBaseEnvironment, TestGymEnv
 
 
 def montezuma():
-    return Montezuma(clone_seeds=True, autoreset=True)
+    return Montezuma(clone_seeds=True, autoreset=True, score_objects=True)
 
 
 def montezuma_unproc():
@@ -19,7 +19,9 @@ def montezuma_unproc():
 
 
 def parallel_montezuma():
-    return ParallelEnvironment(env_class=Montezuma, frameskip=5, name="")
+    return ParallelEnvironment(
+        env_class=Montezuma, frameskip=5, name="", score_objects=True, objects_from_pixels=True
+    )
 
 
 environments = [montezuma, parallel_montezuma, montezuma_unproc]
@@ -41,6 +43,7 @@ class TestMontezumaPosLevel:
 
     def test_compate(self, pos_level):
         assert pos_level.__eq__(MontezumaPosLevel(*pos_level.tuple))
+        assert not pos_level == 6
 
     def test_get_state(self, pos_level):
         assert pos_level.__getstate__() == pos_level.tuple

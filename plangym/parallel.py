@@ -275,7 +275,7 @@ class ExternalProcess:
                     assert payload is None
                     break  # pragma: no cover
                 raise KeyError(
-                    "Received message of unknown type {}".format(message)
+                    "Received message of unknown type {}".format(message),
                 )  # pragma: no cover
         except Exception:  # pragma: no cover # pylint: disable=broad-except
             import logging
