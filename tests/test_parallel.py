@@ -7,7 +7,7 @@ from tests.api_tests import batch_size, display, TestBaseEnvironment, TestGymEnv
 
 
 def parallel_cartpole():
-    return ParallelEnvironment(env_class=ClassicControl, name="CartPole-v0")
+    return ParallelEnvironment(env_class=ClassicControl, name="CartPole-v0", blocking=True)
 
 
 def parallel_pacman():

@@ -13,12 +13,6 @@ from plangym.core import VideogameEnvironment, wrap_callable
 
 cv2.ocl.setUseOpenCL(False)
 
-try:
-    import retro
-
-except ImportError:
-    print("Please install OpenAI retro")
-
 
 def resize_frame(
     frame: numpy.ndarray,
@@ -222,6 +216,8 @@ class RetroEnvironment(VideogameEnvironment):
 
     def init_env(self):
         """Initialize the internal retro environment and its class attributes."""
+        import retro
+
         if self._gym_env is not None:
             self._gym_env.close()
         env = retro.make(self.name, **self.gym_env_kwargs).unwrapped

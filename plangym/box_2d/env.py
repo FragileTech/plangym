@@ -1,7 +1,6 @@
 """Implement the ``plangym`` API for Box2D environments."""
 import copy
 
-from Box2D.Box2D import b2Transform, b2Vec2
 import numpy
 
 from plangym.core import PlanEnvironment
@@ -41,6 +40,8 @@ class Box2DState:
     @staticmethod
     def serialize_body_attribute(value):
         """Copy one body attribute."""
+        from Box2D.Box2D import b2Transform, b2Vec2
+
         if isinstance(value, b2Vec2):
             return tuple([*value.copy()])
         elif isinstance(value, b2Transform):
@@ -59,6 +60,8 @@ class Box2DState:
     @staticmethod
     def set_value_to_body(body, name, value):
         """Set the target value to a body attribute."""
+        from Box2D.Box2D import b2Transform, b2Vec2
+
         body_object = getattr(body, name)
         if isinstance(body_object, b2Vec2):
             return body_object.Set(*value)

@@ -92,7 +92,6 @@ class AtariEnvironment(VideogameEnvironment):
             >>> type(state)
             <class 'numpy.ndarray'>
 
-
         """
         self._gym_env = None
         self.clone_seeds = clone_seeds
