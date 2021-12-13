@@ -142,7 +142,7 @@ class BaseEnvironment(ABC):
         no_states = states is None or states[0] is None
         states = [None] * len(actions) if no_states else states
         data = [self.step(action, state, dt=dt) for action, state, dt in zip(actions, states, dt)]
-        return tuple(zip(*data))
+        return tuple(list(x) for x in zip(*data))
 
     def init_env(self) -> None:
         """
@@ -465,7 +465,7 @@ class PlanEnvironment(BaseEnvironment):
 
 
 class VideogameEnvironment(PlanEnvironment):
-    """Common interface for working with Atari Environments."""
+    """Common interface for working with video games that run using an emulator."""
 
     def __init__(
         self,
@@ -485,30 +485,30 @@ class VideogameEnvironment(PlanEnvironment):
         wrappers: Iterable[wrap_callable] = None,
     ):
         """
-        Initialize a :class:`AtariEnvironment`.
+        Initialize a :class:`VideogameEnvironment`.
 
         Args:
             name: Name of the environment. Follows standard gym syntax conventions.
-            frameskip: Number of times an action will be applied for each step \
+            frameskip: Number of times an action will be applied for each step
                 in dt.
             episodic_live: Return ``end = True`` when losing a life.
             autoreset: Restart environment when reaching a terminal state.
-            delay_init: If ``True`` do not initialize the ``gym.Environment`` \
-                     and wait for ``init_env`` to be called later.
+            delay_init: If ``True`` do not initialize the ``gym.Environment``
+                        and wait for ``init_env`` to be called later.
             remove_time_limit: If True, remove the time limit from the environment.
             obs_type: One of {"rgb", "ram", "gryscale"}.
             mode: Integer or string indicating the game mode, when available.
             difficulty: Difficulty level of the game, when available.
             repeat_action_probability: Repeat the last action with this probability.
-            full_action_space: Wheter to use the full range of possible actions \
-                              or only those available in the game.
+            full_action_space: Whether to use the full range of possible actions
+                               or only those available in the game.
             render_mode: One of {None, "human", "rgb_aray"}.
-            possible_to_win: It is possible to finish the Atari game without \
-                            getting a terminal state that is not out of bounds \
-                            or doest not involve losing a life.
-            wrappers: Wrappers that will be applied to the underlying OpenAI env. \
-                     Every element of the iterable can be either a :class:`gym.Wrapper` \
-                     or a tuple containing ``(gym.Wrapper, kwargs)``.
+            possible_to_win: It is possible to finish the Atari game without
+                             getting a terminal state that is not out of bounds
+                             or doest not involve losing a life.
+            wrappers: Wrappers that will be applied to the underlying OpenAI env.
+                      Every element of the iterable can be either a :class:`gym.Wrapper`
+                      or a tuple containing ``(gym.Wrapper, kwargs)``.
 
         """
         self._remove_time_limit = remove_time_limit

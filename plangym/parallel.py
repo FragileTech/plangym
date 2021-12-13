@@ -614,4 +614,5 @@ class ParallelEnvironment(VectorizedEnvironment):
         """Close the environment and the spawned processes."""
         if hasattr(self._batch_env, "close"):
             self._batch_env.close()
-        self.gym_env.close()
+        if hasattr(self.gym_env, "close"):
+            self.gym_env.close()

@@ -1,11 +1,35 @@
-# Welcome to plangym
+```{include} ../../README.md
+```
 
-Plangym is an interface to use OpenAI gym for planning problems. It extends the standard interface to allow setting and recovering the environment states.
+```{toctree}
+---
+maxdepth: 1
+caption: Introduction
+---
+markdown/readme.md
+```
 
 ```{toctree}
 ---
 maxdepth: 5
-caption: plangym API
+caption: User guide
+---
+notebooks/plangym_introduction.ipynb
+```
+
+```{toctree}
+---
+maxdepth: 3
+caption: Environment Classes
+---
+notes/interface.rst
+```
+
+
+```{toctree}
+---
+maxdepth: 3
+caption: API Reference
 ---
 autoapi/index.rst
 ```

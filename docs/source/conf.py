@@ -50,7 +50,8 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.autosectionlabel",
     "sphinx.ext.autodoc.typehints",
-    "myst_parser",
+    "myst_nb",
+    # "myst_parser",
     # "sphinx.ext.githubpages",
     # "m2r",
 ]
@@ -103,6 +104,8 @@ html_static_path = ["_static"]
 
 # myst_parser options
 myst_heading_anchors = 2
+# myst_update_mathjax = False
+autosectionlabel_prefix_document = True
 myst_enable_extensions = [
     "amsmath",
     "colon_fence",
