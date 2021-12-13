@@ -92,9 +92,6 @@ pip install -r requirements.txt
 pip install .
 ```
 
-Note: The `stable-retro` [library installation is currently broken](https://github.com/MatPoliquin/stable-retro/issues/2). Until it is fixed, 
-the `requirements.txt` files points to our own fork that fixes the installation issues.
-
 ## Roadmap
 
 This is a summary of the incoming improvements to the project:
