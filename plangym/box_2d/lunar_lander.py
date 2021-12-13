@@ -17,6 +17,7 @@ try:
     import_error = None
 except ImportError as e:
     import_error = e
+    GymLunarLander = object
 
 # Rocket trajectory optimization is a classic topic in Optimal Control.
 #
