@@ -20,6 +20,31 @@ class AtariEnvironment(VideogameEnvironment):
     """
     Create an environment to play OpenAI gym Atari Games that uses AtariALE as the emulator.
 
+    Args:
+        name: Name of the environment. Follows standard gym syntax conventions.
+        frameskip: Number of times an action will be applied for each step
+            in dt.
+        episodic_live: Return ``end = True`` when losing a life.
+        autoreset: Restart environment when reaching a terminal state.
+        delay_init: If ``True`` do not initialize the ``gym.Environment``
+            and wait for ``init_env`` to be called later.
+        remove_time_limit: If True, remove the time limit from the environment.
+        obs_type: One of {"rgb", "ram", "grayscale"}.
+        mode: Integer or string indicating the game mode, when available.
+        difficulty: Difficulty level of the game, when available.
+        repeat_action_probability: Repeat the last action with this probability.
+        full_action_space: Wheter to use the full range of possible actions
+            or only those available in the game.
+        render_mode: One of {None, "human", "rgb_aray"}.
+        possible_to_win: It is possible to finish the Atari game without getting a
+            terminal state that is not out of bounds or does not involve losing a life.
+        wrappers: Wrappers that will be applied to the underlying OpenAI env.
+            Every element of the iterable can be either a :class:`gym.Wrapper`
+            or a tuple containing ``(gym.Wrapper, kwargs)``.
+        array_state: Whether to return the state of the environment as a numpy array.
+        clone_seeds: Clone the random seed of the ALE emulator when reading/setting
+            the state. False makes the environment stochastic.
+
     Example::
 
         >>> env = plangym.make(name="ALE/MsPacman-v5", difficulty=2, mode=1)
@@ -59,29 +84,28 @@ class AtariEnvironment(VideogameEnvironment):
 
         Args:
             name: Name of the environment. Follows standard gym syntax conventions.
-            frameskip: Number of times an action will be applied for each step \
+            frameskip: Number of times an action will be applied for each step
                 in dt.
             episodic_live: Return ``end = True`` when losing a life.
             autoreset: Restart environment when reaching a terminal state.
-            delay_init: If ``True`` do not initialize the ``gym.Environment`` \
-                     and wait for ``init_env`` to be called later.
+            delay_init: If ``True`` do not initialize the ``gym.Environment``
+                and wait for ``init_env`` to be called later.
             remove_time_limit: If True, remove the time limit from the environment.
-            obs_type: One of {"rgb", "ram", "gryscale"}.
+            obs_type: One of {"rgb", "ram", "grayscale"}.
             mode: Integer or string indicating the game mode, when available.
             difficulty: Difficulty level of the game, when available.
             repeat_action_probability: Repeat the last action with this probability.
-            full_action_space: Wheter to use the full range of possible actions \
-                              or only those available in the game.
+            full_action_space: Wheter to use the full range of possible actions
+                or only those available in the game.
             render_mode: One of {None, "human", "rgb_aray"}.
-            possible_to_win: It is possible to finish the Atari game without \
-                            getting a terminal state that is not out of bounds \
-                            or doest not involve losing a life.
-            wrappers: Wrappers that will be applied to the underlying OpenAI env. \
-                     Every element of the iterable can be either a :class:`gym.Wrapper` \
-                     or a tuple containing ``(gym.Wrapper, kwargs)``.
+            possible_to_win: It is possible to finish the Atari game without getting a
+                terminal state that is not out of bounds or does not involve losing a life.
+            wrappers: Wrappers that will be applied to the underlying OpenAI env.
+                Every element of the iterable can be either a :class:`gym.Wrapper`
+                or a tuple containing ``(gym.Wrapper, kwargs)``.
             array_state: Whether to return the state of the environment as a numpy array.
-            clone_seeds: Clone the random seed of the ALE emulator when reading/setting \
-                        the state. False makes the environment stochastic.
+            clone_seeds: Clone the random seed of the ALE emulator when reading/setting
+                the state. False makes the environment stochastic.
 
         Example::
 
@@ -143,9 +167,9 @@ class AtariEnvironment(VideogameEnvironment):
         """
         Return a numpy array containing the rendered view of the environment.
 
-        Returns a three-dimensional array interpreted as an RGB image with
-         channels (Height, Width, RGB). Ignores wrappers as it loads the
-         screen directly from the emulator.
+        Image is a three-dimensional array interpreted as an RGB image with
+        channels (Height, Width, RGB). Ignores wrappers as it loads the
+        screen directly from the emulator.
 
         Example::
 
@@ -158,10 +182,9 @@ class AtariEnvironment(VideogameEnvironment):
 
     def get_ram(self) -> numpy.ndarray:
         """
-        Return a numpy array containing the rendered view of the environment.
+        Return a numpy array containing the content of the emulator's RAM.
 
-        Returns a three-dimensional array interpreted as an RGB image with
-         channels (Height, Width, RGB).
+        The RAM is a vector array interpreted as the memory of the emulator.
 
          Example::
 
@@ -173,7 +196,7 @@ class AtariEnvironment(VideogameEnvironment):
         return self.gym_env.ale.getRAM()
 
     def init_gym_env(self) -> gym.Env:
-        """Initialize the :class:`gum.Env`` instance that the current clas is wrapping."""
+        """Initialize the :class:`gum.Env`` instance that the Environment is wrapping."""
         # Remove any undocumented wrappers
         try:
             gym_env = gym.make(
@@ -210,6 +233,7 @@ class AtariEnvironment(VideogameEnvironment):
         Cloning the full state ensures the environment is deterministic.
 
         Example::
+
             >>> env = AtariEnvironment(name="Qbert-v0")
             >>> env.get_state()
             array([128,   4, 149, ..., 148,  98,  46], dtype=uint8)
@@ -231,10 +255,8 @@ class AtariEnvironment(VideogameEnvironment):
         Args:
             state: Target state to be set in the environment.
 
-        Returns:
-            None
-
         Example::
+
             >>> env = AtariEnvironment(name="Qbert-v0")
             >>> state, obs = env.reset()
             >>> new_state, obs, reward, end, info = env.step(env.sample_action(), state=state)
@@ -250,18 +272,19 @@ class AtariEnvironment(VideogameEnvironment):
 
     def step_with_dt(self, action: Union[numpy.ndarray, int, float], dt: int = 1):
         """
-         Take ``dt`` simulation steps and make the environment evolve in multiples \
-          of ``self.frameskip`` for a total of ``dt`` * ``self.frameskip`` steps.
+        Take ``dt`` simulation steps and make the environment evolve in multiples \
+        of ``self.frameskip`` for a total of ``dt`` * ``self.frameskip`` steps.
 
         Args:
             action: Chosen action applied to the environment.
             dt: Consecutive number of times that the action will be applied.
 
         Returns:
-            if state is None returns ``(observs, reward, terminal, info)``
+            If state is `None` return ``(observs, reward, terminal, info)``
             else returns ``(new_state, observs, reward, terminal, info)``
 
         Example::
+
             >>> env = AtariEnvironment(name="Pong-v0")
             >>> obs = env.reset(return_state=False)
             >>> obs, reward, end, info = env.step_with_dt(env.sample_action(), dt=7)
@@ -336,7 +359,7 @@ class AtariPyEnvironment(AtariEnvironment):
         Take ``dt`` simulation steps and make the environment evolve in multiples \
         of ``self.frameskip``.
 
-        The info dictionary will contain a boolean called '`lost_live'` that will
+        The info dictionary will contain a boolean called `lost_live` that will
         be ``True`` if a life was lost during the current step.
 
         Args:
@@ -345,7 +368,7 @@ class AtariPyEnvironment(AtariEnvironment):
             dt: Consecutive number of times that the action will be applied.
 
         Returns:
-            if states is None returns ``(observs, rewards, ends, infos)``
+            if states is `None` returns ``(observs, rewards, ends, infos)``
             else returns ``(new_states, observs, rewards, ends, infos)``
 
         """
