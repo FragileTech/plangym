@@ -142,7 +142,7 @@ class RetroEnvironment(VideogameEnvironment):
             episodic_live: Return ``end = True`` when losing a life.
             autoreset: Restart environment when reaching a terminal state.
             delay_init: If ``True`` do not initialize the ``gym.Environment`` \
-                     and wait for ``init_env`` to be called later.
+                     and wait for ``setup`` to be called later.
             remove_time_limit: If True, remove the time limit from the environment.
             obs_type: One of {"rgb", "ram", "gryscale"}.
             mode: Alias for state. Passed to retro.make().
@@ -214,7 +214,7 @@ class RetroEnvironment(VideogameEnvironment):
             width=self.width,
         )
 
-    def init_env(self):
+    def setup(self):
         """Initialize the internal retro environment and its class attributes."""
         import retro
 
@@ -311,7 +311,7 @@ class RetroEnvironment(VideogameEnvironment):
 
         """
         if self.gym_env is None and self.delay_init:
-            self.init_env()
+            self.setup()
         obs = self.gym_env.reset()
         if self.obs_type == "ram":
             obs = self.get_state().copy()

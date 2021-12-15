@@ -27,7 +27,7 @@ class AtariEnvironment(VideogameEnvironment):
         episodic_live: Return ``end = True`` when losing a life.
         autoreset: Restart environment when reaching a terminal state.
         delay_init: If ``True`` do not initialize the ``gym.Environment``
-            and wait for ``init_env`` to be called later.
+            and wait for ``setup`` to be called later.
         remove_time_limit: If True, remove the time limit from the environment.
         obs_type: One of {"rgb", "ram", "grayscale"}.
         mode: Integer or string indicating the game mode, when available.
@@ -89,7 +89,7 @@ class AtariEnvironment(VideogameEnvironment):
             episodic_live: Return ``end = True`` when losing a life.
             autoreset: Restart environment when reaching a terminal state.
             delay_init: If ``True`` do not initialize the ``gym.Environment``
-                and wait for ``init_env`` to be called later.
+                and wait for ``setup`` to be called later.
             remove_time_limit: If True, remove the time limit from the environment.
             obs_type: One of {"rgb", "ram", "grayscale"}.
             mode: Integer or string indicating the game mode, when available.

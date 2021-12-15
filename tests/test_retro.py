@@ -41,7 +41,7 @@ environments = [retro_airstrike, retro_sonic, parallel_retro]
 def env(request) -> Union[RetroEnvironment, ParallelEnvironment]:
     env_ = request.param()
     if env_.delay_init and env_.gym_env is None:
-        env_.init_env()
+        env_.setup()
     yield env_
     env_.close()
 
@@ -50,7 +50,7 @@ class TestRetro:
     def test_init_env(self):
         env = retro_airstrike()
         env.reset()
-        env.init_env()
+        env.setup()
 
     def test_getattribute(self):
         env = retro_airstrike()

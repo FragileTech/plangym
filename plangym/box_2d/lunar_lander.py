@@ -381,7 +381,7 @@ class LunarLander(PlanEnvironment):
         """Return true if the LunarLander agent takes continuous actions as input."""
         return self._continuous
 
-    def init_env(self):
+    def setup(self):
         """Initialize the target :class:`gym.Env` instance."""
         if import_error is not None:
             raise import_error

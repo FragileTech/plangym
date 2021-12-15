@@ -54,7 +54,7 @@ def test_remote_actor():
         return ClassicControl(name="CartPole-v0")
 
     env = RemoteEnv.remote(create_cartpole)
-    ray.get(env.init_env.remote())
+    ray.get(env.setup.remote())
     ray.get(env.reset.remote())
     ray.get(env.step.remote(0))
     state = ray.get(env.get_state.remote())

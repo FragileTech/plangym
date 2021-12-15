@@ -35,7 +35,7 @@ class RemoteEnv(BaseEnvironment):
         """Return the name of the environment."""
         return self.env.name
 
-    def init_env(self):
+    def setup(self):
         """Init the wrapped environment."""
         self.env = self._env_callable()
 
@@ -122,7 +122,7 @@ class RayEnv(VectorizedEnvironment):
             autoreset: Ignored. Always set to True. Automatically reset the environment
                       when the OpenAI environment returns ``end = True``.
             delay_init: If ``True`` do not initialize the ``gym.Environment`` \
-                     and wait for ``init_env`` to be called later.
+                     and wait for ``setup`` to be called later.
             env_callable: Callable that returns an instance of the environment \
                          that will be parallelized.
             n_workers:  Number of workers that will be used to step the env.
@@ -146,16 +146,16 @@ class RayEnv(VectorizedEnvironment):
         """Remote actors exposing copies of the environment."""
         return self._workers
 
-    def init_env(self):
+    def setup(self):
         """Run environment initialization and create the subprocesses for stepping in parallel."""
         import ray
 
         env_callable = self.create_env_callable(autoreset=True, delay_init=False)
         workers = [RemoteEnv.remote(env_callable=env_callable) for _ in range(self.n_workers)]
-        ray.get([w.init_env.remote() for w in workers])
+        ray.get([w.setup.remote() for w in workers])
         self._workers = workers
         # Initialize local copy last to tolerate singletons better
-        super(RayEnv, self).init_env()
+        super(RayEnv, self).setup()
 
     def step_batch(self, actions: [np.ndarray, list], states=None, dt: int = 1) -> tuple:
         """

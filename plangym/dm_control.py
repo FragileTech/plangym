@@ -50,7 +50,7 @@ class DMControlEnv(PlanEnvironment):
                      Every element of the iterable can be either a :class:`gym.Wrapper` \
                      or a tuple containing ``(gym.Wrapper, kwargs)``.
             delay_init: If ``True`` do not initialize the ``gym.Environment`` \
-                      and wait for ``init_env`` to be called later.
+                      and wait for ``setup`` to be called later.
             visualize_reward: The color of the agent depends on the reward on it's last timestep.
             domain_name: Same as in dm_control.suite.load.
             task_name: Same as in dm_control.suite.load.
@@ -136,7 +136,7 @@ class DMControlEnv(PlanEnvironment):
         self._viewer = None if novideo_mode else rendering.SimpleImageViewer()
         return env
 
-    def init_env(self):
+    def setup(self):
         """Initialize the target :class:`gym.Env` instance."""
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")

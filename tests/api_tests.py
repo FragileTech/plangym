@@ -150,7 +150,7 @@ class TestBaseEnvironment:
 
             clone = env.clone()
             if clone.delay_init:
-                clone.init_env()
+                clone.setup()
             clone.close()
 
     @pytest.mark.skipif(os.getenv("SKIP_RENDER", False), reason="No display in CI.")
