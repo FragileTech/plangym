@@ -355,7 +355,7 @@ class LunarLander(PlanEnvironment):
         episodic_live: bool = True,
         autoreset: bool = True,
         wrappers: Iterable[wrap_callable] = None,
-        delay_init: bool = False,
+        delay_setup: bool = False,
         deterministic: bool = False,
         continuous: bool = False,
     ):
@@ -368,7 +368,7 @@ class LunarLander(PlanEnvironment):
             episodic_live=episodic_live,
             autoreset=autoreset,
             wrappers=wrappers,
-            delay_init=delay_init,
+            delay_setup=delay_setup,
         )
 
     @property

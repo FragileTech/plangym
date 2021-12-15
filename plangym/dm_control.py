@@ -30,7 +30,7 @@ class DMControlEnv(PlanEnvironment):
         episodic_live: bool = False,
         autoreset: bool = True,
         wrappers: Iterable[wrap_callable] = None,
-        delay_init: bool = False,
+        delay_setup: bool = False,
         visualize_reward: bool = True,
         domain_name=None,
         task_name=None,
@@ -49,7 +49,7 @@ class DMControlEnv(PlanEnvironment):
             wrappers: Wrappers that will be applied to the underlying OpenAI env. \
                      Every element of the iterable can be either a :class:`gym.Wrapper` \
                      or a tuple containing ``(gym.Wrapper, kwargs)``.
-            delay_init: If ``True`` do not initialize the ``gym.Environment`` \
+            delay_setup: If ``True`` do not initialize the ``gym.Environment`` \
                       and wait for ``setup`` to be called later.
             visualize_reward: The color of the agent depends on the reward on it's last timestep.
             domain_name: Same as in dm_control.suite.load.
@@ -62,13 +62,15 @@ class DMControlEnv(PlanEnvironment):
         self._last_time_step = None
         self._viewer = None
         self._render_mode = render_mode
+        self._observation_space = None
+        self._action_space = None
         name, self._domain_name, self._task_name = self._parse_names(name, domain_name, task_name)
         super(DMControlEnv, self).__init__(
             name=name,
             frameskip=frameskip,
             episodic_live=episodic_live,
             wrappers=wrappers,
-            delay_init=delay_init,
+            delay_setup=delay_setup,
             autoreset=autoreset,
         )
 

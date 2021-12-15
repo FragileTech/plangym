@@ -18,4 +18,4 @@ environments = [
 def env(request) -> ClassicControl:
     name = request.param
     timelimit = [(TimeLimit, {"max_episode_steps": 1000})]
-    return ClassicControl(name=name, delay_init=name == "CartPole-v0", wrappers=timelimit)
+    return ClassicControl(name=name, delay_setup=name == "CartPole-v0", wrappers=timelimit)

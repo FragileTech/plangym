@@ -40,7 +40,7 @@ environments = [retro_airstrike, retro_sonic, parallel_retro]
 @pytest.fixture(params=environments, scope="class")
 def env(request) -> Union[RetroEnvironment, ParallelEnvironment]:
     env_ = request.param()
-    if env_.delay_init and env_.gym_env is None:
+    if env_.delay_setup and env_.gym_env is None:
         env_.setup()
     yield env_
     env_.close()
@@ -57,7 +57,7 @@ class TestRetro:
         env.em.get_state()
 
     def test_clone(self):
-        env = RetroEnvironment(name="Airstriker-Genesis", obs_type="ram", delay_init=True)
+        env = RetroEnvironment(name="Airstriker-Genesis", obs_type="ram", delay_setup=True)
         new_env = env.clone()
         del env
         new_env.reset()

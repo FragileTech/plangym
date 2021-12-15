@@ -24,7 +24,7 @@ class BaseEnvironment(ABC):
         name: str,
         frameskip: int = 1,
         autoreset: bool = True,
-        delay_init: bool = False,
+        delay_setup: bool = False,
     ):
         """
         Initialize a :class:`Environment`.
@@ -34,15 +34,15 @@ class BaseEnvironment(ABC):
             frameskip: Number of times ``step`` will be called with the same action.
             autoreset: Automatically reset the environment when the OpenAI environment
                       returns ``end = True``.
-            delay_init: If ``True`` do not initialize the ``gym.Environment`` \
+            delay_setup: If ``True`` do not initialize the ``gym.Environment`` \
                      and wait for ``setup`` to be called later.
 
         """
         self._name = name
         self.frameskip = frameskip
         self.autoreset = autoreset
-        self.delay_init = delay_init
-        if not delay_init:
+        self.delay_setup = delay_setup
+        if not delay_setup:
             self.setup()
 
     @property
@@ -116,22 +116,22 @@ class BaseEnvironment(ABC):
         actions: Union[numpy.ndarray, Iterable[Union[numpy.ndarray, int]]],
         states: Union[numpy.ndarray, Iterable] = None,
         dt: Union[int, numpy.ndarray] = 1,
-    ) -> Tuple[numpy.ndarray, ...]:
+    ) -> Tuple[Union[list, numpy.ndarray], ...]:
         """
         Vectorized version of the `step` method. It allows to step a vector of \
         states and actions.
 
-        The signature and behaviour is the same as `step`, but taking a list of \
+        The signature and behaviour is the same as `step`, but taking a list of
         states, actions and dts as input.
 
         Args:
             actions: Iterable containing the different actions to be applied.
             states: Iterable containing the different states to be set.
-            dt: int or array containing the frameskips that will be applied.
+            dt: int or array containing the consecutive that will be applied to each state.
 
         Returns:
-            if states is None returns ``(observs, rewards, ends, infos)``
-            else returns ``(new_states, observs, rewards, ends, infos)``
+            if states is `None` returns `(observs, rewards, ends, infos)`
+            else returns `(new_states, observs, rewards, ends, infos)`.
 
         """
         dt = (
@@ -143,6 +143,17 @@ class BaseEnvironment(ABC):
         states = [None] * len(actions) if no_states else states
         data = [self.step(action, state, dt=dt) for action, state, dt in zip(actions, states, dt)]
         return tuple(list(x) for x in zip(*data))
+
+    def clone(self, **kwargs) -> "BaseEnvironment":
+        """Return a copy of the environment."""
+        clone_kwargs = dict(
+            name=self.name,
+            frameskip=self.frameskip,
+            autoreset=self.autoreset,
+            delay_setup=self.delay_setup,
+        )
+        clone_kwargs.update(kwargs)
+        return self.__class__(**clone_kwargs)
 
     def setup(self) -> None:
         """
@@ -227,10 +238,6 @@ class BaseEnvironment(ABC):
         """
         return None
 
-    def clone(self) -> "BaseEnvironment":
-        """Return a copy of the environment."""
-        raise NotImplementedError()
-
 
 class PlanEnvironment(BaseEnvironment):
     """Base class for implementing OpenAI ``gym`` environments in ``plangym``."""
@@ -242,7 +249,7 @@ class PlanEnvironment(BaseEnvironment):
         episodic_live: bool = False,
         autoreset: bool = True,
         wrappers: Iterable[wrap_callable] = None,
-        delay_init: bool = False,
+        delay_setup: bool = False,
         remove_time_limit=True,
     ):
         """
@@ -257,7 +264,7 @@ class PlanEnvironment(BaseEnvironment):
             wrappers: Wrappers that will be applied to the underlying OpenAI env.
                 Every element of the iterable can be either a :class:`gym.Wrapper`
                 or a tuple containing ``(gym.Wrapper, kwargs)``.
-            delay_init: If ``True`` do not initialize the :class:`gym.Environment`
+            delay_setup: If ``True`` do not initialize the :class:`gym.Environment`
                 and wait for ``setup`` to be called later.
             remove_time_limit: If True, remove the time limit from the environment.
 
@@ -270,7 +277,7 @@ class PlanEnvironment(BaseEnvironment):
             name=name,
             frameskip=frameskip,
             autoreset=autoreset,
-            delay_init=delay_init,
+            delay_setup=delay_setup,
         )
 
     @property
@@ -342,7 +349,7 @@ class PlanEnvironment(BaseEnvironment):
             ``obs`` if ```return_state`` is ``True`` else return ``(state, obs)``.
 
         """
-        if self.gym_env is None and self.delay_init:
+        if self.gym_env is None and self.delay_setup:
             self.setup()
         obs = self.gym_env.reset()
         return (self.get_state(), obs) if return_state else obs
@@ -394,16 +401,12 @@ class PlanEnvironment(BaseEnvironment):
         if hasattr(self.action_space, "sample"):
             return self.action_space.sample()
 
-    def clone(self) -> "PlanEnvironment":
+    def clone(self, **kwargs) -> "PlanEnvironment":
         """Return a copy of the environment."""
-        return self.__class__(
-            name=self.name,
-            frameskip=self.frameskip,
-            wrappers=self._wrappers,
-            episodic_live=self.episodic_life,
-            autoreset=self.autoreset,
-            delay_init=self.delay_init,
-        )
+        env_kwargs = dict(episodic_live=self.episodic_life, wrappers=self._wrappers)
+        env_kwargs.update(kwargs)
+        env: PlanEnvironment = super(PlanEnvironment, self).clone(**env_kwargs)
+        return env
 
     def close(self):
         """Close the underlying :class:`gym.Env`."""
@@ -473,7 +476,7 @@ class VideogameEnvironment(PlanEnvironment):
         frameskip: int = 5,
         episodic_live: bool = False,
         autoreset: bool = True,
-        delay_init: bool = False,
+        delay_setup: bool = False,
         remove_time_limit: bool = True,
         obs_type: str = "rgb",  # ram | rgb | grayscale
         mode: int = 0,  # game mode, see Machado et al. 2018
@@ -493,8 +496,8 @@ class VideogameEnvironment(PlanEnvironment):
                 in dt.
             episodic_live: Return ``end = True`` when losing a life.
             autoreset: Restart environment when reaching a terminal state.
-            delay_init: If ``True`` do not initialize the ``gym.Environment``
-                        and wait for ``setup`` to be called later.
+            delay_setup: If ``True`` do not initialize the ``gym.Environment``
+                and wait for ``setup`` to be called later.
             remove_time_limit: If True, remove the time limit from the environment.
             obs_type: One of {"rgb", "ram", "grayscale"}.
             mode: Integer or string indicating the game mode, when available.
@@ -525,7 +528,7 @@ class VideogameEnvironment(PlanEnvironment):
             episodic_live=episodic_live,
             autoreset=autoreset,
             wrappers=wrappers,
-            delay_init=delay_init,
+            delay_setup=delay_setup,
         )
 
     @property
@@ -576,9 +579,8 @@ class VideogameEnvironment(PlanEnvironment):
             wrappers=self._wrappers,
             episodic_live=self.episodic_life,
             autoreset=self.autoreset,
-            delay_init=self.delay_init,
+            delay_setup=self.delay_setup,
             possible_to_win=self.possible_to_win,
-            clone_seeds=self.clone_seeds,
             mode=self.mode,
             difficulty=self.difficulty,
             obs_type=self.obs_type,
@@ -588,7 +590,7 @@ class VideogameEnvironment(PlanEnvironment):
             remove_time_limit=self._remove_time_limit,
         )
         params.update(**kwargs)
-        return self.__class__(**params)
+        return super(VideogameEnvironment, self).clone(**params)
 
     def get_ram(self) -> np.ndarray:
         """Return the ram of the emulator as a numpy array."""
@@ -615,7 +617,7 @@ class VectorizedEnvironment(BaseEnvironment, ABC):
         name: str,
         frameskip: int = 1,
         autoreset: bool = True,
-        delay_init: bool = False,
+        delay_setup: bool = False,
         n_workers: int = 8,
         **kwargs,
     ):
@@ -628,7 +630,7 @@ class VectorizedEnvironment(BaseEnvironment, ABC):
             frameskip: Number of times ``step`` will be called with the same action.
             autoreset: Ignored. Always set to True. Automatically reset the environment
                 when the OpenAI environment returns ``end = True``.
-            delay_init: If ``True`` do not initialize the :class:`gym.Environment`
+            delay_setup: If ``True`` do not initialize the :class:`gym.Environment`
                 and wait for ``setup`` to be called later.
             env_callable: Callable that returns an instance of the environment
                 that will be parallelized.
@@ -651,7 +653,7 @@ class VectorizedEnvironment(BaseEnvironment, ABC):
             name=name,
             frameskip=frameskip,
             autoreset=autoreset,
-            delay_init=delay_init,
+            delay_setup=delay_setup,
         )
 
     @property
@@ -731,7 +733,7 @@ class VectorizedEnvironment(BaseEnvironment, ABC):
             env_class=self._env_class,
             name=self.name,
             frameskip=self.frameskip,
-            delay_init=self._env_class.SINGLETON,
+            delay_setup=self._env_class.SINGLETON,
             **self._env_kwargs,
         )
         callable_kwargs.update(kwargs)
@@ -746,9 +748,7 @@ class VectorizedEnvironment(BaseEnvironment, ABC):
         """
         Step the environment applying a given action from an arbitrary state.
 
-        If is not provided the signature matches the one from OpenAI gym. It allows
-        to apply arbitrary boundary conditions to define custom end states in case
-        the env was initialized with a "CustomDeath' object.
+        If is not provided the signature matches the `step` method from OpenAI gym.
 
         Args:
             action: Array containing the action to be applied.
@@ -880,7 +880,7 @@ class VectorizedEnvironment(BaseEnvironment, ABC):
         self_kwargs = dict(
             name=self.name,
             frameskip=self.frameskip,
-            delay_init=self.delay_init,
+            delay_setup=self.delay_setup,
             env_class=self._env_class,
             n_workers=self.n_workers,
             **self._env_kwargs,

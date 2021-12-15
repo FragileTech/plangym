@@ -521,7 +521,7 @@ class ParallelEnvironment(VectorizedEnvironment):
         name: str,
         frameskip: int = 1,
         autoreset: bool = True,
-        delay_init: bool = False,
+        delay_setup: bool = False,
         n_workers: int = 8,
         blocking: bool = False,
         **kwargs,
@@ -535,7 +535,7 @@ class ParallelEnvironment(VectorizedEnvironment):
             frameskip: Number of times ``step`` will me called with the same action.
             autoreset: Ignored. Always set to True. Automatically reset the environment
                       when the OpenAI environment returns ``end = True``.
-            delay_init: If ``True`` do not initialize the ``gym.Environment`` \
+            delay_setup: If ``True`` do not initialize the ``gym.Environment`` \
                      and wait for ``setup`` to be called later.
             env_callable: Callable that returns an instance of the environment \
                          that will be parallelized.
@@ -552,7 +552,7 @@ class ParallelEnvironment(VectorizedEnvironment):
             name=name,
             frameskip=frameskip,
             autoreset=autoreset,
-            delay_init=delay_init,
+            delay_setup=delay_setup,
             n_workers=n_workers,
             **kwargs,
         )
@@ -564,7 +564,7 @@ class ParallelEnvironment(VectorizedEnvironment):
 
     def setup(self):
         """Run environment initialization and create the subprocesses for stepping in parallel."""
-        external_callable = self.create_env_callable(autoreset=True, delay_init=False)
+        external_callable = self.create_env_callable(autoreset=True, delay_setup=False)
         envs = [ExternalProcess(constructor=external_callable) for _ in range(self.n_workers)]
         self._batch_env = BatchEnv(envs, blocking=self._blocking)
         # Initialize local copy last to tolerate singletons better

@@ -108,7 +108,7 @@ class RayEnv(VectorizedEnvironment):
         name: str,
         frameskip: int = 1,
         autoreset: bool = True,
-        delay_init: bool = False,
+        delay_setup: bool = False,
         n_workers: int = 8,
         **kwargs,
     ):
@@ -121,7 +121,7 @@ class RayEnv(VectorizedEnvironment):
             frameskip: Number of times ``step`` will me called with the same action.
             autoreset: Ignored. Always set to True. Automatically reset the environment
                       when the OpenAI environment returns ``end = True``.
-            delay_init: If ``True`` do not initialize the ``gym.Environment`` \
+            delay_setup: If ``True`` do not initialize the ``gym.Environment`` \
                      and wait for ``setup`` to be called later.
             env_callable: Callable that returns an instance of the environment \
                          that will be parallelized.
@@ -136,7 +136,7 @@ class RayEnv(VectorizedEnvironment):
             name=name,
             frameskip=frameskip,
             autoreset=autoreset,
-            delay_init=delay_init,
+            delay_setup=delay_setup,
             n_workers=n_workers,
             **kwargs,
         )
@@ -150,7 +150,7 @@ class RayEnv(VectorizedEnvironment):
         """Run environment initialization and create the subprocesses for stepping in parallel."""
         import ray
 
-        env_callable = self.create_env_callable(autoreset=True, delay_init=False)
+        env_callable = self.create_env_callable(autoreset=True, delay_setup=False)
         workers = [RemoteEnv.remote(env_callable=env_callable) for _ in range(self.n_workers)]
         ray.get([w.setup.remote() for w in workers])
         self._workers = workers

@@ -413,7 +413,7 @@ class Montezuma(AtariEnvironment):
         frameskip: int = 1,
         episodic_live: bool = False,
         autoreset: bool = True,
-        delay_init: bool = False,
+        delay_setup: bool = False,
         remove_time_limit: bool = True,
         obs_type: str = "rgb",  # ram | rgb | grayscale
         mode: int = 0,  # game mode, see Machado et al. 2018
@@ -435,7 +435,7 @@ class Montezuma(AtariEnvironment):
             autoreset=autoreset,
             episodic_live=episodic_live,
             clone_seeds=False,
-            delay_init=delay_init,
+            delay_setup=delay_setup,
             remove_time_limit=remove_time_limit,
             obs_type=obs_type,
             mode=mode,

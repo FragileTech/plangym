@@ -26,7 +26,7 @@ class AtariEnvironment(VideogameEnvironment):
             in dt.
         episodic_live: Return ``end = True`` when losing a life.
         autoreset: Restart environment when reaching a terminal state.
-        delay_init: If ``True`` do not initialize the ``gym.Environment``
+        delay_setup: If ``True`` do not initialize the ``gym.Environment``
             and wait for ``setup`` to be called later.
         remove_time_limit: If True, remove the time limit from the environment.
         obs_type: One of {"rgb", "ram", "grayscale"}.
@@ -66,7 +66,7 @@ class AtariEnvironment(VideogameEnvironment):
         frameskip: int = 5,
         episodic_live: bool = False,
         autoreset: bool = True,
-        delay_init: bool = False,
+        delay_setup: bool = False,
         remove_time_limit: bool = True,
         obs_type: str = "rgb",  # ram | rgb | grayscale
         mode: int = 0,  # game mode, see Machado et al. 2018
@@ -88,7 +88,7 @@ class AtariEnvironment(VideogameEnvironment):
                 in dt.
             episodic_live: Return ``end = True`` when losing a life.
             autoreset: Restart environment when reaching a terminal state.
-            delay_init: If ``True`` do not initialize the ``gym.Environment``
+            delay_setup: If ``True`` do not initialize the ``gym.Environment``
                 and wait for ``setup`` to be called later.
             remove_time_limit: If True, remove the time limit from the environment.
             obs_type: One of {"rgb", "ram", "grayscale"}.
@@ -124,7 +124,7 @@ class AtariEnvironment(VideogameEnvironment):
             frameskip=frameskip,
             episodic_live=episodic_live,
             autoreset=autoreset,
-            delay_init=delay_init,
+            delay_setup=delay_setup,
             remove_time_limit=remove_time_limit,
             obs_type=obs_type,  # ram | rgb | grayscale
             mode=mode,  # game mode, see Machado et al. 2018
@@ -321,6 +321,10 @@ class AtariEnvironment(VideogameEnvironment):
         info["win"] = self.get_win_condition(info)
         info["n_steps"] = n_steps
         return obs, reward, terminal, info
+
+    def clone(self, **kwargs) -> "VideogameEnvironment":
+        """Return a copy of the environment."""
+        return super(AtariEnvironment, self).clone(clone_seeds=self.clone_seeds)
 
 
 class AtariPyEnvironment(AtariEnvironment):

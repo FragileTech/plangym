@@ -117,7 +117,7 @@ class RetroEnvironment(VideogameEnvironment):
         frameskip: int = 5,
         episodic_live: bool = False,
         autoreset: bool = True,
-        delay_init: bool = False,
+        delay_setup: bool = False,
         remove_time_limit: bool = True,
         obs_type: str = "rgb",  # ram | rgb | grayscale
         mode: int = 0,  # game mode, see Machado et al. 2018
@@ -141,14 +141,14 @@ class RetroEnvironment(VideogameEnvironment):
                 in dt.
             episodic_live: Return ``end = True`` when losing a life.
             autoreset: Restart environment when reaching a terminal state.
-            delay_init: If ``True`` do not initialize the ``gym.Environment`` \
+            delay_setup: If ``True`` do not initialize the ``gym.Environment`` \
                      and wait for ``setup`` to be called later.
             remove_time_limit: If True, remove the time limit from the environment.
             obs_type: One of {"rgb", "ram", "gryscale"}.
             mode: Alias for state. Passed to retro.make().
             difficulty: Difficulty level of the game, when available.
             repeat_action_probability: Repeat the last action with this probability.
-            full_action_space: Wheter to use the full range of possible actions \
+            full_action_space: Whether to use the full range of possible actions \
                               or only those available in the game.
             render_mode: One of {None, "human", "rgb_aray"}.
             possible_to_win: It is possible to finish the Atari game without \
@@ -169,7 +169,7 @@ class RetroEnvironment(VideogameEnvironment):
             frameskip=frameskip,
             episodic_live=episodic_live,
             autoreset=autoreset,
-            delay_init=delay_init,
+            delay_setup=delay_setup,
             remove_time_limit=remove_time_limit,
             obs_type=obs_type,  # ram | rgb | grayscale
             mode=mode,  # game mode, see Machado et al. 2018
@@ -208,7 +208,7 @@ class RetroEnvironment(VideogameEnvironment):
             wrappers=self._wrappers,
             episodic_live=self.episodic_life,
             autoreset=self.autoreset,
-            delay_init=self.delay_init,
+            delay_setup=self.delay_setup,
             obs_type=self.obs_type,
             height=self.height,
             width=self.width,
@@ -310,7 +310,7 @@ class RetroEnvironment(VideogameEnvironment):
             Otherwise return ``(state, obs)`` after reset.
 
         """
-        if self.gym_env is None and self.delay_init:
+        if self.gym_env is None and self.delay_setup:
             self.setup()
         obs = self.gym_env.reset()
         if self.obs_type == "ram":
