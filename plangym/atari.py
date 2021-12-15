@@ -244,8 +244,11 @@ class AtariEnvironment(VideogameEnvironment):
 
         """
         state = self.gym_env.unwrapped.clone_state(include_rng=self.clone_seeds)
-        if self.STATE_IS_ARRAY:
+        is_pickled = self.STATE_IS_ARRAY and not self.clone_seeds
+        if is_pickled:
             state = numpy.frombuffer(pickle.dumps(state), dtype=numpy.uint8)
+        elif self.clone_seeds:
+            state = numpy.array((state, None), dtype=object)
         return state
 
     def set_state(self, state: numpy.ndarray) -> None:
@@ -265,8 +268,11 @@ class AtariEnvironment(VideogameEnvironment):
             >>> (state == env.get_state()).all()
             True
         """
-        if self.STATE_IS_ARRAY:
+        is_pickled = self.STATE_IS_ARRAY and not self.clone_seeds
+        if is_pickled:
             state = pickle.loads(state.tobytes())
+        elif self.STATE_IS_ARRAY:
+            state = state[0]
         self.gym_env.unwrapped.restore_state(state)
         del state
 
