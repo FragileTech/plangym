@@ -1,6 +1,6 @@
 Cython>=0.28,<1.0; python_version == '3.8'
 opencv-python==4.5.4.60
-pillow==8.4.0
+pillow==9.0.0
 ale-py==0.7.3
 gym[accept-rom-license]==0.21.0
 gym[box2d]==0.21.0
