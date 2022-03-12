@@ -40,7 +40,7 @@ setup(
     install_requires=[
         "numpy>=1.16.2",
         "gym>=0.21.0",
-        "pillow==8.4.0",
+        "pillow==9.0.1",
         "opencv-python>=4.2.0.32",
     ],
     extras_require=extras,
