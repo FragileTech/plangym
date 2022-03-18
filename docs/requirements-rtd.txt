@@ -5,7 +5,7 @@ m2r==0.2.1
 myst-parser==0.15.2
 myst-nb==0.13.1
 networkx==2.5
-numpy==1.20.0
+numpy==1.21.0
 linkify-it-py==1.0.2
 pandoc==2.0.1
 psycopg2-binary==2.8.4
