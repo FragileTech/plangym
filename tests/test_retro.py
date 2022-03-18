@@ -7,7 +7,7 @@ from plangym.retro import Downsample, RetroEnvironment, SonicDiscretizer
 
 
 pytest.importorskip("retro")
-from tests.api_tests import batch_size, display, TestBaseEnvironment, TestGymEnvironment
+from plangym.api_tests import batch_size, display, TestBaseEnvironment, TestGymEnvironment
 
 
 def retro_airstrike():
@@ -40,8 +40,8 @@ environments = [retro_airstrike, retro_sonic, parallel_retro]
 @pytest.fixture(params=environments, scope="class")
 def env(request) -> Union[RetroEnvironment, ParallelEnvironment]:
     env_ = request.param()
-    if env_.delay_init and env_.gym_env is None:
-        env_.init_env()
+    if env_.delay_setup and env_.gym_env is None:
+        env_.setup()
     yield env_
     env_.close()
 
@@ -50,14 +50,14 @@ class TestRetro:
     def test_init_env(self):
         env = retro_airstrike()
         env.reset()
-        env.init_env()
+        env.setup()
 
     def test_getattribute(self):
         env = retro_airstrike()
         env.em.get_state()
 
     def test_clone(self):
-        env = RetroEnvironment(name="Airstriker-Genesis", obs_type="ram", delay_init=True)
+        env = RetroEnvironment(name="Airstriker-Genesis", obs_type="ram", delay_setup=True)
         new_env = env.clone()
         del env
         new_env.reset()

@@ -30,7 +30,7 @@ class DMControlEnv(PlanEnvironment):
         episodic_live: bool = False,
         autoreset: bool = True,
         wrappers: Iterable[wrap_callable] = None,
-        delay_init: bool = False,
+        delay_setup: bool = False,
         visualize_reward: bool = True,
         domain_name=None,
         task_name=None,
@@ -49,8 +49,8 @@ class DMControlEnv(PlanEnvironment):
             wrappers: Wrappers that will be applied to the underlying OpenAI env. \
                      Every element of the iterable can be either a :class:`gym.Wrapper` \
                      or a tuple containing ``(gym.Wrapper, kwargs)``.
-            delay_init: If ``True`` do not initialize the ``gym.Environment`` \
-                      and wait for ``init_env`` to be called later.
+            delay_setup: If ``True`` do not initialize the ``gym.Environment`` \
+                      and wait for ``setup`` to be called later.
             visualize_reward: The color of the agent depends on the reward on it's last timestep.
             domain_name: Same as in dm_control.suite.load.
             task_name: Same as in dm_control.suite.load.
@@ -61,15 +61,17 @@ class DMControlEnv(PlanEnvironment):
         self.viewer = []
         self._last_time_step = None
         self._viewer = None
-        self._render_mode = render_mode
+        self._observation_space = None
+        self._action_space = None
         name, self._domain_name, self._task_name = self._parse_names(name, domain_name, task_name)
         super(DMControlEnv, self).__init__(
             name=name,
             frameskip=frameskip,
             episodic_live=episodic_live,
             wrappers=wrappers,
-            delay_init=delay_init,
+            delay_setup=delay_setup,
             autoreset=autoreset,
+            render_mode=render_mode,
         )
 
     @property
@@ -136,20 +138,20 @@ class DMControlEnv(PlanEnvironment):
         self._viewer = None if novideo_mode else rendering.SimpleImageViewer()
         return env
 
-    def init_env(self):
+    def setup(self):
         """Initialize the target :class:`gym.Env` instance."""
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             self._gym_env = self.init_gym_env()
             if self._wrappers is not None:
                 self.apply_wrappers(self._wrappers)
-            shape = self.reset(return_state=False).shape
-            self._observation_space = Box(low=-np.inf, high=np.inf, shape=shape, dtype=np.float32)
             self._action_space = Box(
                 low=self.action_spec().minimum,
                 high=self.action_spec().maximum,
                 dtype=np.float32,
             )
+            shape = self.reset(return_state=False).shape
+            self._observation_space = Box(low=-np.inf, high=np.inf, shape=shape, dtype=np.float32)
 
     def action_spec(self):
         """Alias for the environment's ``action_spec``."""
@@ -159,6 +161,10 @@ class DMControlEnv(PlanEnvironment):
         """Seed the underlying :class:`gym.Env`."""
         np.random.seed(seed)
         # self.gym_env.seed(seed)
+
+    def get_image(self) -> np.ndarray:
+        """Return and RGB array representing the current state of the environment."""
+        return self.render(mode="rgb_array")
 
     def render(self, mode="human"):
         """
@@ -201,6 +207,7 @@ class DMControlEnv(PlanEnvironment):
             return (state, obs) after reset.
         """
         time_step = self.gym_env.reset()
+        # observed, *_ = self.step_with_dt(action=self.sample_action(), dt=20)
         observed = self._time_step_to_obs(time_step)
         self._render_i = 0
         if not return_state:
@@ -275,6 +282,8 @@ class DMControlEnv(PlanEnvironment):
         info["oob"] = terminal
         info["win"] = self.get_win_condition(info)
         info["n_steps"] = n_steps
+        if self.render_mode == "rgb_array":
+            info["rgb"] = self.get_image()
         return obs, reward, terminal, info
 
     @staticmethod

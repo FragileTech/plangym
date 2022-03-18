@@ -85,17 +85,11 @@ pycodestyle = ["-D*"]
 pylint = ["-D*"]
 pyflakes = ["-F401", "-F811"]
 
-[tool.flakehell.exceptions."**/wrappers/*"]
+[tool.flakehell.exceptions."**/api_tests.py"]
 pycodestyle = ["-D*"]
 "flake8*" = ["-D*"]
 pylint = ["-D*"]
 pyflakes = ["-D*", "-F401"]
-
-[tool.flakehell.exceptions."**/wrappers/README.md"]
-pycodestyle = ["-*"]
-"flake8*" = ["-*"]
-pylint = ["-*"]
-pyflakes = ["-*", "-F821"]
 
 [tool.pylint.master]
 ignore = 'tests'

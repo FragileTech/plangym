@@ -423,16 +423,18 @@ class BatchEnv:
 
         """
         no_states = states is None or states[0] is None
+        dt_is_array = (isinstance(dt, numpy.ndarray) and dt.shape) or isinstance(dt, (list, tuple))
+        dt = dt if dt_is_array else numpy.ones(len(actions), dtype=int) * dt
         if no_states:
             observs, rewards, dones, infos = self._make_transitions(actions, states, dt)
         else:
             states, observs, rewards, dones, infos = self._make_transitions(actions, states, dt)
-        observ = numpy.stack(observs)
-        reward = numpy.stack(rewards)
-        done = numpy.stack(dones)
-        infos = numpy.stack(infos)
+        # observ = numpy.stack(observs)
+        # reward = numpy.stack(rewards)
+        # done = numpy.stack(dones)
+        # infos = numpy.stack(infos)
         if no_states:
-            return observ, reward, done, infos
+            return observs, rewards, dones, infos
         else:
             return states, observs, rewards, dones, infos
 
@@ -521,7 +523,7 @@ class ParallelEnvironment(VectorizedEnvironment):
         name: str,
         frameskip: int = 1,
         autoreset: bool = True,
-        delay_init: bool = False,
+        delay_setup: bool = False,
         n_workers: int = 8,
         blocking: bool = False,
         **kwargs,
@@ -535,8 +537,8 @@ class ParallelEnvironment(VectorizedEnvironment):
             frameskip: Number of times ``step`` will me called with the same action.
             autoreset: Ignored. Always set to True. Automatically reset the environment
                       when the OpenAI environment returns ``end = True``.
-            delay_init: If ``True`` do not initialize the ``gym.Environment`` \
-                     and wait for ``init_env`` to be called later.
+            delay_setup: If ``True`` do not initialize the ``gym.Environment`` \
+                     and wait for ``setup`` to be called later.
             env_callable: Callable that returns an instance of the environment \
                          that will be parallelized.
             n_workers:  Number of workers that will be used to step the env.
@@ -552,7 +554,7 @@ class ParallelEnvironment(VectorizedEnvironment):
             name=name,
             frameskip=frameskip,
             autoreset=autoreset,
-            delay_init=delay_init,
+            delay_setup=delay_setup,
             n_workers=n_workers,
             **kwargs,
         )
@@ -562,13 +564,13 @@ class ParallelEnvironment(VectorizedEnvironment):
         """If True the steps are performed sequentially."""
         return self._blocking
 
-    def init_env(self):
+    def setup(self):
         """Run environment initialization and create the subprocesses for stepping in parallel."""
-        external_callable = self.create_env_callable(autoreset=True, delay_init=False)
+        external_callable = self.create_env_callable(autoreset=True, delay_setup=False)
         envs = [ExternalProcess(constructor=external_callable) for _ in range(self.n_workers)]
         self._batch_env = BatchEnv(envs, blocking=self._blocking)
         # Initialize local copy last to tolerate singletons better
-        super(ParallelEnvironment, self).init_env()
+        super(ParallelEnvironment, self).setup()
 
     def clone(self) -> "BaseEnvironment":
         """Return a copy of the environment."""

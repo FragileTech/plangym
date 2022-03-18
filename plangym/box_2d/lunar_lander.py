@@ -1,7 +1,7 @@
 """Implementation of LunarLander with no fire coming out of the engines that steps faster."""
 import copy
 import math
-from typing import Any, Dict, Iterable, Union
+from typing import Any, Dict, Iterable, Optional, Union
 
 import numpy as np
 import numpy as numpy
@@ -355,9 +355,10 @@ class LunarLander(PlanEnvironment):
         episodic_live: bool = True,
         autoreset: bool = True,
         wrappers: Iterable[wrap_callable] = None,
-        delay_init: bool = False,
+        delay_setup: bool = False,
         deterministic: bool = False,
         continuous: bool = False,
+        render_mode: Optional[str] = None,
     ):
         """Initialize a :class:`LunarLander`."""
         self._deterministic = deterministic
@@ -368,7 +369,8 @@ class LunarLander(PlanEnvironment):
             episodic_live=episodic_live,
             autoreset=autoreset,
             wrappers=wrappers,
-            delay_init=delay_init,
+            delay_setup=delay_setup,
+            render_mode=render_mode,
         )
 
     @property
@@ -381,7 +383,7 @@ class LunarLander(PlanEnvironment):
         """Return true if the LunarLander agent takes continuous actions as input."""
         return self._continuous
 
-    def init_env(self):
+    def setup(self):
         """Initialize the target :class:`gym.Env` instance."""
         if import_error is not None:
             raise import_error

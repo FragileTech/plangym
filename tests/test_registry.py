@@ -18,15 +18,15 @@ from tests import (
 
 def _test_env_class(name, cls, **kwargs):
     n_workers = 2
-    assert isinstance(make(name, delay_init=False, **kwargs), cls)
-    env = make(name=name, n_workers=n_workers, delay_init=True, **kwargs)
+    assert isinstance(make(name, delay_setup=False, **kwargs), cls)
+    env = make(name=name, n_workers=n_workers, delay_setup=True, **kwargs)
     assert isinstance(env, ParallelEnvironment)
     assert env._env_class == cls
     assert env.n_workers == n_workers
     if not SKIP_RAY_TESTS:
         from plangym.ray import RayEnv
 
-        env = make(name=name, n_workers=n_workers, ray=True, delay_init=True, **kwargs)
+        env = make(name=name, n_workers=n_workers, ray=True, delay_setup=True, **kwargs)
         assert isinstance(env, RayEnv)
         assert env._env_class == cls
         assert env.n_workers == n_workers

@@ -13,7 +13,7 @@ from plangym.ray import RayEnv, RemoteEnv
 pytest.importorskip("ray")
 if os.getenv("DISABLE_RAY", False) and str(os.getenv("DISABLE_RAY", False)).lower() != "false":
     pytest.skip("Ray not installed or disabled", allow_module_level=True)
-from tests.api_tests import batch_size, display, TestBaseEnvironment, TestGymEnvironment
+from plangym.api_tests import batch_size, display, TestBaseEnvironment, TestGymEnvironment
 
 
 def ray_cartpole():
@@ -54,7 +54,7 @@ def test_remote_actor():
         return ClassicControl(name="CartPole-v0")
 
     env = RemoteEnv.remote(create_cartpole)
-    ray.get(env.init_env.remote())
+    ray.get(env.setup.remote())
     ray.get(env.reset.remote())
     ray.get(env.step.remote(0))
     state = ray.get(env.get_state.remote())

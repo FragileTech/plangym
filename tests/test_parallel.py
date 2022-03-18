@@ -1,10 +1,10 @@
 import numpy as np
 import pytest
 
+from plangym.api_tests import batch_size, display, TestBaseEnvironment, TestGymEnvironment
 from plangym.atari import AtariEnvironment
 from plangym.classic_control import ClassicControl
 from plangym.parallel import BatchEnv, ExternalProcess, ParallelEnvironment
-from tests.api_tests import batch_size, display, TestBaseEnvironment, TestGymEnvironment
 
 
 def parallel_cartpole():

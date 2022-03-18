@@ -1,5 +1,4 @@
 """Implement the ``plangym`` API for Atari environments."""
-import pickle
 from typing import Any, Dict, Iterable, Optional, Union
 
 import gym
@@ -26,8 +25,8 @@ class AtariEnvironment(VideogameEnvironment):
             in dt.
         episodic_live: Return ``end = True`` when losing a life.
         autoreset: Restart environment when reaching a terminal state.
-        delay_init: If ``True`` do not initialize the ``gym.Environment``
-            and wait for ``init_env`` to be called later.
+        delay_setup: If ``True`` do not initialize the ``gym.Environment``
+            and wait for ``setup`` to be called later.
         remove_time_limit: If True, remove the time limit from the environment.
         obs_type: One of {"rgb", "ram", "grayscale"}.
         mode: Integer or string indicating the game mode, when available.
@@ -66,7 +65,7 @@ class AtariEnvironment(VideogameEnvironment):
         frameskip: int = 5,
         episodic_live: bool = False,
         autoreset: bool = True,
-        delay_init: bool = False,
+        delay_setup: bool = False,
         remove_time_limit: bool = True,
         obs_type: str = "rgb",  # ram | rgb | grayscale
         mode: int = 0,  # game mode, see Machado et al. 2018
@@ -88,8 +87,8 @@ class AtariEnvironment(VideogameEnvironment):
                 in dt.
             episodic_live: Return ``end = True`` when losing a life.
             autoreset: Restart environment when reaching a terminal state.
-            delay_init: If ``True`` do not initialize the ``gym.Environment``
-                and wait for ``init_env`` to be called later.
+            delay_setup: If ``True`` do not initialize the ``gym.Environment``
+                and wait for ``setup`` to be called later.
             remove_time_limit: If True, remove the time limit from the environment.
             obs_type: One of {"rgb", "ram", "grayscale"}.
             mode: Integer or string indicating the game mode, when available.
@@ -124,7 +123,7 @@ class AtariEnvironment(VideogameEnvironment):
             frameskip=frameskip,
             episodic_live=episodic_live,
             autoreset=autoreset,
-            delay_init=delay_init,
+            delay_setup=delay_setup,
             remove_time_limit=remove_time_limit,
             obs_type=obs_type,  # ram | rgb | grayscale
             mode=mode,  # game mode, see Machado et al. 2018
@@ -235,8 +234,9 @@ class AtariEnvironment(VideogameEnvironment):
         Example::
 
             >>> env = AtariEnvironment(name="Qbert-v0")
-            >>> env.get_state()
-            array([128,   4, 149, ..., 148,  98,  46], dtype=uint8)
+            >>> env.get_state() #doctest: +ELLIPSIS
+            array([<ale_py._ale_py.ALEState object at 0x...>, None],
+                  dtype=object)
 
             >>> env = AtariEnvironment(name="Qbert-v0", array_state=False)
             >>> env.get_state() #doctest: +ELLIPSIS
@@ -245,7 +245,7 @@ class AtariEnvironment(VideogameEnvironment):
         """
         state = self.gym_env.unwrapped.clone_state(include_rng=self.clone_seeds)
         if self.STATE_IS_ARRAY:
-            state = numpy.frombuffer(pickle.dumps(state), dtype=numpy.uint8)
+            state = numpy.array((state, None), dtype=object)
         return state
 
     def set_state(self, state: numpy.ndarray) -> None:
@@ -266,9 +266,8 @@ class AtariEnvironment(VideogameEnvironment):
             True
         """
         if self.STATE_IS_ARRAY:
-            state = pickle.loads(state.tobytes())
+            state = state[0]
         self.gym_env.unwrapped.restore_state(state)
-        del state
 
     def step_with_dt(self, action: Union[numpy.ndarray, int, float], dt: int = 1):
         """
@@ -315,6 +314,10 @@ class AtariEnvironment(VideogameEnvironment):
         info["win"] = self.get_win_condition(info)
         info["n_steps"] = n_steps
         return obs, reward, terminal, info
+
+    def clone(self, **kwargs) -> "VideogameEnvironment":
+        """Return a copy of the environment."""
+        return super(AtariEnvironment, self).clone(clone_seeds=self.clone_seeds)
 
 
 class AtariPyEnvironment(AtariEnvironment):

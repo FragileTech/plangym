@@ -28,7 +28,7 @@ class TestBaseEnvironment:
         assert hasattr(env, "_name")
         assert hasattr(env, "frameskip")
         assert hasattr(env, "autoreset")
-        assert hasattr(env, "delay_init")
+        assert hasattr(env, "delay_setup")
         assert hasattr(env, "SINGLETON")
         assert hasattr(env, "STATE_IS_ARRAY")
         assert hasattr(env, "RETURNS_GYM_TUPLE")
@@ -37,7 +37,7 @@ class TestBaseEnvironment:
         if isinstance(env, VectorizedEnvironment):
             return
         cls = env.__class__
-        kwargs = {"name": env.name, "frameskip": 1, "autoreset": True, "delay_init": True}
+        kwargs = {"name": env.name, "frameskip": 1, "autoreset": True, "delay_setup": True}
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             cls(**kwargs)
@@ -144,13 +144,13 @@ class TestBaseEnvironment:
     def test_clone_and_close(self, env):
         if not env.SINGLETON:
             clone = env.clone()
-            if clone.delay_init:
+            if clone.delay_setup:
                 clone.reset()
             del clone
 
             clone = env.clone()
-            if clone.delay_init:
-                clone.init_env()
+            if clone.delay_setup:
+                clone.setup()
             clone.close()
 
     @pytest.mark.skipif(os.getenv("SKIP_RENDER", False), reason="No display in CI.")
@@ -177,7 +177,7 @@ class TestGymEnvironment(TestBaseEnvironment):
             "name": env.name,
             "frameskip": 1,
             "autoreset": True,
-            "delay_init": True,
+            "delay_setup": True,
             "wrappers": None,
         }
         with warnings.catch_warnings():
