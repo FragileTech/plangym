@@ -163,6 +163,7 @@ class DMControlEnv(PlanEnvironment):
         # self.gym_env.seed(seed)
 
     def get_image(self) -> np.ndarray:
+        """Return and RGB array representing the current state of the environment."""
         return self.render(mode="rgb_array")
 
     def render(self, mode="human"):

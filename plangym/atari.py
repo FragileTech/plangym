@@ -1,5 +1,4 @@
 """Implement the ``plangym`` API for Atari environments."""
-import pickle
 from typing import Any, Dict, Iterable, Optional, Union
 
 import gym
