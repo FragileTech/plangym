@@ -110,7 +110,7 @@ This is a summary of the incoming improvements to the project:
 - **Support for rendering in notebooks that are running on headless machines**.
 
 ## License
-ML Ops Quickstart is released under the [MIT](LICENSE) license.
+Plangym is released under the [MIT](LICENSE) license.
 
 ## Contributing
 
