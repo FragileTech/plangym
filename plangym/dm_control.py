@@ -61,7 +61,6 @@ class DMControlEnv(PlanEnvironment):
         self.viewer = []
         self._last_time_step = None
         self._viewer = None
-        self._render_mode = render_mode
         self._observation_space = None
         self._action_space = None
         name, self._domain_name, self._task_name = self._parse_names(name, domain_name, task_name)
@@ -72,6 +71,7 @@ class DMControlEnv(PlanEnvironment):
             wrappers=wrappers,
             delay_setup=delay_setup,
             autoreset=autoreset,
+            render_mode=render_mode,
         )
 
     @property
@@ -145,13 +145,13 @@ class DMControlEnv(PlanEnvironment):
             self._gym_env = self.init_gym_env()
             if self._wrappers is not None:
                 self.apply_wrappers(self._wrappers)
-            shape = self.reset(return_state=False).shape
-            self._observation_space = Box(low=-np.inf, high=np.inf, shape=shape, dtype=np.float32)
             self._action_space = Box(
                 low=self.action_spec().minimum,
                 high=self.action_spec().maximum,
                 dtype=np.float32,
             )
+            shape = self.reset(return_state=False).shape
+            self._observation_space = Box(low=-np.inf, high=np.inf, shape=shape, dtype=np.float32)
 
     def action_spec(self):
         """Alias for the environment's ``action_spec``."""
@@ -161,6 +161,9 @@ class DMControlEnv(PlanEnvironment):
         """Seed the underlying :class:`gym.Env`."""
         np.random.seed(seed)
         # self.gym_env.seed(seed)
+
+    def get_image(self) -> np.ndarray:
+        return self.render(mode="rgb_array")
 
     def render(self, mode="human"):
         """
@@ -203,6 +206,7 @@ class DMControlEnv(PlanEnvironment):
             return (state, obs) after reset.
         """
         time_step = self.gym_env.reset()
+        # observed, *_ = self.step_with_dt(action=self.sample_action(), dt=20)
         observed = self._time_step_to_obs(time_step)
         self._render_i = 0
         if not return_state:
@@ -277,6 +281,8 @@ class DMControlEnv(PlanEnvironment):
         info["oob"] = terminal
         info["win"] = self.get_win_condition(info)
         info["n_steps"] = n_steps
+        if self.render_mode == "rgb_array":
+            info["rgb"] = self.get_image()
         return obs, reward, terminal, info
 
     @staticmethod

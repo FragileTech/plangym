@@ -1,7 +1,7 @@
 """Implementation of LunarLander with no fire coming out of the engines that steps faster."""
 import copy
 import math
-from typing import Any, Dict, Iterable, Union
+from typing import Any, Dict, Iterable, Optional, Union
 
 import numpy as np
 import numpy as numpy
@@ -358,6 +358,7 @@ class LunarLander(PlanEnvironment):
         delay_setup: bool = False,
         deterministic: bool = False,
         continuous: bool = False,
+        render_mode: Optional[str] = None,
     ):
         """Initialize a :class:`LunarLander`."""
         self._deterministic = deterministic
@@ -369,6 +370,7 @@ class LunarLander(PlanEnvironment):
             autoreset=autoreset,
             wrappers=wrappers,
             delay_setup=delay_setup,
+            render_mode=render_mode,
         )
 
     @property

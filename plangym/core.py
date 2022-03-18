@@ -134,11 +134,8 @@ class BaseEnvironment(ABC):
             else returns `(new_states, observs, rewards, ends, infos)`.
 
         """
-        dt = (
-            dt
-            if isinstance(dt, (numpy.ndarray, Iterable))
-            else numpy.ones(len(actions), dtype=int) * dt
-        )
+        dt_is_array = (isinstance(dt, numpy.ndarray) and dt.shape) or isinstance(dt, (list, tuple))
+        dt = dt if dt_is_array else numpy.ones(len(actions), dtype=int) * dt
         no_states = states is None or states[0] is None
         states = [None] * len(actions) if no_states else states
         data = [self.step(action, state, dt=dt) for action, state, dt in zip(actions, states, dt)]
@@ -251,6 +248,7 @@ class PlanEnvironment(BaseEnvironment):
         wrappers: Iterable[wrap_callable] = None,
         delay_setup: bool = False,
         remove_time_limit=True,
+        render_mode: Optional[str] = None,
     ):
         """
         Initialize a :class:`PlanEnvironment`.
@@ -269,6 +267,7 @@ class PlanEnvironment(BaseEnvironment):
             remove_time_limit: If True, remove the time limit from the environment.
 
         """
+        self._render_mode = render_mode
         self._gym_env = None
         self.episodic_life = episodic_live
         self.remove_time_limit = remove_time_limit
@@ -318,6 +317,11 @@ class PlanEnvironment(BaseEnvironment):
         """Return the metadata of the environment."""
         if hasattr(self.gym_env, "metadata"):
             return self.gym_env.metadata
+
+    @property
+    def render_mode(self) -> Union[None, str]:
+        """Return how the game will be rendered. Values: None | human | rgb_array."""
+        return self._render_mode
 
     def setup(self):
         """Initialize the target :class:`gym.Env` instance."""
@@ -394,6 +398,8 @@ class PlanEnvironment(BaseEnvironment):
         info["oob"] = oob
         info["win"] = self.get_win_condition(info)
         info["n_steps"] = n_steps
+        if self.render_mode == "rgb_array":
+            info["rgb"] = self.get_image()
         return obs, reward, terminal, info
 
     def sample_action(self) -> Union[int, np.ndarray]:
@@ -461,7 +467,7 @@ class PlanEnvironment(BaseEnvironment):
         """Calculate a new terminal condition using the info data."""
         return False
 
-    def render(self, mode=None):
+    def render(self, mode="human"):
         """Render the environment using OpenGL. This wraps the OpenAI render method."""
         if hasattr(self.gym_env, "render"):
             return self.gym_env.render(mode=mode)
@@ -521,7 +527,6 @@ class VideogameEnvironment(PlanEnvironment):
         self._difficulty = difficulty
         self._repeat_action_probability = repeat_action_probability
         self._full_action_space = full_action_space
-        self._render_mode = render_mode
         super(VideogameEnvironment, self).__init__(
             name=name,
             frameskip=frameskip,
@@ -529,6 +534,7 @@ class VideogameEnvironment(PlanEnvironment):
             autoreset=autoreset,
             wrappers=wrappers,
             delay_setup=delay_setup,
+            render_mode=render_mode,
         )
 
     @property
@@ -555,11 +561,6 @@ class VideogameEnvironment(PlanEnvironment):
     def full_action_space(self) -> bool:
         """If True the action space correspond to all possible actions in the Atari emulator."""
         return self._full_action_space
-
-    @property
-    def render_mode(self) -> str:
-        """Return how the game will be rendered. Values: None | human | rgb_array."""
-        return self._render_mode
 
     @property
     def has_time_limit(self) -> bool:

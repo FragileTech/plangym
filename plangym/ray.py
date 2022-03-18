@@ -173,18 +173,15 @@ class RayEnv(VectorizedEnvironment):
             if states is None returns (observs, rewards, ends, infos)
             else returns(new_states, observs, rewards, ends, infos)
         """
+        dt_is_array = (isinstance(dt, np.ndarray) and dt.shape) or isinstance(dt, (list, tuple))
+        dt = dt if dt_is_array else np.ones(len(actions), dtype=int) * dt
         if states is None:
             observs, rewards, dones, infos = self._make_transitions(actions, None, dt)
         else:
             states, observs, rewards, dones, infos = self._make_transitions(actions, states, dt)
 
-        observ = np.stack(observs)
-        reward = np.stack(rewards)
-        done = np.stack(dones)
-        infos = np.stack(infos)
-
         if states is None:
-            return observ, reward, done, infos
+            return observs, rewards, dones, infos
         else:
             return states, observs, rewards, dones, infos
 

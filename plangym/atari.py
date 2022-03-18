@@ -235,8 +235,9 @@ class AtariEnvironment(VideogameEnvironment):
         Example::
 
             >>> env = AtariEnvironment(name="Qbert-v0")
-            >>> env.get_state()
-            array([128,   4, 149, ..., 148,  98,  46], dtype=uint8)
+            >>> env.get_state() #doctest: +ELLIPSIS
+            array([<ale_py._ale_py.ALEState object at 0x...>, None],
+                  dtype=object)
 
             >>> env = AtariEnvironment(name="Qbert-v0", array_state=False)
             >>> env.get_state() #doctest: +ELLIPSIS
@@ -244,10 +245,7 @@ class AtariEnvironment(VideogameEnvironment):
 
         """
         state = self.gym_env.unwrapped.clone_state(include_rng=self.clone_seeds)
-        is_pickled = self.STATE_IS_ARRAY and not self.clone_seeds
-        if is_pickled:
-            state = numpy.frombuffer(pickle.dumps(state), dtype=numpy.uint8)
-        elif self.clone_seeds:
+        if self.STATE_IS_ARRAY:
             state = numpy.array((state, None), dtype=object)
         return state
 
@@ -268,13 +266,9 @@ class AtariEnvironment(VideogameEnvironment):
             >>> (state == env.get_state()).all()
             True
         """
-        is_pickled = self.STATE_IS_ARRAY and not self.clone_seeds
-        if is_pickled:
-            state = pickle.loads(state.tobytes())
-        elif self.STATE_IS_ARRAY:
+        if self.STATE_IS_ARRAY:
             state = state[0]
         self.gym_env.unwrapped.restore_state(state)
-        del state
 
     def step_with_dt(self, action: Union[numpy.ndarray, int, float], dt: int = 1):
         """

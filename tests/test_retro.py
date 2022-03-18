@@ -7,7 +7,7 @@ from plangym.retro import Downsample, RetroEnvironment, SonicDiscretizer
 
 
 pytest.importorskip("retro")
-from tests.api_tests import batch_size, display, TestBaseEnvironment, TestGymEnvironment
+from plangym.api_tests import batch_size, display, TestBaseEnvironment, TestGymEnvironment
 
 
 def retro_airstrike():

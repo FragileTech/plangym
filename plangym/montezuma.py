@@ -248,7 +248,6 @@ class CustomMontezuma:
         """Restore the state of the game from the provided numpy array."""
         state = pickle.loads(state.tobytes())
         self.unwrapped.restore_state(state)
-        del state
 
     def get_restore(self):
         """Return a tuple containing all the information needed to clone the state of the env."""

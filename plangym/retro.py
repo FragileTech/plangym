@@ -272,14 +272,15 @@ class RetroEnvironment(VideogameEnvironment):
         """
         data = super(RetroEnvironment, self).step(action=action, state=state, dt=dt)
         ram_obs = self.obs_type == "ram"
-        if state is None:
-            observ, reward, terminal, info = data
+        *state, observ, reward, terminal, info = data
+        if self.render_mode == "rgb_array":
+            info["rgb"] = self.get_image()
+        if state:
+            observ = state[0].copy() if ram_obs else self.process_obs(observ)
+            return state[0], observ, reward, terminal, info
+        else:
             observ = self.get_ram() if ram_obs else self.process_obs(observ)
             return observ, reward, terminal, info
-        else:
-            state, observ, reward, terminal, info = data
-            observ = state.copy() if ram_obs else self.process_obs(observ)
-            return state, observ, reward, terminal, info
 
     def process_obs(self, obs):
         """Resize the observations to the target size and transform them to grayscale."""

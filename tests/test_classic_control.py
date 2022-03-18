@@ -1,8 +1,8 @@
 from gym.wrappers import TimeLimit
 import pytest
 
+from plangym.api_tests import batch_size, display, TestBaseEnvironment, TestGymEnvironment
 from plangym.classic_control import ClassicControl
-from tests.api_tests import batch_size, display, TestBaseEnvironment, TestGymEnvironment
 
 
 environments = [

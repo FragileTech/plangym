@@ -423,16 +423,18 @@ class BatchEnv:
 
         """
         no_states = states is None or states[0] is None
+        dt_is_array = (isinstance(dt, numpy.ndarray) and dt.shape) or isinstance(dt, (list, tuple))
+        dt = dt if dt_is_array else numpy.ones(len(actions), dtype=int) * dt
         if no_states:
             observs, rewards, dones, infos = self._make_transitions(actions, states, dt)
         else:
             states, observs, rewards, dones, infos = self._make_transitions(actions, states, dt)
-        observ = numpy.stack(observs)
-        reward = numpy.stack(rewards)
-        done = numpy.stack(dones)
-        infos = numpy.stack(infos)
+        # observ = numpy.stack(observs)
+        # reward = numpy.stack(rewards)
+        # done = numpy.stack(dones)
+        # infos = numpy.stack(infos)
         if no_states:
-            return observ, reward, done, infos
+            return observs, rewards, dones, infos
         else:
             return states, observs, rewards, dones, infos
 
