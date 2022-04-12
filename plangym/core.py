@@ -598,7 +598,7 @@ class VideogameEnvironment(PlanEnvironment):
         raise NotImplementedError()
 
 
-class VectorizedEnvironment(BaseEnvironment, ABC):
+class VectorizedEnvironment(PlanEnvironment, ABC):
     """
     Base class that defines the API for working with vectorized environments.
 
@@ -663,31 +663,31 @@ class VectorizedEnvironment(BaseEnvironment, ABC):
         return self._n_workers
 
     @property
-    def plangym_env(self) -> BaseEnvironment:
+    def plan_env(self) -> BaseEnvironment:
         """Environment that is wrapped by the current instance."""
         return self._plangym_env
 
     @property
     def obs_shape(self) -> Tuple[int]:
         """Tuple containing the shape of the observations returned by the Environment."""
-        return self.plangym_env.obs_shape
+        return self.plan_env.obs_shape
 
     @property
     def action_shape(self) -> Tuple[int]:
         """Tuple containing the shape of the actions applied to the Environment."""
-        return self.plangym_env.action_shape
+        return self.plan_env.action_shape
 
     @property
     def gym_env(self):
         """Return the instance of the environment that is being wrapped by plangym."""
         try:
-            return self.plangym_env.gym_env
+            return self.plan_env.gym_env
         except AttributeError:
             return
 
     def __getattr__(self, item):
         """Forward attributes to the wrapped environment."""
-        return getattr(self.plangym_env, item)
+        return getattr(self.plan_env, item)
 
     @staticmethod
     def split_similar_chunks(
@@ -742,7 +742,7 @@ class VectorizedEnvironment(BaseEnvironment, ABC):
 
     def setup(self) -> None:
         """Initialize the target environment with the parameters provided at __init__."""
-        self._plangym_env: BaseEnvironment = self.create_env_callable()()
+        self._plangym_env: PlanEnvironment = self.create_env_callable()()
         self._plangym_env.setup()
 
     def step(self, action: numpy.ndarray, state: numpy.ndarray = None, dt: int = 1):
@@ -761,7 +761,7 @@ class VectorizedEnvironment(BaseEnvironment, ABC):
             `(new_states, observs, rewards, ends, infos)`.
 
         """
-        return self.plangym_env.step(action=action, state=state, dt=dt)
+        return self.plan_env.step(action=action, state=state, dt=dt)
 
     def reset(self, return_state: bool = True):
         """
@@ -776,7 +776,7 @@ class VectorizedEnvironment(BaseEnvironment, ABC):
             return (state, obs) after reset.
 
         """
-        state, obs = self.plangym_env.reset(return_state=True)
+        state, obs = self.plan_env.reset(return_state=True)
         self.sync_states(state)
         return (state, obs) if return_state else obs
 
@@ -790,7 +790,7 @@ class VectorizedEnvironment(BaseEnvironment, ABC):
             State of the simulation.
 
         """
-        return self.plangym_env.get_state()
+        return self.plan_env.get_state()
 
     def set_state(self, state):
         """
@@ -800,12 +800,12 @@ class VectorizedEnvironment(BaseEnvironment, ABC):
             state: Target state to be set in the environment.
 
         """
-        self.plangym_env.set_state(state)
+        self.plan_env.set_state(state)
         self.sync_states(state)
 
     def render(self, mode="human"):
         """Render the environment using OpenGL. This wraps the OpenAI render method."""
-        return self.plangym_env.render(mode)
+        return self.plan_env.render(mode)
 
     def get_image(self) -> np.ndarray:
         """
@@ -814,7 +814,7 @@ class VectorizedEnvironment(BaseEnvironment, ABC):
         Square matrices are interpreted as a greyscale image. Three-dimensional arrays
         are interpreted as RGB images with channels (Height, Width, RGB)
         """
-        return self.plangym_env.get_image()
+        return self.plan_env.get_image()
 
     def step_with_dt(self, action: Union[numpy.ndarray, int, float], dt: int = 1) -> tuple:
         """
@@ -830,7 +830,7 @@ class VectorizedEnvironment(BaseEnvironment, ABC):
             else returns `(new_state, observs, reward, terminal, info)`.
 
         """
-        return self.plangym_env.step_with_dt(action=action, dt=dt)
+        return self.plan_env.step_with_dt(action=action, dt=dt)
 
     def sample_action(self):
         """
@@ -839,7 +839,7 @@ class VectorizedEnvironment(BaseEnvironment, ABC):
         Implementing this method is optional, and it's only intended to make the
         testing process of the Environment easier.
         """
-        return self.plangym_env.sample_action()
+        return self.plan_env.sample_action()
 
     def sync_states(self, state: None):
         """
