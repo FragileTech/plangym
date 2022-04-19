@@ -35,6 +35,7 @@ class DMControlEnv(PlanEnvironment):
         domain_name=None,
         task_name=None,
         render_mode=None,
+        remove_time_limit=None,
     ):
         """
         Initialize a :class:`DMControlEnv`.
@@ -250,7 +251,7 @@ class DMControlEnv(PlanEnvironment):
         env_end = time_step.last()
         _reward = time_step.reward if time_step.reward is not None else 0.0
         terminal = self.terminal_condition(obs, _reward, env_end, info, action)
-        reward = _reward + self.curr_reward
+        reward = _reward + self._reward_step
         return obs, reward, terminal, info
 
     @staticmethod

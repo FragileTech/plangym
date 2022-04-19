@@ -359,6 +359,7 @@ class LunarLander(PlanEnvironment):
         deterministic: bool = False,
         continuous: bool = False,
         render_mode: Optional[str] = None,
+        remove_time_limit=None,
     ):
         """Initialize a :class:`LunarLander`."""
         self._deterministic = deterministic

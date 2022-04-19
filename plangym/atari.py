@@ -5,6 +5,7 @@ import gym
 import numpy
 
 from plangym.core import VideogameEnvironment, wrap_callable
+from plangym.utils import remove_time_limit
 
 
 def ale_to_ram(ale) -> numpy.ndarray:
@@ -118,6 +119,10 @@ class AtariEnvironment(VideogameEnvironment):
         """
         self._gym_env = None
         self.clone_seeds = clone_seeds
+        self._mode = mode
+        self._difficulty = difficulty
+        self._repeat_action_probability = repeat_action_probability
+        self._full_action_space = full_action_space
         super(AtariEnvironment, self).__init__(
             name=name,
             frameskip=frameskip,
@@ -126,12 +131,7 @@ class AtariEnvironment(VideogameEnvironment):
             delay_setup=delay_setup,
             remove_time_limit=remove_time_limit,
             obs_type=obs_type,  # ram | rgb | grayscale
-            mode=mode,  # game mode, see Machado et al. 2018
-            difficulty=difficulty,  # game difficulty, see Machado et al. 2018
-            repeat_action_probability=repeat_action_probability,  # Sticky action probability
-            full_action_space=full_action_space,  # Use all actions
             render_mode=render_mode,  # None | human | rgb_array
-            possible_to_win=possible_to_win,
             wrappers=wrappers,
         )
         self.STATE_IS_ARRAY = array_state
@@ -151,16 +151,29 @@ class AtariEnvironment(VideogameEnvironment):
         """
         return self.gym_env.unwrapped.ale
 
+    @property
+    def mode(self) -> int:
+        """Return the selected game mode for the current environment."""
+        return self._mode
+
+    @property
+    def difficulty(self) -> int:
+        """Return the selected difficulty for the current environment."""
+        return self._difficulty
+
+    @property
+    def repeat_action_probability(self) -> float:
+        """Probability of repeating the same action after input."""
+        return self._repeat_action_probability
+
+    @property
+    def full_action_space(self) -> bool:
+        """If True the action space correspond to all possible actions in the Atari emulator."""
+        return self._full_action_space
+
     def get_lifes_from_info(self, info: Dict[str, Any]) -> int:
         """Return the number of lives remaining in the current game."""
-        val = super().get_lifes_from_info(info)
-        return info.get("ale.lives", val)
-
-    def get_win_condition(self, info: Dict[str, Any]) -> bool:
-        """Return ``True`` if the current state corresponds to winning the game."""
-        if not self.possible_to_win:
-            return False
-        return not info["lost_live"] and info["terminal"]
+        return info.get("ale.lives", super().get_lifes_from_info(info))
 
     def get_image(self) -> numpy.ndarray:
         """
@@ -210,17 +223,9 @@ class AtariEnvironment(VideogameEnvironment):
             )
         except RuntimeError:
             gym_env = gym.make(self.name)
-        remove_time_limit = (
-            self.has_time_limit
-            and hasattr(gym_env, "_max_episode_steps")
-            and isinstance(gym_env, gym.wrappers.time_limit.TimeLimit)
-        )
-        if remove_time_limit:
-            max_steps = 1e100
-            gym_env._max_episode_steps = max_steps
-            if gym_env.spec is not None:
-                gym_env.spec.max_episode_steps = None
-        gym_env = gym_env.unwrapped
+        if self.remove_time_limit:
+            gym_env = remove_time_limit(gym_env)
+            gym_env = gym_env.unwrapped
         gym_env.reset()
         return gym_env
 
@@ -294,7 +299,14 @@ class AtariEnvironment(VideogameEnvironment):
 
     def clone(self, **kwargs) -> "VideogameEnvironment":
         """Return a copy of the environment."""
-        return super(AtariEnvironment, self).clone(clone_seeds=self.clone_seeds)
+        params = dict(
+            mode=self.mode,
+            difficulty=self.difficulty,
+            repeat_action_probability=self.repeat_action_probability,
+            full_action_space=self.full_action_space,
+        )
+        params.update(**kwargs)
+        return super(VideogameEnvironment, self).clone(**params)
 
 
 class AtariPyEnvironment(AtariEnvironment):

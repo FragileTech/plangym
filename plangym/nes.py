@@ -9,8 +9,11 @@ from plangym.core import VideogameEnvironment
 
 
 class NesEnvironment(VideogameEnvironment):
+    """Environment for working with the NES-py emulator."""
+
     @property
-    def nes_env(self) -> "NESEnv":
+    def nes_env(self) -> "NESEnv":  # noqa: F821
+        """Access the underlying NESEnv."""
         return self.gym_env.unwrapped
 
     def get_image(self) -> np.ndarray:
@@ -23,6 +26,7 @@ class NesEnvironment(VideogameEnvironment):
         return self.gym_env.screen.copy()
 
     def get_ram(self) -> np.ndarray:
+        """Return a copy of the emulator environment."""
         return self.nes_env.ram.copy()
 
     def get_state(self, state: Optional[np.ndarray] = None) -> np.ndarray:
@@ -58,22 +62,23 @@ class MarioEnvironment(NesEnvironment):
 
     @property
     def obs_shape(self) -> Tuple[int, ...]:
+        """Return the shape of the environment observations."""
         return tuple([7])
 
-    def get_state(self) -> np.ndarray:
+    def get_state(self, state: Optional[np.ndarray] = None) -> np.ndarray:
         """
         Recover the internal state of the simulation.
 
         A state must completely describe the Environment at a given moment.
         """
-        state = np.empty(250288, dtype=np.byte)
+        state = np.empty(250288, dtype=np.byte) if state is None else state
         state[-2:] = 0  # Some states use the last two bytes. Set to zero by default.
         return super(MarioEnvironment, self).get_state(state)
 
     def init_gym_env(self) -> gym.Env:
         """Initialize the :class:`gym.Env`` instance that the current class is wrapping."""
         import gym_super_mario_bros
-        from gym_super_mario_bros.actions import COMPLEX_MOVEMENT, SIMPLE_MOVEMENT
+        from gym_super_mario_bros.actions import COMPLEX_MOVEMENT  # , SIMPLE_MOVEMENT
         from nes_py.wrappers import JoypadSpace
 
         env = gym_super_mario_bros.make(self.name)
@@ -152,6 +157,18 @@ class MarioEnvironment(NesEnvironment):
         self,
         return_state: bool = True,
     ) -> Union[numpy.ndarray, Tuple[numpy.ndarray, numpy.ndarray]]:
+        """
+        Reset the environment and returns the first observation, or the first \
+        (state, obs) tuple.
+
+        Args:
+            return_state: If true return a also the initial state of the env.
+
+        Returns:
+            Observation of the environment if `return_state` is False. Otherwise,
+            return (state, obs) after reset.
+
+        """
         data = super(MarioEnvironment, self).reset(return_state=return_state)
         obs = np.zeros(7)
         return (data[0], obs) if return_state else obs
