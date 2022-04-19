@@ -115,7 +115,7 @@ class RetroEnvironment(VideogameEnvironment):
         self,
         name: str,
         frameskip: int = 5,
-        episodic_live: bool = False,
+        episodic_life: bool = False,
         autoreset: bool = True,
         delay_setup: bool = False,
         remove_time_limit: bool = True,
@@ -139,7 +139,7 @@ class RetroEnvironment(VideogameEnvironment):
             name: Name of the environment. Follows standard gym syntax conventions.
             frameskip: Number of times an action will be applied for each step \
                 in dt.
-            episodic_live: Return ``end = True`` when losing a life.
+            episodic_life: Return ``end = True`` when losing a life.
             autoreset: Restart environment when reaching a terminal state.
             delay_setup: If ``True`` do not initialize the ``gym.Environment`` \
                      and wait for ``setup`` to be called later.
@@ -167,7 +167,7 @@ class RetroEnvironment(VideogameEnvironment):
         super(RetroEnvironment, self).__init__(
             name=name,
             frameskip=frameskip,
-            episodic_live=episodic_live,
+            episodic_life=episodic_life,
             autoreset=autoreset,
             delay_setup=delay_setup,
             remove_time_limit=remove_time_limit,
@@ -206,7 +206,7 @@ class RetroEnvironment(VideogameEnvironment):
             name=self.name,
             frameskip=self.frameskip,
             wrappers=self._wrappers,
-            episodic_live=self.episodic_life,
+            episodic_life=self.episodic_life,
             autoreset=self.autoreset,
             delay_setup=self.delay_setup,
             obs_type=self.obs_type,

@@ -433,6 +433,7 @@ class BatchEnv:
         # reward = numpy.stack(rewards)
         # done = numpy.stack(dones)
         # infos = numpy.stack(infos)
+        # states = numpy.stack(states) if self.plan_env.STATE_IS_ARRAY else states
         if no_states:
             return observs, rewards, dones, infos
         else:

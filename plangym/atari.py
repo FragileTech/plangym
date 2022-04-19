@@ -23,7 +23,7 @@ class AtariEnvironment(VideogameEnvironment):
         name: Name of the environment. Follows standard gym syntax conventions.
         frameskip: Number of times an action will be applied for each step
             in dt.
-        episodic_live: Return ``end = True`` when losing a life.
+        episodic_life: Return ``end = True`` when losing a life.
         autoreset: Restart environment when reaching a terminal state.
         delay_setup: If ``True`` do not initialize the ``gym.Environment``
             and wait for ``setup`` to be called later.
@@ -63,7 +63,7 @@ class AtariEnvironment(VideogameEnvironment):
         self,
         name: str,
         frameskip: int = 5,
-        episodic_live: bool = False,
+        episodic_life: bool = False,
         autoreset: bool = True,
         delay_setup: bool = False,
         remove_time_limit: bool = True,
@@ -85,7 +85,7 @@ class AtariEnvironment(VideogameEnvironment):
             name: Name of the environment. Follows standard gym syntax conventions.
             frameskip: Number of times an action will be applied for each step
                 in dt.
-            episodic_live: Return ``end = True`` when losing a life.
+            episodic_life: Return ``end = True`` when losing a life.
             autoreset: Restart environment when reaching a terminal state.
             delay_setup: If ``True`` do not initialize the ``gym.Environment``
                 and wait for ``setup`` to be called later.
@@ -121,7 +121,7 @@ class AtariEnvironment(VideogameEnvironment):
         super(AtariEnvironment, self).__init__(
             name=name,
             frameskip=frameskip,
-            episodic_live=episodic_live,
+            episodic_life=episodic_life,
             autoreset=autoreset,
             delay_setup=delay_setup,
             remove_time_limit=remove_time_limit,
@@ -151,9 +151,9 @@ class AtariEnvironment(VideogameEnvironment):
         """
         return self.gym_env.unwrapped.ale
 
-    def get_lives_from_info(self, info: Dict[str, Any]) -> int:
+    def get_lifes_from_info(self, info: Dict[str, Any]) -> int:
         """Return the number of lives remaining in the current game."""
-        val = super().get_lives_from_info(info)
+        val = super().get_lifes_from_info(info)
         return info.get("ale.lives", val)
 
     def get_win_condition(self, info: Dict[str, Any]) -> bool:
@@ -195,7 +195,7 @@ class AtariEnvironment(VideogameEnvironment):
         return self.gym_env.ale.getRAM()
 
     def init_gym_env(self) -> gym.Env:
-        """Initialize the :class:`gum.Env`` instance that the Environment is wrapping."""
+        """Initialize the :class:`gym.Env`` instance that the Environment is wrapping."""
         # Remove any undocumented wrappers
         try:
             gym_env = gym.make(
@@ -287,33 +287,10 @@ class AtariEnvironment(VideogameEnvironment):
             >>> env = AtariEnvironment(name="Pong-v0")
             >>> obs = env.reset(return_state=False)
             >>> obs, reward, end, info = env.step_with_dt(env.sample_action(), dt=7)
-            >>> assert info["n_steps"] == 7
+            >>> assert not end
 
         """
-        reward = 0
-        obs, lost_life, terminal, oob = None, False, False, False
-        info = {"lives": -1}
-        n_steps = 0
-        for _ in range(int(dt)):
-            obs, _reward, _oob, _info = self.gym_env.step(action)
-            _info["lives"] = self.get_lives_from_info(_info)
-            lost_life = info["lives"] > _info["lives"] or lost_life
-            oob = oob or _oob
-            custom_terminal = self.custom_terminal_condition(info, _info, _oob)
-            terminal = terminal or oob or custom_terminal
-            terminal = (terminal or lost_life) if self.episodic_life else terminal
-            info = _info.copy()
-            reward += _reward
-            n_steps += 1
-            if terminal:
-                break
-        # This allows to get the original values even when using an episodic life environment
-        info["terminal"] = terminal
-        info["lost_live"] = lost_life
-        info["oob"] = oob
-        info["win"] = self.get_win_condition(info)
-        info["n_steps"] = n_steps
-        return obs, reward, terminal, info
+        return super(AtariEnvironment, self).step_with_dt(action=action, dt=dt)
 
     def clone(self, **kwargs) -> "VideogameEnvironment":
         """Return a copy of the environment."""
