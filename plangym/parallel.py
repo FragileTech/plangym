@@ -278,21 +278,21 @@ class ExternalProcess:
                     "Received message of unknown type {}".format(message),
                 )  # pragma: no cover
         except Exception:  # pragma: no cover # pylint: disable=broad-except
-            import logging
+            # import logging
 
             stacktrace = "".join(traceback.format_exception(*sys.exc_info()))
-            try:
-                import tensorflow as tf
-
-                message = f"Error in environment process: {stacktrace}"
-                if hasattr(tf, "logging"):
-                    tf.logging.error(message)
-                else:
-                    logger = tf.get_logger()
-                    logger.setLevel(logging.ERROR)
-                    logger.error(message)
-            except ImportError:
-                pass
+            # try:
+            #    import tensorflow as tf
+            #
+            #    message = f"Error in environment process: {stacktrace}"
+            #    if hasattr(tf, "logging"):
+            #        tf.logging.error(message)
+            #    else:
+            #        logger = tf.get_logger()
+            #        logger.setLevel(logging.ERROR)
+            #        logger.error(message)
+            # except ImportError:
+            #    pass
             conn.send((self._EXCEPTION, stacktrace))
             conn.close()
 
@@ -433,6 +433,7 @@ class BatchEnv:
         # reward = numpy.stack(rewards)
         # done = numpy.stack(dones)
         # infos = numpy.stack(infos)
+        # states = numpy.stack(states) if self.plan_env.STATE_IS_ARRAY else states
         if no_states:
             return observs, rewards, dones, infos
         else:

@@ -5,6 +5,7 @@ import gym
 import numpy
 
 from plangym.core import VideogameEnvironment, wrap_callable
+from plangym.utils import remove_time_limit
 
 
 def ale_to_ram(ale) -> numpy.ndarray:
@@ -23,7 +24,7 @@ class AtariEnvironment(VideogameEnvironment):
         name: Name of the environment. Follows standard gym syntax conventions.
         frameskip: Number of times an action will be applied for each step
             in dt.
-        episodic_live: Return ``end = True`` when losing a life.
+        episodic_life: Return ``end = True`` when losing a life.
         autoreset: Restart environment when reaching a terminal state.
         delay_setup: If ``True`` do not initialize the ``gym.Environment``
             and wait for ``setup`` to be called later.
@@ -63,7 +64,7 @@ class AtariEnvironment(VideogameEnvironment):
         self,
         name: str,
         frameskip: int = 5,
-        episodic_live: bool = False,
+        episodic_life: bool = False,
         autoreset: bool = True,
         delay_setup: bool = False,
         remove_time_limit: bool = True,
@@ -85,7 +86,7 @@ class AtariEnvironment(VideogameEnvironment):
             name: Name of the environment. Follows standard gym syntax conventions.
             frameskip: Number of times an action will be applied for each step
                 in dt.
-            episodic_live: Return ``end = True`` when losing a life.
+            episodic_life: Return ``end = True`` when losing a life.
             autoreset: Restart environment when reaching a terminal state.
             delay_setup: If ``True`` do not initialize the ``gym.Environment``
                 and wait for ``setup`` to be called later.
@@ -118,20 +119,19 @@ class AtariEnvironment(VideogameEnvironment):
         """
         self._gym_env = None
         self.clone_seeds = clone_seeds
+        self._mode = mode
+        self._difficulty = difficulty
+        self._repeat_action_probability = repeat_action_probability
+        self._full_action_space = full_action_space
         super(AtariEnvironment, self).__init__(
             name=name,
             frameskip=frameskip,
-            episodic_live=episodic_live,
+            episodic_life=episodic_life,
             autoreset=autoreset,
             delay_setup=delay_setup,
             remove_time_limit=remove_time_limit,
             obs_type=obs_type,  # ram | rgb | grayscale
-            mode=mode,  # game mode, see Machado et al. 2018
-            difficulty=difficulty,  # game difficulty, see Machado et al. 2018
-            repeat_action_probability=repeat_action_probability,  # Sticky action probability
-            full_action_space=full_action_space,  # Use all actions
             render_mode=render_mode,  # None | human | rgb_array
-            possible_to_win=possible_to_win,
             wrappers=wrappers,
         )
         self.STATE_IS_ARRAY = array_state
@@ -151,16 +151,29 @@ class AtariEnvironment(VideogameEnvironment):
         """
         return self.gym_env.unwrapped.ale
 
-    def get_lives_from_info(self, info: Dict[str, Any]) -> int:
-        """Return the number of lives remaining in the current game."""
-        val = super().get_lives_from_info(info)
-        return info.get("ale.lives", val)
+    @property
+    def mode(self) -> int:
+        """Return the selected game mode for the current environment."""
+        return self._mode
 
-    def get_win_condition(self, info: Dict[str, Any]) -> bool:
-        """Return ``True`` if the current state corresponds to winning the game."""
-        if not self.possible_to_win:
-            return False
-        return not info["lost_live"] and info["terminal"]
+    @property
+    def difficulty(self) -> int:
+        """Return the selected difficulty for the current environment."""
+        return self._difficulty
+
+    @property
+    def repeat_action_probability(self) -> float:
+        """Probability of repeating the same action after input."""
+        return self._repeat_action_probability
+
+    @property
+    def full_action_space(self) -> bool:
+        """If True the action space correspond to all possible actions in the Atari emulator."""
+        return self._full_action_space
+
+    def get_lifes_from_info(self, info: Dict[str, Any]) -> int:
+        """Return the number of lives remaining in the current game."""
+        return info.get("ale.lives", super().get_lifes_from_info(info))
 
     def get_image(self) -> numpy.ndarray:
         """
@@ -195,7 +208,7 @@ class AtariEnvironment(VideogameEnvironment):
         return self.gym_env.ale.getRAM()
 
     def init_gym_env(self) -> gym.Env:
-        """Initialize the :class:`gum.Env`` instance that the Environment is wrapping."""
+        """Initialize the :class:`gym.Env`` instance that the Environment is wrapping."""
         # Remove any undocumented wrappers
         try:
             gym_env = gym.make(
@@ -210,17 +223,9 @@ class AtariEnvironment(VideogameEnvironment):
             )
         except RuntimeError:
             gym_env = gym.make(self.name)
-        remove_time_limit = (
-            self.has_time_limit
-            and hasattr(gym_env, "_max_episode_steps")
-            and isinstance(gym_env, gym.wrappers.time_limit.TimeLimit)
-        )
-        if remove_time_limit:
-            max_steps = 1e100
-            gym_env._max_episode_steps = max_steps
-            if gym_env.spec is not None:
-                gym_env.spec.max_episode_steps = None
-        gym_env = gym_env.unwrapped
+        if self.remove_time_limit:
+            gym_env = remove_time_limit(gym_env)
+            gym_env = gym_env.unwrapped
         gym_env.reset()
         return gym_env
 
@@ -287,37 +292,21 @@ class AtariEnvironment(VideogameEnvironment):
             >>> env = AtariEnvironment(name="Pong-v0")
             >>> obs = env.reset(return_state=False)
             >>> obs, reward, end, info = env.step_with_dt(env.sample_action(), dt=7)
-            >>> assert info["n_steps"] == 7
+            >>> assert not end
 
         """
-        reward = 0
-        obs, lost_life, terminal, oob = None, False, False, False
-        info = {"lives": -1}
-        n_steps = 0
-        for _ in range(int(dt)):
-            obs, _reward, _oob, _info = self.gym_env.step(action)
-            _info["lives"] = self.get_lives_from_info(_info)
-            lost_life = info["lives"] > _info["lives"] or lost_life
-            oob = oob or _oob
-            custom_terminal = self.custom_terminal_condition(info, _info, _oob)
-            terminal = terminal or oob or custom_terminal
-            terminal = (terminal or lost_life) if self.episodic_life else terminal
-            info = _info.copy()
-            reward += _reward
-            n_steps += 1
-            if terminal:
-                break
-        # This allows to get the original values even when using an episodic life environment
-        info["terminal"] = terminal
-        info["lost_live"] = lost_life
-        info["oob"] = oob
-        info["win"] = self.get_win_condition(info)
-        info["n_steps"] = n_steps
-        return obs, reward, terminal, info
+        return super(AtariEnvironment, self).step_with_dt(action=action, dt=dt)
 
     def clone(self, **kwargs) -> "VideogameEnvironment":
         """Return a copy of the environment."""
-        return super(AtariEnvironment, self).clone(clone_seeds=self.clone_seeds)
+        params = dict(
+            mode=self.mode,
+            difficulty=self.difficulty,
+            repeat_action_probability=self.repeat_action_probability,
+            full_action_space=self.full_action_space,
+        )
+        params.update(**kwargs)
+        return super(VideogameEnvironment, self).clone(**params)
 
 
 class AtariPyEnvironment(AtariEnvironment):

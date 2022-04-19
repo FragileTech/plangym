@@ -27,7 +27,7 @@ class DMControlEnv(PlanEnvironment):
         self,
         name: str = "cartpole-balance",
         frameskip: int = 1,
-        episodic_live: bool = False,
+        episodic_life: bool = False,
         autoreset: bool = True,
         wrappers: Iterable[wrap_callable] = None,
         delay_setup: bool = False,
@@ -35,6 +35,7 @@ class DMControlEnv(PlanEnvironment):
         domain_name=None,
         task_name=None,
         render_mode=None,
+        remove_time_limit=None,
     ):
         """
         Initialize a :class:`DMControlEnv`.
@@ -44,7 +45,7 @@ class DMControlEnv(PlanEnvironment):
                   example 'cartpole-balance'.
             frameskip: Set a deterministic frameskip to apply the same
                        action N times.
-            episodic_live: Send terminal signal after loosing a life.
+            episodic_life: Send terminal signal after loosing a life.
             autoreset: Restart environment when reaching a terminal state.
             wrappers: Wrappers that will be applied to the underlying OpenAI env. \
                      Every element of the iterable can be either a :class:`gym.Wrapper` \
@@ -67,7 +68,7 @@ class DMControlEnv(PlanEnvironment):
         super(DMControlEnv, self).__init__(
             name=name,
             frameskip=frameskip,
-            episodic_live=episodic_live,
+            episodic_life=episodic_life,
             wrappers=wrappers,
             delay_setup=delay_setup,
             autoreset=autoreset,
@@ -242,48 +243,15 @@ class DMControlEnv(PlanEnvironment):
         """
         return self.gym_env.physics.get_state()
 
-    def step_with_dt(self, action: Union[np.ndarray, int, float], dt: int = 1) -> tuple:
-        """
-         Take ``dt`` simulation steps and make the environment evolve in multiples\
-          of ``self.frameskip`` for a total of ``dt`` * ``self.frameskip`` steps.
-
-        Args:
-            action: Chosen action applied to the environment.
-            dt: Consecutive number of times that the action will be applied.
-
-        Returns:
-            if state is None returns ``(observs, reward, terminal, info)``
-            else returns ``(new_state, observs, reward, terminal, info)``
-
-        """
-        reward = 0
-        obs, lost_live, terminal = None, False, False
-        info = {"lives": -1}
-        n_steps = 0
-
-        for _ in range(int(dt)):
-            end = False
-            for _ in range(self.frameskip):
-                time_step = self.gym_env.step(action)
-                end = end or time_step.last()
-                reward += time_step.reward if time_step.reward is not None else 0.0
-                custom_terminal = self.custom_terminal_condition(info, {}, end)
-                terminal = terminal or end or custom_terminal
-                terminal = (terminal or lost_live) if self.episodic_life else terminal
-                n_steps += 1
-                if terminal:
-                    break
-            if terminal:
-                break
-        obs = self._time_step_to_obs(time_step)
-        # This allows to get the original values even when using an episodic life environment
-        info["terminal"] = terminal
-        info["lost_live"] = lost_live
-        info["oob"] = terminal
-        info["win"] = self.get_win_condition(info)
-        info["n_steps"] = n_steps
-        if self.render_mode == "rgb_array":
-            info["rgb"] = self.get_image()
+    def apply_action(self, action):
+        """Transform the returned time_step object to a compatible gym tuple."""
+        info = {}
+        time_step = self.gym_env.step(action)
+        obs = self._time_step_to_obs(time_step)  # TODO: Optimize this so we only do it once
+        env_end = time_step.last()
+        _reward = time_step.reward if time_step.reward is not None else 0.0
+        terminal = self.terminal_condition(obs, _reward, env_end, info, action)
+        reward = _reward + self._reward_step
         return obs, reward, terminal, info
 
     @staticmethod

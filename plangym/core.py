@@ -8,8 +8,12 @@ from gym.spaces import Space
 import numpy
 import numpy as np
 
+from plangym.utils import remove_time_limit, remove_time_limit_from_spec
+
 
 wrap_callable = Union[Callable[[], gym.Wrapper], Tuple[Callable[..., gym.Wrapper], Dict[str, Any]]]
+
+LIFE_KEY = "lifes"
 
 
 class BaseEnvironment(ABC):
@@ -25,6 +29,7 @@ class BaseEnvironment(ABC):
         frameskip: int = 1,
         autoreset: bool = True,
         delay_setup: bool = False,
+        return_image: bool = False,
     ):
         """
         Initialize a :class:`Environment`.
@@ -33,17 +38,35 @@ class BaseEnvironment(ABC):
             name: Name of the environment.
             frameskip: Number of times ``step`` will be called with the same action.
             autoreset: Automatically reset the environment when the OpenAI environment
-                      returns ``end = True``.
-            delay_setup: If ``True`` do not initialize the ``gym.Environment`` \
-                     and wait for ``setup`` to be called later.
+                returns ``end = True``.
+            delay_setup: If ``True`` do not initialize the ``gym.Environment``
+                and wait for ``setup`` to be called later.
+            return_image: If ``True`` add an "rgb" key in the `info` dictionary returned by `step`
+             that contains an RGB representation of the environment state.
 
         """
+        # Public attributes
         self._name = name
         self.frameskip = frameskip
         self.autoreset = autoreset
         self.delay_setup = delay_setup
+        self._return_image = return_image
+        # Attributes for tracking data during the step process
+        self._n_step = 0
+        self._obs_step = None
+        self._reward_step = 0
+        self._terminal_step = False
+        self._info_step = {}
+        self._action_step = None
+        self._dt_step = None
+        self._state_step = None
+        self._return_state_step = None
         if not delay_setup:
             self.setup()
+
+    def __del__(self):
+        """Teardown the Environment when it is no longer needed."""
+        return self.close()
 
     @property
     def unwrapped(self) -> "BaseEnvironment":
@@ -55,6 +78,16 @@ class BaseEnvironment(ABC):
 
         """
         return self
+
+    @property
+    def return_image(self) -> bool:
+        """
+        Return `return_image` flag.
+
+        If ``True`` add an "rgb" key in the `info` dictionary returned by `step` \
+        that contains an RGB representation of the environment state.
+        """
+        return self._return_image
 
     @property
     def name(self) -> str:
@@ -71,15 +104,33 @@ class BaseEnvironment(ABC):
         """Tuple containing the shape of the actions applied to the Environment."""
         raise NotImplementedError()
 
-    def __del__(self):
-        """Teardown the Environment when it is no longer needed."""
-        return self.close()
+    def get_image(self) -> Union[None, np.ndarray]:
+        """
+        Return a numpy array containing the rendered view of the environment.
+
+        Square matrices are interpreted as a greyscale image. Three-dimensional arrays
+        are interpreted as RGB images with channels (Height, Width, RGB)
+        """
+        return None
+
+    def begin_step(self, action=None, dt=None, state=None, return_state: bool = None):
+        """Perform setup of step variables before starting `step_with_dt`."""
+        self._n_step = 0
+        self._obs_step = None
+        self._reward_step = 0
+        self._terminal_step = False
+        self._info_step = {}
+        self._action_step = action
+        self._dt_step = dt
+        self._state_step = state
+        self._return_state_step = return_state
 
     def step(
         self,
         action: Union[numpy.ndarray, int, float],
         state: numpy.ndarray = None,
         dt: int = 1,
+        return_state: Optional[bool] = None,
     ) -> tuple:
         """
         Step the environment applying the supplied action.
@@ -93,23 +144,151 @@ class BaseEnvironment(ABC):
             action: Chosen action applied to the environment.
             state: Set the environment to the given state before stepping it.
             dt: Consecutive number of times that the action will be applied.
+            return_state: Whether to return the state in the returned tuple. \
+                If None, `step` will return the state if `state` was passed as a parameter.
 
         Returns:
             if state is None returns ``(observs, reward, terminal, info)``
             else returns ``(new_state, observs, reward, terminal, info)``
 
         """
+        self.begin_step(action=action, state=state, dt=dt, return_state=return_state)
         if state is not None:
             self.set_state(state)
         obs, reward, terminal, info = self.step_with_dt(action=action, dt=dt)
-        if state is not None:
-            new_state = self.get_state()
-            data = new_state, obs, reward, terminal, info
-        else:
-            data = obs, reward, terminal, info
+        obs, reward, terminal, info = self.process_step(
+            obs=obs,
+            reward=reward,
+            terminal=terminal,
+            info=info,
+        )
+        step_data = self.get_step_tuple(
+            obs=obs,
+            reward=reward,
+            terminal=terminal,
+            info=info,
+        )
+        self.run_autoreset(step_data)  # Resets at the end to preserve the environment state.
+        return step_data
+
+    def step_with_dt(self, action: Union[numpy.ndarray, int, float], dt: int = 1):
+        """
+        Take ``dt`` simulation steps and make the environment evolve in multiples\
+        of ``self.frameskip`` for a total of ``dt`` * ``self.frameskip`` steps.
+
+        Args:
+            action: Chosen action applied to the environment.
+            dt: Consecutive number of times that the action will be applied.
+
+        Returns:
+            Tuple containing ``(observs, reward, terminal, info)``.
+
+        """
+        self._n_step = 0
+        for _ in range(int(dt)):
+            for _ in range(self.frameskip):
+                step_data = self.apply_action(action)  # (obs, reward, terminal, info)
+                step_data = self.process_apply_action(*step_data)
+                self._obs_step, self._reward_step, self._terminal_step, self._info_step = step_data
+                self._n_step += 1
+                if self._terminal_step:
+                    break
+            if self._terminal_step:
+                break
+        return step_data
+
+    def run_autoreset(self, step_data):
+        """Reset the environment automatically if needed."""
+        *_, terminal, _ = step_data  # Assumes terminal, info are the last two elements
         if terminal and self.autoreset:
             self.reset(return_state=False)
-        return data
+
+    def process_apply_action(
+        self,
+        obs,
+        reward,
+        terminal,
+        info,
+    ):
+        """
+        Perform any post-processing to the data returned by `apply_action`.
+
+        Args:
+            obs: Observation of the environment.
+            reward: Reward signal.
+            terminal: Boolean indicating if the environment is finished.
+            info: Dictionary containing additional information about the environment.
+
+        Returns:
+            Tuple containing the processed data.
+        """
+        terminal = terminal or self._terminal_step
+        reward = self._reward_step + reward
+        return obs, reward, terminal, info
+
+    def process_step(
+        self,
+        obs,
+        reward,
+        terminal,
+        info,
+    ):
+        """
+        Prepare the returned info dictionary.
+
+        This is a post processing step to have fine-grained control over what data \
+        the info dictionary contains.
+
+        Args:
+            obs: Observation of the environment.
+            reward: Reward signal.
+            terminal: Boolean indicating if the environment is finished.
+            info: Dictionary containing additional information about the environment.
+
+        Returns:
+            Tuple containing the environment data after calling `step`.
+        """
+        info["n_step"] = int(self._n_step)
+        info["dt"] = self._dt_step
+        if self.return_image:
+            info["rgb"] = self.get_image()
+        return obs, reward, terminal, info
+
+    def get_step_tuple(
+        self,
+        obs,
+        reward,
+        terminal,
+        info,
+    ):
+        """
+        Prepare the tuple that step returns.
+
+        This is a post processing state to have fine-grained control over what data \
+        that step is returning.
+
+        By default it determines:
+         - Return the state in the tuple.
+         - Adding the "rgb" key in the `info` dictionary containing an RGB \
+         representation of the environment.
+
+        Args:
+            obs: Observation of the environment.
+            reward: Reward signal.
+            terminal: Boolean indicating if the environment is finished.
+            info: Dictionary containing additional information about the environment.
+
+        Returns:
+            Tuple containing the environment data after calling `step`.
+        """
+        default_mode = self._state_step is not None and self._return_state_step is None
+        return_state = self._return_state_step or default_mode
+        step_data = (
+            (self.get_state(), obs, reward, terminal, info)
+            if return_state
+            else (obs, reward, terminal, info)
+        )
+        return step_data
 
     def step_batch(
         self,
@@ -175,18 +354,8 @@ class BaseEnvironment(ABC):
         """
         pass
 
-    def step_with_dt(self, action: Union[numpy.ndarray, int, float], dt: int = 1) -> tuple:
-        """
-        Take ``dt`` simulation steps and make the environment evolve in multiples \
-        of ``self.frameskip`` for a total of ``dt`` * ``self.frameskip`` steps.
-
-        Args:
-            action: Chosen action applied to the environment.
-            dt: Consecutive number of times that the action will be applied.
-
-        Returns:
-            tuple containing ``(observs, reward, terminal, info)``.
-        """
+    def apply_action(self, action):
+        """Evolve the environment for one time step applying the provided action."""
         raise NotImplementedError()
 
     def reset(
@@ -226,15 +395,6 @@ class BaseEnvironment(ABC):
         """
         raise NotImplementedError()
 
-    def get_image(self) -> Union[None, np.ndarray]:
-        """
-        Return a numpy array containing the rendered view of the environment.
-
-        Square matrices are interpreted as a greyscale image. Three-dimensional arrays
-        are interpreted as RGB images with channels (Height, Width, RGB)
-        """
-        return None
-
 
 class PlanEnvironment(BaseEnvironment):
     """Base class for implementing OpenAI ``gym`` environments in ``plangym``."""
@@ -243,12 +403,12 @@ class PlanEnvironment(BaseEnvironment):
         self,
         name: str,
         frameskip: int = 1,
-        episodic_live: bool = False,
         autoreset: bool = True,
         wrappers: Iterable[wrap_callable] = None,
         delay_setup: bool = False,
         remove_time_limit=True,
         render_mode: Optional[str] = None,
+        episodic_life=False,
     ):
         """
         Initialize a :class:`PlanEnvironment`.
@@ -256,7 +416,6 @@ class PlanEnvironment(BaseEnvironment):
         Args:
             name: Name of the environment. Follows standard gym syntax conventions.
             frameskip: Number of times an action will be applied for each ``dt``.
-            episodic_live: Return ``end = True`` when losing a life.
             autoreset: Automatically reset the environment when the OpenAI environment
                 returns ``end = True``.
             wrappers: Wrappers that will be applied to the underlying OpenAI env.
@@ -269,14 +428,15 @@ class PlanEnvironment(BaseEnvironment):
         """
         self._render_mode = render_mode
         self._gym_env = None
-        self.episodic_life = episodic_live
-        self.remove_time_limit = remove_time_limit
+        self.episodic_life = episodic_life
+        self._remove_time_limit = remove_time_limit
         self._wrappers = wrappers
         super(PlanEnvironment, self).__init__(
             name=name,
             frameskip=frameskip,
             autoreset=autoreset,
             delay_setup=delay_setup,
+            return_image=render_mode == "rgb_array",
         )
 
     @property
@@ -317,11 +477,17 @@ class PlanEnvironment(BaseEnvironment):
         """Return the metadata of the environment."""
         if hasattr(self.gym_env, "metadata"):
             return self.gym_env.metadata
+        return {"render_modes": [None, "human", "rgb_array"]}
 
     @property
     def render_mode(self) -> Union[None, str]:
         """Return how the game will be rendered. Values: None | human | rgb_array."""
         return self._render_mode
+
+    @property
+    def remove_time_limit(self) -> bool:
+        """Return True if the Environment can only be stepped for a limited number of times."""
+        return self._remove_time_limit
 
     def setup(self):
         """Initialize the target :class:`gym.Env` instance."""
@@ -358,48 +524,9 @@ class PlanEnvironment(BaseEnvironment):
         obs = self.gym_env.reset()
         return (self.get_state(), obs) if return_state else obs
 
-    def step_with_dt(self, action: Union[numpy.ndarray, int, float], dt: int = 1):
-        """
-        Take ``dt`` simulation steps and make the environment evolve in multiples\
-        of ``self.frameskip`` for a total of ``dt`` * ``self.frameskip`` steps.
-
-        Args:
-            action: Chosen action applied to the environment.
-            dt: Consecutive number of times that the action will be applied.
-
-        Returns:
-            if state is None returns ``(observs, reward, terminal, info)``
-            else returns ``(new_state, observs, reward, terminal, info)``
-
-        """
-        reward = 0
-        obs, lost_live, terminal, oob = None, False, False, False
-        info = {"lives": -1}
-        n_steps = 0
-        for _ in range(int(dt)):
-            for _ in range(self.frameskip):
-                obs, _reward, _oob, _info = self.gym_env.step(action)
-                _info["lives"] = self.get_lives_from_info(_info)
-                lost_live = info["lives"] > _info["lives"] or lost_live
-                oob = oob or _oob
-                custom_terminal = self.custom_terminal_condition(info, _info, _oob)
-                terminal = terminal or oob or custom_terminal
-                terminal = (terminal or lost_live) if self.episodic_life else terminal
-                info = _info.copy()
-                reward += _reward
-                n_steps += 1
-                if terminal:
-                    break
-            if terminal:
-                break
-        # This allows to get the original values even when using an episodic life environment
-        info["terminal"] = terminal
-        info["lost_live"] = lost_live
-        info["oob"] = oob
-        info["win"] = self.get_win_condition(info)
-        info["n_steps"] = n_steps
-        if self.render_mode == "rgb_array":
-            info["rgb"] = self.get_image()
+    def apply_action(self, action):
+        """Accumulate rewards and calculate terminal flag after stepping the environment."""
+        obs, reward, terminal, info = self.gym_env.step(action)
         return obs, reward, terminal, info
 
     def sample_action(self) -> Union[int, np.ndarray]:
@@ -409,7 +536,11 @@ class PlanEnvironment(BaseEnvironment):
 
     def clone(self, **kwargs) -> "PlanEnvironment":
         """Return a copy of the environment."""
-        env_kwargs = dict(episodic_live=self.episodic_life, wrappers=self._wrappers)
+        env_kwargs = dict(
+            wrappers=self._wrappers,
+            remove_time_limit=self._remove_time_limit,
+            render_mode=self.render_mode,
+        )
         env_kwargs.update(kwargs)
         env: PlanEnvironment = super(PlanEnvironment, self).clone(**env_kwargs)
         return env
@@ -424,13 +555,10 @@ class PlanEnvironment(BaseEnvironment):
         # Remove any undocumented wrappers
         spec = gym_registry.spec(self.name)
         if self.remove_time_limit:
-            if hasattr(spec, "max_episode_steps"):
-                spec._max_episode_steps = spec.max_episode_steps
-            if hasattr(spec, "max_episode_time"):
-                spec._max_episode_time = spec.max_episode_time
-        spec.max_episode_steps = None
-        spec.max_episode_time = None
+            remove_time_limit_from_spec(spec)
         gym_env: gym.Env = spec.make()
+        if self.remove_time_limit:
+            gym_env = remove_time_limit(gym_env)
         gym_env.reset()
         return gym_env
 
@@ -453,17 +581,16 @@ class PlanEnvironment(BaseEnvironment):
         self._gym_env = wrapper(self.gym_env, *args, **kwargs)
 
     @staticmethod
-    def get_lives_from_info(info: Dict[str, Any]) -> int:
-        """Return the number of lives remaining in the current game."""
-        return info.get("lives", -1)
+    def get_lifes_from_info(info: Dict[str, Any]) -> int:
+        """Return the number of lifes remaining in the current game."""
+        return info.get(LIFE_KEY, -1)
 
     @staticmethod
     def get_win_condition(info: Dict[str, Any]) -> bool:
         """Return ``True`` if the current state corresponds to winning the game."""
         return False
 
-    @staticmethod
-    def custom_terminal_condition(old_info, new_info, oob) -> bool:
+    def terminal_condition(self, old_info, new_info, terminal, *args, **kwargs) -> bool:
         """Calculate a new terminal condition using the info data."""
         return False
 
@@ -480,17 +607,12 @@ class VideogameEnvironment(PlanEnvironment):
         self,
         name: str,
         frameskip: int = 5,
-        episodic_live: bool = False,
+        episodic_life: bool = False,
         autoreset: bool = True,
         delay_setup: bool = False,
         remove_time_limit: bool = True,
         obs_type: str = "rgb",  # ram | rgb | grayscale
-        mode: int = 0,  # game mode, see Machado et al. 2018
-        difficulty: int = 0,  # game difficulty, see Machado et al. 2018
-        repeat_action_probability: float = 0.0,  # Sticky action probability
-        full_action_space: bool = False,  # Use all actions
         render_mode: Optional[str] = None,  # None | human | rgb_array
-        possible_to_win: bool = False,
         wrappers: Iterable[wrap_callable] = None,
     ):
         """
@@ -500,7 +622,7 @@ class VideogameEnvironment(PlanEnvironment):
             name: Name of the environment. Follows standard gym syntax conventions.
             frameskip: Number of times an action will be applied for each step
                 in dt.
-            episodic_live: Return ``end = True`` when losing a life.
+            episodic_life: Return ``end = True`` when losing a life.
             autoreset: Restart environment when reaching a terminal state.
             delay_setup: If ``True`` do not initialize the ``gym.Environment``
                 and wait for ``setup`` to be called later.
@@ -512,29 +634,22 @@ class VideogameEnvironment(PlanEnvironment):
             full_action_space: Whether to use the full range of possible actions
                                or only those available in the game.
             render_mode: One of {None, "human", "rgb_aray"}.
-            possible_to_win: It is possible to finish the Atari game without
-                             getting a terminal state that is not out of bounds
-                             or doest not involve losing a life.
             wrappers: Wrappers that will be applied to the underlying OpenAI env.
                       Every element of the iterable can be either a :class:`gym.Wrapper`
                       or a tuple containing ``(gym.Wrapper, kwargs)``.
 
         """
-        self._remove_time_limit = remove_time_limit
-        self.possible_to_win = possible_to_win
         self._obs_type = obs_type
-        self._mode = mode
-        self._difficulty = difficulty
-        self._repeat_action_probability = repeat_action_probability
-        self._full_action_space = full_action_space
+        self.episodic_life = episodic_life
+        self._info_step = {LIFE_KEY: -1, "lost_life": False}
         super(VideogameEnvironment, self).__init__(
             name=name,
             frameskip=frameskip,
-            episodic_live=episodic_live,
             autoreset=autoreset,
             wrappers=wrappers,
             delay_setup=delay_setup,
             render_mode=render_mode,
+            remove_time_limit=remove_time_limit,
         )
 
     @property
@@ -543,62 +658,46 @@ class VideogameEnvironment(PlanEnvironment):
         return self._obs_type
 
     @property
-    def mode(self) -> int:
-        """Return the selected game mode for the current environment."""
-        return self._mode
-
-    @property
-    def difficulty(self) -> int:
-        """Return the selected difficulty for the current environment."""
-        return self._difficulty
-
-    @property
-    def repeat_action_probability(self) -> float:
-        """Probability of repeating the same action after input."""
-        return self._repeat_action_probability
-
-    @property
-    def full_action_space(self) -> bool:
-        """If True the action space correspond to all possible actions in the Atari emulator."""
-        return self._full_action_space
-
-    @property
-    def has_time_limit(self) -> bool:
-        """Return True if the Environment can only be stepped for a limited number of times."""
-        return self._remove_time_limit
-
-    @property
     def n_actions(self) -> int:
         """Return the number of actions available."""
         return self.gym_env.action_space.n
 
+    def apply_action(self, action):
+        """Evolve the environment for one time step applying the provided action."""
+        obs, reward, terminal, info = super(VideogameEnvironment, self).apply_action(action=action)
+        info[LIFE_KEY] = self.get_lifes_from_info(info)
+        past_lifes = self._info_step.get(LIFE_KEY, -1)
+        lost_life = past_lifes > info[LIFE_KEY] or self._info_step.get("lost_life")
+        info["lost_life"] = lost_life
+        terminal = (terminal or lost_life) if self.episodic_life else terminal
+        return obs, reward, terminal, info
+
     def clone(self, **kwargs) -> "VideogameEnvironment":
         """Return a copy of the environment."""
         params = dict(
-            name=self.name,
-            frameskip=self.frameskip,
-            wrappers=self._wrappers,
-            episodic_live=self.episodic_life,
-            autoreset=self.autoreset,
-            delay_setup=self.delay_setup,
-            possible_to_win=self.possible_to_win,
-            mode=self.mode,
-            difficulty=self.difficulty,
+            episodic_life=self.episodic_life,
             obs_type=self.obs_type,
-            repeat_action_probability=self.repeat_action_probability,
-            full_action_space=self.full_action_space,
             render_mode=self.render_mode,
-            remove_time_limit=self._remove_time_limit,
         )
         params.update(**kwargs)
         return super(VideogameEnvironment, self).clone(**params)
+
+    def begin_step(self, action=None, dt=None, state=None, return_state: bool = None):
+        """Perform setup of step variables before starting `step_with_dt`."""
+        self._info_step = {LIFE_KEY: -1, "lost_life": False}
+        super(VideogameEnvironment, self).begin_step(
+            action=action,
+            dt=dt,
+            state=state,
+            return_state=return_state,
+        )
 
     def get_ram(self) -> np.ndarray:
         """Return the ram of the emulator as a numpy array."""
         raise NotImplementedError()
 
 
-class VectorizedEnvironment(BaseEnvironment, ABC):
+class VectorizedEnvironment(PlanEnvironment, ABC):
     """
     Base class that defines the API for working with vectorized environments.
 
@@ -663,31 +762,31 @@ class VectorizedEnvironment(BaseEnvironment, ABC):
         return self._n_workers
 
     @property
-    def plangym_env(self) -> BaseEnvironment:
+    def plan_env(self) -> BaseEnvironment:
         """Environment that is wrapped by the current instance."""
         return self._plangym_env
 
     @property
     def obs_shape(self) -> Tuple[int]:
         """Tuple containing the shape of the observations returned by the Environment."""
-        return self.plangym_env.obs_shape
+        return self.plan_env.obs_shape
 
     @property
     def action_shape(self) -> Tuple[int]:
         """Tuple containing the shape of the actions applied to the Environment."""
-        return self.plangym_env.action_shape
+        return self.plan_env.action_shape
 
     @property
     def gym_env(self):
         """Return the instance of the environment that is being wrapped by plangym."""
         try:
-            return self.plangym_env.gym_env
+            return self.plan_env.gym_env
         except AttributeError:
             return
 
     def __getattr__(self, item):
         """Forward attributes to the wrapped environment."""
-        return getattr(self.plangym_env, item)
+        return getattr(self.plan_env, item)
 
     @staticmethod
     def split_similar_chunks(
@@ -742,7 +841,7 @@ class VectorizedEnvironment(BaseEnvironment, ABC):
 
     def setup(self) -> None:
         """Initialize the target environment with the parameters provided at __init__."""
-        self._plangym_env: BaseEnvironment = self.create_env_callable()()
+        self._plangym_env: PlanEnvironment = self.create_env_callable()()
         self._plangym_env.setup()
 
     def step(self, action: numpy.ndarray, state: numpy.ndarray = None, dt: int = 1):
@@ -761,7 +860,7 @@ class VectorizedEnvironment(BaseEnvironment, ABC):
             `(new_states, observs, rewards, ends, infos)`.
 
         """
-        return self.plangym_env.step(action=action, state=state, dt=dt)
+        return self.plan_env.step(action=action, state=state, dt=dt)
 
     def reset(self, return_state: bool = True):
         """
@@ -776,7 +875,7 @@ class VectorizedEnvironment(BaseEnvironment, ABC):
             return (state, obs) after reset.
 
         """
-        state, obs = self.plangym_env.reset(return_state=True)
+        state, obs = self.plan_env.reset(return_state=True)
         self.sync_states(state)
         return (state, obs) if return_state else obs
 
@@ -790,7 +889,7 @@ class VectorizedEnvironment(BaseEnvironment, ABC):
             State of the simulation.
 
         """
-        return self.plangym_env.get_state()
+        return self.plan_env.get_state()
 
     def set_state(self, state):
         """
@@ -800,12 +899,12 @@ class VectorizedEnvironment(BaseEnvironment, ABC):
             state: Target state to be set in the environment.
 
         """
-        self.plangym_env.set_state(state)
+        self.plan_env.set_state(state)
         self.sync_states(state)
 
     def render(self, mode="human"):
         """Render the environment using OpenGL. This wraps the OpenAI render method."""
-        return self.plangym_env.render(mode)
+        return self.plan_env.render(mode)
 
     def get_image(self) -> np.ndarray:
         """
@@ -814,7 +913,7 @@ class VectorizedEnvironment(BaseEnvironment, ABC):
         Square matrices are interpreted as a greyscale image. Three-dimensional arrays
         are interpreted as RGB images with channels (Height, Width, RGB)
         """
-        return self.plangym_env.get_image()
+        return self.plan_env.get_image()
 
     def step_with_dt(self, action: Union[numpy.ndarray, int, float], dt: int = 1) -> tuple:
         """
@@ -830,7 +929,7 @@ class VectorizedEnvironment(BaseEnvironment, ABC):
             else returns `(new_state, observs, reward, terminal, info)`.
 
         """
-        return self.plangym_env.step_with_dt(action=action, dt=dt)
+        return self.plan_env.step_with_dt(action=action, dt=dt)
 
     def sample_action(self):
         """
@@ -839,7 +938,7 @@ class VectorizedEnvironment(BaseEnvironment, ABC):
         Implementing this method is optional, and it's only intended to make the
         testing process of the Environment easier.
         """
-        return self.plangym_env.sample_action()
+        return self.plan_env.sample_action()
 
     def sync_states(self, state: None):
         """

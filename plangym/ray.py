@@ -232,7 +232,7 @@ class RayEnv(VectorizedEnvironment):
     def reset(self, return_state: bool = True) -> [np.ndarray, tuple]:
         """Restart the environment."""
         ray.get([w.reset.remote(return_state=return_state) for w in self.workers])
-        state, obs = self.plangym_env.reset(return_state=True)
+        state, obs = self.plan_env.reset(return_state=True)
         ray.get([w.set_state.remote(state) for w in self.workers])
         return (state, obs) if return_state else obs
 
@@ -246,5 +246,5 @@ class RayEnv(VectorizedEnvironment):
         """
         state = super().get_state() if state is None else state
         obj_ids = [w.set_state.remote(state) for w in self.workers]
-        self.plangym_env.set_state(state)
+        self.plan_env.set_state(state)
         ray.get(obj_ids)

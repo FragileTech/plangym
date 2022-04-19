@@ -115,17 +115,12 @@ class RetroEnvironment(VideogameEnvironment):
         self,
         name: str,
         frameskip: int = 5,
-        episodic_live: bool = False,
+        episodic_life: bool = False,
         autoreset: bool = True,
         delay_setup: bool = False,
         remove_time_limit: bool = True,
         obs_type: str = "rgb",  # ram | rgb | grayscale
-        mode: int = 0,  # game mode, see Machado et al. 2018
-        difficulty: int = 0,  # game difficulty, see Machado et al. 2018
-        repeat_action_probability: float = 0.0,  # Sticky action probability
-        full_action_space: bool = False,  # Use all actions
         render_mode: Optional[str] = None,  # None | human | rgb_array
-        possible_to_win: bool = False,
         wrappers: Iterable[wrap_callable] = None,
         array_state: bool = True,
         height: int = None,  # 100,
@@ -139,27 +134,18 @@ class RetroEnvironment(VideogameEnvironment):
             name: Name of the environment. Follows standard gym syntax conventions.
             frameskip: Number of times an action will be applied for each step \
                 in dt.
-            episodic_live: Return ``end = True`` when losing a life.
+            episodic_life: Return ``end = True`` when losing a life.
             autoreset: Restart environment when reaching a terminal state.
             delay_setup: If ``True`` do not initialize the ``gym.Environment`` \
                      and wait for ``setup`` to be called later.
             remove_time_limit: If True, remove the time limit from the environment.
-            obs_type: One of {"rgb", "ram", "gryscale"}.
-            mode: Alias for state. Passed to retro.make().
-            difficulty: Difficulty level of the game, when available.
-            repeat_action_probability: Repeat the last action with this probability.
-            full_action_space: Whether to use the full range of possible actions \
-                              or only those available in the game.
+            obs_type: One of {"rgb", "ram", "grayscale"}.
             render_mode: One of {None, "human", "rgb_aray"}.
-            possible_to_win: It is possible to finish the Atari game without \
-                            getting a terminal state that is not out of bounds \
-                            or doest not involve losing a life.
             wrappers: Wrappers that will be applied to the underlying OpenAI env. \
                      Every element of the iterable can be either a :class:`gym.Wrapper` \
                      or a tuple containing ``(gym.Wrapper, kwargs)``.
             array_state: Whether to return the state of the environment as a numpy array.
         """
-        kwargs["state"] = kwargs.get("state", mode)
         self.gym_env_kwargs = kwargs
         self.height = height
         self.width = width
@@ -167,17 +153,12 @@ class RetroEnvironment(VideogameEnvironment):
         super(RetroEnvironment, self).__init__(
             name=name,
             frameskip=frameskip,
-            episodic_live=episodic_live,
+            episodic_life=episodic_life,
             autoreset=autoreset,
             delay_setup=delay_setup,
             remove_time_limit=remove_time_limit,
             obs_type=obs_type,  # ram | rgb | grayscale
-            mode=mode,  # game mode, see Machado et al. 2018
-            difficulty=difficulty,  # game difficulty, see Machado et al. 2018
-            repeat_action_probability=repeat_action_probability,  # Sticky action probability
-            full_action_space=full_action_space,  # Use all actions
             render_mode=render_mode,  # None | human | rgb_array
-            possible_to_win=possible_to_win,
             wrappers=wrappers,
         )
 
@@ -206,7 +187,7 @@ class RetroEnvironment(VideogameEnvironment):
             name=self.name,
             frameskip=self.frameskip,
             wrappers=self._wrappers,
-            episodic_live=self.episodic_life,
+            episodic_life=self.episodic_life,
             autoreset=self.autoreset,
             delay_setup=self.delay_setup,
             obs_type=self.obs_type,

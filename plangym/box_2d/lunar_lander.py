@@ -352,13 +352,14 @@ class LunarLander(PlanEnvironment):
         self,
         name: str = None,
         frameskip: int = 1,
-        episodic_live: bool = True,
+        episodic_life: bool = True,
         autoreset: bool = True,
         wrappers: Iterable[wrap_callable] = None,
         delay_setup: bool = False,
         deterministic: bool = False,
         continuous: bool = False,
         render_mode: Optional[str] = None,
+        remove_time_limit=None,
     ):
         """Initialize a :class:`LunarLander`."""
         self._deterministic = deterministic
@@ -366,7 +367,7 @@ class LunarLander(PlanEnvironment):
         super(LunarLander, self).__init__(
             name="LunarLander-plangym",
             frameskip=frameskip,
-            episodic_live=episodic_live,
+            episodic_life=episodic_life,
             autoreset=autoreset,
             wrappers=wrappers,
             delay_setup=delay_setup,

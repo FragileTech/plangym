@@ -58,7 +58,7 @@ class TestBaseEnvironment:
         if env.STATE_IS_ARRAY:
             assert isinstance(state, np.ndarray)
             if not env.SINGLETON:
-                assert (state == state_reset).all()
+                assert (state == state_reset).all(), f"original: {state} env: {env.get_state()}"
 
     def test_set_state(self, env):
         env.reset()
@@ -92,9 +92,14 @@ class TestBaseEnvironment:
         state, *data = env.step(action, state)
         assert len(data) > 0
         if env.STATE_IS_ARRAY:
-            assert isinstance(state, np.ndarray)
+            assert isinstance(
+                state,
+                np.ndarray,
+            ), f"state is type: {type(state)}, and value: {state}"
             if not env.SINGLETON:
-                assert (state == env.get_state()).all()
+                assert (
+                    state == env.get_state()
+                ).all(), f"original: {state} env: {env.get_state()}"
 
     @pytest.mark.parametrize("dt", [1, 3])
     def test_step_gym_tuple(self, env, dt):
@@ -193,12 +198,12 @@ class TestGymEnvironment(TestBaseEnvironment):
         assert hasattr(env, "episodic_life")
         assert hasattr(env, "gym_env")
 
-    def test_get_lives_from_info(self, env):
-        info = {"lives": 3}
-        lives = env.get_lives_from_info(info)
-        assert lives == 3
-        lives = env.get_lives_from_info({})
-        assert lives == -1
+    def test_get_lifes_from_info(self, env):
+        info = {"lifes": 3}
+        lifes = env.get_lifes_from_info(info)
+        assert lifes == 3
+        lifes = env.get_lifes_from_info({})
+        assert lifes == -1
 
     def test_seed(self, env):
         env.seed()
