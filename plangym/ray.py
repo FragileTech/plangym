@@ -9,12 +9,12 @@ try:
 except ImportError:
     pass
 
-from plangym.core import BaseEnvironment, VectorizedEnvironment
+from plangym.core import PlanEnvironment, VectorizedEnvironment
 
 
 @ray.remote
-class RemoteEnv(BaseEnvironment):
-    """Remote ray Actor interface for a plangym.BaseEnvironment."""
+class RemoteEnv(PlanEnvironment):
+    """Remote ray Actor interface for a plangym.PlanEnvironment."""
 
     def __init__(self, env_callable):
         """Initialize a :class:`RemoteEnv`."""

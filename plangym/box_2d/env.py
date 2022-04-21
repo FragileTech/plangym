@@ -3,7 +3,7 @@ import copy
 
 import numpy
 
-from plangym.core import PlanEnvironment
+from plangym.core import PlangymEnv
 
 
 class Box2DState:
@@ -107,7 +107,7 @@ class Box2DState:
         return cls.set_world_state(env.unwrapped.world, state)
 
 
-class Box2DEnv(PlanEnvironment):
+class Box2DEnv(PlangymEnv):
     """Common interface for working with Box2D environments."""
 
     def get_state(self) -> numpy.array:

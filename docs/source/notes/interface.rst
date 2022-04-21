@@ -29,10 +29,10 @@ DM Control
 Abstract classes defining plangym's API
 =======================================
 
-.. autoclass:: plangym.core.BaseEnvironment
+.. autoclass:: plangym.core.PlanEnvironment
    :members:
 
-.. autoclass:: plangym.core.PlanEnvironment
+.. autoclass:: plangym.core.PlangymEnv
    :members:
 
 .. autoclass:: plangym.parallel.VideogameEnvironment

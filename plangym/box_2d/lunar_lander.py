@@ -7,7 +7,7 @@ import numpy as np
 import numpy as numpy
 
 from plangym.box_2d.env import Box2DState
-from plangym.core import PlanEnvironment, wrap_callable
+from plangym.core import PlangymEnv, wrap_callable
 
 
 try:
@@ -345,7 +345,7 @@ class FastGymLunarLander(GymLunarLander):
         return self.viewer.render(return_rgb_array=mode == "rgb_array")
 
 
-class LunarLander(PlanEnvironment):
+class LunarLander(PlangymEnv):
     """Fast LunarLander that follows the plangym API."""
 
     def __init__(

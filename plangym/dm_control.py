@@ -5,7 +5,7 @@ import warnings
 from gym.spaces import Box, Space
 import numpy as np
 
-from plangym.core import PlanEnvironment, wrap_callable
+from plangym.core import PlangymEnv, wrap_callable
 
 
 try:
@@ -16,7 +16,7 @@ except Exception:
     novideo_mode = True
 
 
-class DMControlEnv(PlanEnvironment):
+class DMControlEnv(PlangymEnv):
     """
     Wrap the dm_control library, so it can work for planning problems.
 

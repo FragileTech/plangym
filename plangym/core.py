@@ -16,7 +16,7 @@ wrap_callable = Union[Callable[[], gym.Wrapper], Tuple[Callable[..., gym.Wrapper
 LIFE_KEY = "lifes"
 
 
-class BaseEnvironment(ABC):
+class PlanEnvironment(ABC):
     """Inherit from this class to adapt environments to different problems."""
 
     STATE_IS_ARRAY = True
@@ -69,7 +69,7 @@ class BaseEnvironment(ABC):
         return self.close()
 
     @property
-    def unwrapped(self) -> "BaseEnvironment":
+    def unwrapped(self) -> "PlanEnvironment":
         """
         Completely unwrap this Environment.
 
@@ -320,7 +320,7 @@ class BaseEnvironment(ABC):
         data = [self.step(action, state, dt=dt) for action, state, dt in zip(actions, states, dt)]
         return tuple(list(x) for x in zip(*data))
 
-    def clone(self, **kwargs) -> "BaseEnvironment":
+    def clone(self, **kwargs) -> "PlanEnvironment":
         """Return a copy of the environment."""
         clone_kwargs = dict(
             name=self.name,
@@ -396,7 +396,7 @@ class BaseEnvironment(ABC):
         raise NotImplementedError()
 
 
-class PlanEnvironment(BaseEnvironment):
+class PlangymEnv(PlanEnvironment):
     """Base class for implementing OpenAI ``gym`` environments in ``plangym``."""
 
     def __init__(
@@ -411,7 +411,7 @@ class PlanEnvironment(BaseEnvironment):
         episodic_life=False,
     ):
         """
-        Initialize a :class:`PlanEnvironment`.
+        Initialize a :class:`PlangymEnv`.
 
         Args:
             name: Name of the environment. Follows standard gym syntax conventions.
@@ -431,7 +431,7 @@ class PlanEnvironment(BaseEnvironment):
         self.episodic_life = episodic_life
         self._remove_time_limit = remove_time_limit
         self._wrappers = wrappers
-        super(PlanEnvironment, self).__init__(
+        super(PlangymEnv, self).__init__(
             name=name,
             frameskip=frameskip,
             autoreset=autoreset,
@@ -534,7 +534,7 @@ class PlanEnvironment(BaseEnvironment):
         if hasattr(self.action_space, "sample"):
             return self.action_space.sample()
 
-    def clone(self, **kwargs) -> "PlanEnvironment":
+    def clone(self, **kwargs) -> "PlangymEnv":
         """Return a copy of the environment."""
         env_kwargs = dict(
             wrappers=self._wrappers,
@@ -542,7 +542,7 @@ class PlanEnvironment(BaseEnvironment):
             render_mode=self.render_mode,
         )
         env_kwargs.update(kwargs)
-        env: PlanEnvironment = super(PlanEnvironment, self).clone(**env_kwargs)
+        env: PlangymEnv = super(PlangymEnv, self).clone(**env_kwargs)
         return env
 
     def close(self):
@@ -600,7 +600,7 @@ class PlanEnvironment(BaseEnvironment):
             return self.gym_env.render(mode=mode)
 
 
-class VideogameEnvironment(PlanEnvironment):
+class VideogameEnvironment(PlangymEnv):
     """Common interface for working with video games that run using an emulator."""
 
     def __init__(
@@ -697,7 +697,7 @@ class VideogameEnvironment(PlanEnvironment):
         raise NotImplementedError()
 
 
-class VectorizedEnvironment(PlanEnvironment, ABC):
+class VectorizedEnvironment(PlangymEnv, ABC):
     """
     Base class that defines the API for working with vectorized environments.
 
@@ -705,7 +705,7 @@ class VectorizedEnvironment(PlanEnvironment, ABC):
     when calling ``step_batch``.
 
     It creates a local copy of the environment that is the target of all the other
-    methods of :class:`BaseEnvironment`. In practise, a :class:`VectorizedEnvironment`
+    methods of :class:`PlanEnvironment`. In practise, a :class:`VectorizedEnvironment`
     acts as a wrapper of an environment initialized with the provided parameters when calling
     __init__.
 
@@ -762,7 +762,7 @@ class VectorizedEnvironment(PlanEnvironment, ABC):
         return self._n_workers
 
     @property
-    def plan_env(self) -> BaseEnvironment:
+    def plan_env(self) -> PlanEnvironment:
         """Environment that is wrapped by the current instance."""
         return self._plangym_env
 
@@ -819,7 +819,7 @@ class VectorizedEnvironment(PlanEnvironment, ABC):
         dt_chunks = cls.split_similar_chunks(dt, n_chunks=batch_size)
         return states_chunks, actions_chunks, dt_chunks
 
-    def create_env_callable(self, **kwargs) -> Callable[..., BaseEnvironment]:
+    def create_env_callable(self, **kwargs) -> Callable[..., PlanEnvironment]:
         """Return a callable that initializes the environment that is being vectorized."""
 
         def create_env_callable(env_class, **env_kwargs):
@@ -841,7 +841,7 @@ class VectorizedEnvironment(PlanEnvironment, ABC):
 
     def setup(self) -> None:
         """Initialize the target environment with the parameters provided at __init__."""
-        self._plangym_env: PlanEnvironment = self.create_env_callable()()
+        self._plangym_env: PlangymEnv = self.create_env_callable()()
         self._plangym_env.setup()
 
     def step(self, action: numpy.ndarray, state: numpy.ndarray = None, dt: int = 1):
@@ -975,7 +975,7 @@ class VectorizedEnvironment(PlanEnvironment, ABC):
         """
         raise NotImplementedError()
 
-    def clone(self, **kwargs) -> "BaseEnvironment":
+    def clone(self, **kwargs) -> "PlanEnvironment":
         """Return a copy of the environment."""
         self_kwargs = dict(
             name=self.name,

@@ -44,7 +44,7 @@ def get_environment_class(
     domain_name: str = None,
     state: str = None,
 ):
-    """Get the class and vectorized environment and PlanEnvironment class from the make params."""
+    """Get the class and vectorized environment and PlangymEnv class from the make params."""
     env_class = get_planenv_class(name, domain_name, state)
     if ray:
         return RayEnv, env_class
@@ -61,7 +61,7 @@ def make(
     state: str = None,
     **kwargs,
 ):
-    """Create the appropriate PlanEnvironment from the environment name and other parameters."""
+    """Create the appropriate PlangymEnv from the environment name and other parameters."""
     parallel_class, env_class = get_environment_class(
         name=name,
         n_workers=n_workers,

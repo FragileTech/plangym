@@ -7,7 +7,7 @@ from typing import Generator, Union
 
 import numpy
 
-from plangym.core import BaseEnvironment, VectorizedEnvironment
+from plangym.core import PlanEnvironment, VectorizedEnvironment
 
 
 def split_similar_chunks(
@@ -573,7 +573,7 @@ class ParallelEnvironment(VectorizedEnvironment):
         # Initialize local copy last to tolerate singletons better
         super(ParallelEnvironment, self).setup()
 
-    def clone(self) -> "BaseEnvironment":
+    def clone(self) -> "PlanEnvironment":
         """Return a copy of the environment."""
         return super(ParallelEnvironment, self).clone(blocking=self.blocking)
 

@@ -3,10 +3,10 @@ import copy
 
 import numpy as np
 
-from plangym.core import PlanEnvironment
+from plangym.core import PlangymEnv
 
 
-class ClassicControl(PlanEnvironment):
+class ClassicControl(PlangymEnv):
     """Environment for OpenAI gym classic control environments."""
 
     def get_state(self) -> np.ndarray:
