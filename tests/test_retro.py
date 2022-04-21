@@ -3,7 +3,8 @@ from typing import Union
 import pytest
 
 from plangym.parallel import ParallelEnvironment
-from plangym.retro import Downsample, RetroEnvironment, SonicDiscretizer
+from plangym.retro import RetroEnvironment, SonicDiscretizer
+from plangym.utils import Downsample
 
 
 pytest.importorskip("retro")

@@ -3,12 +3,11 @@ from abc import ABC
 from typing import Any, Callable, Dict, Generator, Iterable, Optional, Tuple, Union
 
 import gym
-from gym.envs.registration import registry as gym_registry
 from gym.spaces import Space
 import numpy
 import numpy as np
 
-from plangym.utils import remove_time_limit, remove_time_limit_from_spec
+from plangym.utils import remove_time_limit
 
 
 wrap_callable = Union[Callable[[], gym.Wrapper], Tuple[Callable[..., gym.Wrapper], Dict[str, Any]]]
@@ -409,6 +408,7 @@ class PlangymEnv(PlanEnvironment):
         remove_time_limit=True,
         render_mode: Optional[str] = None,
         episodic_life=False,
+        **kwargs,
     ):
         """
         Initialize a :class:`PlangymEnv`.
@@ -428,6 +428,7 @@ class PlangymEnv(PlanEnvironment):
         """
         self._render_mode = render_mode
         self._gym_env = None
+        self._gym_env_kwargs = kwargs or {}
         self.episodic_life = episodic_life
         self._remove_time_limit = remove_time_limit
         self._wrappers = wrappers
@@ -492,6 +493,8 @@ class PlangymEnv(PlanEnvironment):
     def setup(self):
         """Initialize the target :class:`gym.Env` instance."""
         self._gym_env = self.init_gym_env()
+        if self.remove_time_limit:
+            self._gym_env = remove_time_limit(self._gym_env)
         if self._wrappers is not None:
             self.apply_wrappers(self._wrappers)
 
@@ -542,6 +545,7 @@ class PlangymEnv(PlanEnvironment):
             render_mode=self.render_mode,
         )
         env_kwargs.update(kwargs)
+        env_kwargs.update(self._gym_env_kwargs)
         env: PlangymEnv = super(PlangymEnv, self).clone(**env_kwargs)
         return env
 
@@ -552,13 +556,7 @@ class PlangymEnv(PlanEnvironment):
 
     def init_gym_env(self) -> gym.Env:
         """Initialize the :class:`gym.Env`` instance that the current class is wrapping."""
-        # Remove any undocumented wrappers
-        spec = gym_registry.spec(self.name)
-        if self.remove_time_limit:
-            remove_time_limit_from_spec(spec)
-        gym_env: gym.Env = spec.make()
-        if self.remove_time_limit:
-            gym_env = remove_time_limit(gym_env)
+        gym_env: gym.Env = gym.make(self.name, **self._gym_env_kwargs)
         gym_env.reset()
         return gym_env
 
@@ -614,6 +612,7 @@ class VideogameEnvironment(PlangymEnv):
         obs_type: str = "rgb",  # ram | rgb | grayscale
         render_mode: Optional[str] = None,  # None | human | rgb_array
         wrappers: Iterable[wrap_callable] = None,
+        **kwargs,
     ):
         """
         Initialize a :class:`VideogameEnvironment`.
@@ -640,6 +639,7 @@ class VideogameEnvironment(PlangymEnv):
 
         """
         self._obs_type = obs_type
+        self._obs_space = None
         self.episodic_life = episodic_life
         self._info_step = {LIFE_KEY: -1, "lost_life": False}
         super(VideogameEnvironment, self).__init__(
@@ -650,6 +650,7 @@ class VideogameEnvironment(PlangymEnv):
             delay_setup=delay_setup,
             render_mode=render_mode,
             remove_time_limit=remove_time_limit,
+            **kwargs,
         )
 
     @property
@@ -661,6 +662,16 @@ class VideogameEnvironment(PlangymEnv):
     def n_actions(self) -> int:
         """Return the number of actions available."""
         return self.gym_env.action_space.n
+
+    @property
+    def observation_space(self) -> Space:
+        """Return the observation_space of the environment."""
+        return self._obs_space
+
+    @property
+    def obs_shape(self) -> Tuple[int, ...]:
+        """Tuple containing the shape of the observations returned by the Environment."""
+        return self.observation_space.shape if self.gym_env is not None else ()
 
     def apply_action(self, action):
         """Evolve the environment for one time step applying the provided action."""
@@ -682,7 +693,7 @@ class VideogameEnvironment(PlangymEnv):
         params.update(**kwargs)
         return super(VideogameEnvironment, self).clone(**params)
 
-    def begin_step(self, action=None, dt=None, state=None, return_state: bool = None):
+    def begin_step(self, action=None, dt=None, state=None, return_state: bool = None) -> None:
         """Perform setup of step variables before starting `step_with_dt`."""
         self._info_step = {LIFE_KEY: -1, "lost_life": False}
         super(VideogameEnvironment, self).begin_step(
@@ -690,6 +701,80 @@ class VideogameEnvironment(PlangymEnv):
             dt=dt,
             state=state,
             return_state=return_state,
+        )
+
+    def setup(self) -> None:
+        """Initialize the target :class:`gym.Env` instance."""
+        from gym.wrappers.gray_scale_observation import GrayScaleObservation
+
+        super(VideogameEnvironment, self).setup()
+        if self.obs_type == "ram":
+            ram_size = self.get_ram().shape
+            self._obs_space = gym.spaces.Box(low=0, high=255, dtype=numpy.uint8, shape=ram_size)
+        elif self.obs_type == "grayscale":
+            self._gym_env = GrayScaleObservation(self._gym_env)
+        self._obs_space = self._obs_space or self._gym_env.observation_space
+
+    def reset(
+        self,
+        return_state: bool = True,
+    ) -> Union[numpy.ndarray, Tuple[numpy.ndarray, numpy.ndarray]]:
+        """
+        Restart the environment.
+
+        Args:
+            return_state: If ``True`` it will return the state of the environment.
+
+        Returns:
+            ``obs`` if ```return_state`` is ``True`` else return ``(state, obs)``.
+
+        """
+        if self.gym_env is None and self.delay_setup:
+            self.setup()
+        obs = self.gym_env.reset()
+        obs = self.get_ram() if self.obs_type == "ram" else obs
+        return (self.get_state(), obs) if return_state else obs
+
+    def get_step_tuple(
+        self,
+        obs,
+        reward,
+        terminal,
+        info,
+    ):
+        """
+        Prepare the tuple that step returns.
+
+        This is a post processing state to have fine-grained control over what data \
+        that step is returning.
+
+        By default it determines:
+         - Return the state in the tuple.
+         - Adding the "rgb" key in the `info` dictionary containing an RGB \
+         representation of the environment.
+
+        Args:
+            obs: Observation of the environment.
+            reward: Reward signal.
+            terminal: Boolean indicating if the environment is finished.
+            info: Dictionary containing additional information about the environment.
+
+        Returns:
+            Tuple containing the environment data after calling `step`.
+        """
+        data = super(VideogameEnvironment, self).get_step_tuple(
+            obs=obs,
+            reward=reward,
+            terminal=terminal,
+            info=info,
+        )
+        *new_state, obs, reward, terminal, info = data
+        if self.obs_type == "ram":
+            obs = self.get_ram()
+        return (
+            (new_state[0], obs, reward, terminal, info)
+            if new_state
+            else (obs, reward, terminal, info)
         )
 
     def get_ram(self) -> np.ndarray:

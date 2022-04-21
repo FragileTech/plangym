@@ -7,7 +7,7 @@ import numpy
 import numpy as np
 
 from plangym.atari import AtariEnvironment
-from plangym.retro import resize_frame
+from plangym.utils import resize_frame
 
 
 class MinimalPong(AtariEnvironment):

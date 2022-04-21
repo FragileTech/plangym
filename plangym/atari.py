@@ -1,11 +1,11 @@
 """Implement the ``plangym`` API for Atari environments."""
-from typing import Any, Dict, Iterable, Optional, Union
+from typing import Any, Dict, Iterable, Optional, Tuple, Union
 
 import gym
+from gym.spaces import Space
 import numpy
 
-from plangym.core import VideogameEnvironment, wrap_callable
-from plangym.utils import remove_time_limit
+from plangym.core import PlangymEnv, VideogameEnvironment, wrap_callable
 
 
 def ale_to_ram(ale) -> numpy.ndarray:
@@ -78,6 +78,7 @@ class AtariEnvironment(VideogameEnvironment):
         wrappers: Iterable[wrap_callable] = None,
         array_state: bool = True,
         clone_seeds: bool = False,
+        **kwargs,
     ):
         """
         Initialize a :class:`AtariEnvironment`.
@@ -117,7 +118,6 @@ class AtariEnvironment(VideogameEnvironment):
             <class 'numpy.ndarray'>
 
         """
-        self._gym_env = None
         self.clone_seeds = clone_seeds
         self._mode = mode
         self._difficulty = difficulty
@@ -133,6 +133,7 @@ class AtariEnvironment(VideogameEnvironment):
             obs_type=obs_type,  # ram | rgb | grayscale
             render_mode=render_mode,  # None | human | rgb_array
             wrappers=wrappers,
+            **kwargs,
         )
         self.STATE_IS_ARRAY = array_state
 
@@ -170,6 +171,11 @@ class AtariEnvironment(VideogameEnvironment):
     def full_action_space(self) -> bool:
         """If True the action space correspond to all possible actions in the Atari emulator."""
         return self._full_action_space
+
+    @property
+    def observation_space(self) -> Space:
+        """Return the observation_space of the environment."""
+        return self.gym_env.observation_space
 
     def get_lifes_from_info(self, info: Dict[str, Any]) -> int:
         """Return the number of lives remaining in the current game."""
@@ -211,8 +217,7 @@ class AtariEnvironment(VideogameEnvironment):
         """Initialize the :class:`gym.Env`` instance that the Environment is wrapping."""
         # Remove any undocumented wrappers
         try:
-            gym_env = gym.make(
-                self.name,
+            default_env_kwargs = dict(
                 obs_type=self.obs_type,  # ram | rgb | grayscale
                 frameskip=self.frameskip,  # frame skip
                 mode=self._mode,  # game mode, see Machado et al. 2018
@@ -221,12 +226,12 @@ class AtariEnvironment(VideogameEnvironment):
                 full_action_space=self.full_action_space,  # Use all actions
                 render_mode=self.render_mode,  # None | human | rgb_array
             )
+            default_env_kwargs.update(self._gym_env_kwargs)
+            self._gym_env_kwargs = default_env_kwargs
+            gym_env = super(AtariEnvironment, self).init_gym_env()
         except RuntimeError:
-            gym_env = gym.make(self.name)
-        if self.remove_time_limit:
-            gym_env = remove_time_limit(gym_env)
-            gym_env = gym_env.unwrapped
-        gym_env.reset()
+            gym_env: gym.Env = gym.make(self.name)
+            gym_env.reset()
         return gym_env
 
     def get_state(self) -> numpy.ndarray:
@@ -307,6 +312,61 @@ class AtariEnvironment(VideogameEnvironment):
         )
         params.update(**kwargs)
         return super(VideogameEnvironment, self).clone(**params)
+
+    def setup(self) -> None:
+        """Initialize the target :class:`AtariEnv` instance."""
+        return PlangymEnv.setup(self)
+
+    def reset(
+        self,
+        return_state: bool = True,
+    ) -> Union[numpy.ndarray, Tuple[numpy.ndarray, numpy.ndarray]]:
+        """
+        Restart the environment.
+
+        Args:
+            return_state: If ``True`` it will return the state of the environment.
+
+        Returns:
+            ``obs`` if ```return_state`` is ``True`` else return ``(state, obs)``.
+
+        """
+        return PlangymEnv.reset(self, return_state=return_state)
+
+    def get_step_tuple(
+        self,
+        obs,
+        reward,
+        terminal,
+        info,
+    ):
+        """
+        Prepare the tuple that step returns.
+
+        This is a post processing state to have fine-grained control over what data \
+        that step is returning.
+
+        By default it determines:
+         - Return the state in the tuple.
+         - Adding the "rgb" key in the `info` dictionary containing an RGB \
+         representation of the environment.
+
+        Args:
+            obs: Observation of the environment.
+            reward: Reward signal.
+            terminal: Boolean indicating if the environment is finished.
+            info: Dictionary containing additional information about the environment.
+
+        Returns:
+            Tuple containing the environment data after calling `step`.
+        """
+        return PlangymEnv.get_step_tuple(
+            self,
+            obs=obs,
+            reward=reward,
+            terminal=terminal,
+            info=info,
+        )
 
 
 class AtariPyEnvironment(AtariEnvironment):
