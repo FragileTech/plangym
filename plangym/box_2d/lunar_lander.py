@@ -1,7 +1,7 @@
 """Implementation of LunarLander with no fire coming out of the engines that steps faster."""
 import copy
 import math
-from typing import Any, Dict, Iterable, Optional
+from typing import Iterable, Optional
 
 import numpy as np
 import numpy as numpy
@@ -384,17 +384,16 @@ class LunarLander(PlangymEnv):
         """Return true if the LunarLander agent takes continuous actions as input."""
         return self._continuous
 
-    def setup(self):
+    def init_gym_env(self) -> FastGymLunarLander:
         """Initialize the target :class:`gym.Env` instance."""
         if import_error is not None:
             raise import_error
-        self._gym_env = FastGymLunarLander(
+        gym_env = FastGymLunarLander(
             deterministic=self.deterministic,
             continuous=self.continuous,
         )
-        self._gym_env.reset()
-        if self._wrappers is not None:
-            self.apply_wrappers(self._wrappers)
+        gym_env.reset()
+        return gym_env
 
     def get_state(self) -> numpy.ndarray:
         """
@@ -433,15 +432,8 @@ class LunarLander(PlangymEnv):
         self.gym_env.legs[0].ground_contact = state[0][-2]
         self.gym_env.legs[1].ground_contact = state[0][-1]
 
-    @staticmethod
-    def get_win_condition(info: Dict[str, Any]) -> bool:
-        """Return ``True`` if the current state corresponds to winning the game."""
-        return False
-
-    def _lunar_lander_end(self, obs=None):
-        obs = [0] if obs is None else obs
-        return self.gym_env.game_over or abs(obs[0]) >= 1.0 or not self.gym_env.lander.awake
-
     def process_terminal(self, terminal, obs=None, **kwargs) -> bool:
         """Return the terminal condition considering the lunar lander state."""
-        return terminal or self._lunar_lander_end(obs)
+        obs = [0] if obs is None else obs
+        end = self.gym_env.game_over or abs(obs[0]) >= 1.0 or not self.gym_env.lander.awake
+        return terminal or end

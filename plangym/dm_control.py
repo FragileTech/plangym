@@ -61,8 +61,6 @@ class DMControlEnv(PlangymEnv):
         self.viewer = []
         self._last_time_step = None
         self._viewer = None
-        self._observation_space = None
-        self._action_space = None
         name, self._domain_name, self._task_name = self._parse_names(name, domain_name, task_name)
         super(DMControlEnv, self).__init__(
             name=name,
@@ -82,17 +80,12 @@ class DMControlEnv(PlangymEnv):
     @property
     def observation_space(self) -> Space:
         """Return the observation_space of the environment."""
-        return self._observation_space
+        return self._obs_space
 
     @property
     def physics(self):
         """Alias for gym_env.physics."""
         return self.gym_env.physics
-
-    @property
-    def render_mode(self) -> str:
-        """Return how the game will be rendered. Values: None | human | rgb_array."""
-        return self._render_mode
 
     @property
     def domain_name(self) -> str:
@@ -138,13 +131,16 @@ class DMControlEnv(PlangymEnv):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             super(DMControlEnv, self).setup()
+
+    def init_spaces(self):
+        """Initialize the action_space and the observation_space of the environment."""
         self._action_space = Box(
             low=self.action_spec().minimum,
             high=self.action_spec().maximum,
             dtype=np.float32,
         )
         shape = self.reset(return_state=False).shape
-        self._observation_space = Box(low=-np.inf, high=np.inf, shape=shape, dtype=np.float32)
+        self._obs_space = Box(low=-np.inf, high=np.inf, shape=shape, dtype=np.float32)
 
     def action_spec(self):
         """Alias for the environment's ``action_spec``."""

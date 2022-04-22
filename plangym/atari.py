@@ -1,5 +1,5 @@
 """Implement the ``plangym`` API for Atari environments."""
-from typing import Any, Dict, Iterable, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, Optional, Union
 
 import gym
 from gym.spaces import Space
@@ -313,60 +313,13 @@ class AtariEnvironment(VideogameEnvironment):
         params.update(**kwargs)
         return super(VideogameEnvironment, self).clone(**params)
 
-    def setup(self) -> None:
-        """Initialize the target :class:`AtariEnv` instance."""
-        return PlangymEnv.setup(self)
+    def init_spaces(self) -> None:
+        """Initialize the observation_space and action_space."""
+        return PlangymEnv.init_spaces(self)
 
-    def reset(
-        self,
-        return_state: bool = True,
-    ) -> Union[numpy.ndarray, Tuple[numpy.ndarray, numpy.ndarray]]:
-        """
-        Restart the environment.
-
-        Args:
-            return_state: If ``True`` it will return the state of the environment.
-
-        Returns:
-            ``obs`` if ```return_state`` is ``True`` else return ``(state, obs)``.
-
-        """
-        return PlangymEnv.reset(self, return_state=return_state)
-
-    def get_step_tuple(
-        self,
-        obs,
-        reward,
-        terminal,
-        info,
-    ):
-        """
-        Prepare the tuple that step returns.
-
-        This is a post processing state to have fine-grained control over what data \
-        that step is returning.
-
-        By default it determines:
-         - Return the state in the tuple.
-         - Adding the "rgb" key in the `info` dictionary containing an RGB \
-         representation of the environment.
-
-        Args:
-            obs: Observation of the environment.
-            reward: Reward signal.
-            terminal: Boolean indicating if the environment is finished.
-            info: Dictionary containing additional information about the environment.
-
-        Returns:
-            Tuple containing the environment data after calling `step`.
-        """
-        return PlangymEnv.get_step_tuple(
-            self,
-            obs=obs,
-            reward=reward,
-            terminal=terminal,
-            info=info,
-        )
+    def process_obs(self, obs, **kwargs):
+        """Return the observation."""
+        return PlangymEnv.process_obs(self, obs=obs, **kwargs)
 
 
 class AtariPyEnvironment(AtariEnvironment):

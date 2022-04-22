@@ -79,7 +79,6 @@ class RetroEnvironment(VideogameEnvironment):
         """
         self.height = height
         self.width = width
-        self._obs_space = None
         super(RetroEnvironment, self).__init__(
             name=name,
             frameskip=frameskip,

@@ -478,6 +478,8 @@ class PlangymEnv(PlanEnvironment):
         self.episodic_life = episodic_life
         self._remove_time_limit = remove_time_limit
         self._wrappers = wrappers
+        self._obs_space = None
+        self._action_space = None
         super(PlangymEnv, self).__init__(
             name=name,
             frameskip=frameskip,
@@ -512,12 +514,12 @@ class PlangymEnv(PlanEnvironment):
     @property
     def action_space(self) -> Space:
         """Return the action_space of the environment."""
-        return self.gym_env.action_space
+        return self._action_space
 
     @property
     def observation_space(self) -> Space:
         """Return the observation_space of the environment."""
-        return self.gym_env.observation_space
+        return self._obs_space
 
     @property
     def reward_range(self):
@@ -549,6 +551,12 @@ class PlangymEnv(PlanEnvironment):
             self._gym_env = remove_time_limit(self._gym_env)
         if self._wrappers is not None:
             self.apply_wrappers(self._wrappers)
+        self.init_spaces()
+
+    def init_spaces(self):
+        """Initialize the action_space and observation_space of the environment."""
+        self._obs_space = self.gym_env.observation_space
+        self._action_space = self.gym_env.action_space
 
     def get_image(self) -> np.ndarray:
         """
@@ -587,6 +595,10 @@ class PlangymEnv(PlanEnvironment):
         """Return a valid action that can be used to step the Environment chosen at random."""
         if hasattr(self.action_space, "sample"):
             return self.action_space.sample()
+        try:
+            return self.gym_env.action_space.sample()
+        except AttributeError:
+            pass
 
     def clone(self, **kwargs) -> "PlangymEnv":
         """Return a copy of the environment."""
@@ -686,7 +698,6 @@ class VideogameEnvironment(PlangymEnv):
 
         """
         self._obs_type = obs_type
-        self._obs_space = None
         self.episodic_life = episodic_life
         self._info_step = {LIFE_KEY: -1, "lost_life": False}
         super(VideogameEnvironment, self).__init__(
@@ -708,17 +719,10 @@ class VideogameEnvironment(PlangymEnv):
     @property
     def n_actions(self) -> int:
         """Return the number of actions available."""
-        return self.gym_env.action_space.n
-
-    @property
-    def observation_space(self) -> Space:
-        """Return the observation_space of the environment."""
-        return self._obs_space
-
-    @property
-    def obs_shape(self) -> Tuple[int, ...]:
-        """Tuple containing the shape of the observations returned by the Environment."""
-        return self.observation_space.shape if self.gym_env is not None else ()
+        try:
+            return self.action_space.n
+        except AttributeError:
+            return 0
 
     def apply_action(self, action):
         """Evolve the environment for one time step applying the provided action."""
@@ -750,17 +754,17 @@ class VideogameEnvironment(PlangymEnv):
             return_state=return_state,
         )
 
-    def setup(self) -> None:
-        """Initialize the target :class:`gym.Env` instance."""
+    def init_spaces(self) -> None:
+        """Initialize the action_space and the observation_space of the environment."""
         from gym.wrappers.gray_scale_observation import GrayScaleObservation
 
-        super(VideogameEnvironment, self).setup()
+        super(VideogameEnvironment, self).init_spaces()
         if self.obs_type == "ram":
             ram_size = self.get_ram().shape
             self._obs_space = gym.spaces.Box(low=0, high=255, dtype=numpy.uint8, shape=ram_size)
         elif self.obs_type == "grayscale":
             self._gym_env = GrayScaleObservation(self._gym_env)
-        self._obs_space = self._obs_space or self._gym_env.observation_space
+            self._obs_space = self._gym_env.observation_space
 
     def process_obs(self, obs, **kwargs):
         """Return the ram vector if obs_type == "ram" or and image otherwise."""
@@ -849,6 +853,16 @@ class VectorizedEnvironment(PlangymEnv, ABC):
     def action_shape(self) -> Tuple[int]:
         """Tuple containing the shape of the actions applied to the Environment."""
         return self.plan_env.action_shape
+
+    @property
+    def action_space(self) -> Space:
+        """Return the action_space of the environment."""
+        return self.plan_env.action_space
+
+    @property
+    def observation_space(self) -> Space:
+        """Return the observation_space of the environment."""
+        return self.plan_env.observation_space
 
     @property
     def gym_env(self):

@@ -70,9 +70,9 @@ class MarioEnvironment(NesEnvironment):
         state[-2:] = 0  # Some states use the last two bytes. Set to zero by default.
         return super(MarioEnvironment, self).get_state(state)
 
-    def setup(self) -> None:
+    def init_spaces(self) -> None:
         """Initialize the target :class:`NESEnv` instance."""
-        super(MarioEnvironment, self).setup()
+        super(MarioEnvironment, self).init_spaces()
         if self.obs_type == "info":
             self._obs_space = gym.spaces.Box(low=0, high=np.inf, dtype=numpy.float32, shape=7)
 

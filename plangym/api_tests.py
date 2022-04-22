@@ -173,6 +173,8 @@ class TestGymEnvironment(TestBaseEnvironment):
         assert hasattr(env, "action_space")
         # Singleton / delayed envs may not be properly initialized. In that case test separately
         if env.sample_action() is not None:
+            if env.action_space is None:
+                env.setup()
             action = env.action_space.sample()
             assert action is not None
 
