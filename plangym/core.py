@@ -1061,6 +1061,12 @@ class VectorizedEnvironment(PlangymEnv, ABC):
             `(new_states, observs, rewards, ends, infos)`.
 
         """
+        dt_is_array = (isinstance(dt, numpy.ndarray) and dt.shape) or isinstance(dt, (list, tuple))
+        dt = dt if dt_is_array else numpy.ones(len(actions), dtype=int) * dt
+        return self.make_transitions(actions, states, dt)
+
+    def make_transitions(self, actions, states, dt):
+        """Implement the logic for stepping the environment in parallel."""
         raise NotImplementedError()
 
     def clone(self, **kwargs) -> "PlanEnvironment":

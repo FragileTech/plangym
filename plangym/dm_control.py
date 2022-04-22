@@ -59,7 +59,6 @@ class DMControlEnv(PlangymEnv):
         """
         self._visualize_reward = visualize_reward
         self.viewer = []
-        self._last_time_step = None
         self._viewer = None
         name, self._domain_name, self._task_name = self._parse_names(name, domain_name, task_name)
         super(DMControlEnv, self).__init__(
@@ -122,7 +121,6 @@ class DMControlEnv(PlangymEnv):
             visualize_reward=self._visualize_reward,
         )
         self.viewer = []
-        self._last_time_step = None
         self._viewer = None if novideo_mode else rendering.SimpleImageViewer()
         return env
 

@@ -381,22 +381,17 @@ class BatchEnv:
             transitions = _states, observs, rewards, terminals, infos
         return transitions
 
-    def _make_transitions(self, actions, states=None, dt: [numpy.ndarray, int] = 1):
-
+    def make_transitions(self, actions, states=None, dt: [numpy.ndarray, int] = 1):
+        """Implement the logic for stepping the environment in parallel."""
         results = []
         no_states = states is None or states[0] is None
-        states_chunks, actions_chunks, dt_chunks = batch_step_data(
+        chunks = batch_step_data(
             actions=actions,
             states=states,
             dt=dt,
             batch_size=len(self._envs),
         )
-        for env, states_batch, actions_batch, dt in zip(
-            self._envs,
-            states_chunks,
-            actions_chunks,
-            dt_chunks,
-        ):
+        for env, states_batch, actions_batch, dt in zip(self._envs, *chunks):
             result = env.step_batch(
                 actions=actions_batch,
                 states=states_batch,
@@ -405,39 +400,6 @@ class BatchEnv:
             )
             results.append(result)
         return self._unpack_transitions(results=results, no_states=no_states)
-
-    def step_batch(self, actions, states=None, dt: [numpy.ndarray, int] = 1):
-        """
-        Forward a batch of actions to the wrapped environments.
-
-        Args:
-          actions: Batched action to apply to the environment.
-          states: States to be stepped. If None, act on current state.
-          dt: Number of consecutive times the action will be applied.
-
-        Raises:
-          ValueError: Invalid actions.
-
-        Returns:
-          Batch of observations, rewards, and done flags.
-
-        """
-        no_states = states is None or states[0] is None
-        dt_is_array = (isinstance(dt, numpy.ndarray) and dt.shape) or isinstance(dt, (list, tuple))
-        dt = dt if dt_is_array else numpy.ones(len(actions), dtype=int) * dt
-        if no_states:
-            observs, rewards, dones, infos = self._make_transitions(actions, states, dt)
-        else:
-            states, observs, rewards, dones, infos = self._make_transitions(actions, states, dt)
-        # observ = numpy.stack(observs)
-        # reward = numpy.stack(rewards)
-        # done = numpy.stack(dones)
-        # infos = numpy.stack(infos)
-        # states = numpy.stack(states) if self.plan_env.STATE_IS_ARRAY else states
-        if no_states:
-            return observs, rewards, dones, infos
-        else:
-            return states, observs, rewards, dones, infos
 
     def sync_states(self, state, blocking: bool = True) -> None:
         """
@@ -577,7 +539,7 @@ class ParallelEnvironment(VectorizedEnvironment):
         """Return a copy of the environment."""
         return super(ParallelEnvironment, self).clone(blocking=self.blocking)
 
-    def step_batch(
+    def make_transitions(
         self,
         actions: numpy.ndarray,
         states: numpy.ndarray = None,
@@ -600,7 +562,7 @@ class ParallelEnvironment(VectorizedEnvironment):
             ``(new_states, observs, rewards, ends, infos)``
 
         """
-        return self._batch_env.step_batch(actions=actions, states=states, dt=dt)
+        return self._batch_env.make_transitions(actions=actions, states=states, dt=dt)
 
     def sync_states(self, state: None):
         """

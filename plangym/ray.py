@@ -157,34 +157,6 @@ class RayEnv(VectorizedEnvironment):
         # Initialize local copy last to tolerate singletons better
         super(RayEnv, self).setup()
 
-    def step_batch(self, actions: [np.ndarray, list], states=None, dt: int = 1) -> tuple:
-        """
-        Take a step on a batch of states and actions.
-
-        Args:
-            actions: Chosen actions applied to the environment.
-            states: Set the environment to the given states before stepping it.
-                If state is None the behaviour of this function will be the same
-                as in OpenAI gym.
-            dt: Consecutive number of times that the action will be
-                applied.
-
-        Returns:
-            if states is None returns (observs, rewards, ends, infos)
-            else returns(new_states, observs, rewards, ends, infos)
-        """
-        dt_is_array = (isinstance(dt, np.ndarray) and dt.shape) or isinstance(dt, (list, tuple))
-        dt = dt if dt_is_array else np.ones(len(actions), dtype=int) * dt
-        if states is None:
-            observs, rewards, dones, infos = self._make_transitions(actions, None, dt)
-        else:
-            states, observs, rewards, dones, infos = self._make_transitions(actions, states, dt)
-
-        if states is None:
-            return observs, rewards, dones, infos
-        else:
-            return states, observs, rewards, dones, infos
-
     @staticmethod
     def _unpack_transitions(results: list, no_states: bool):
         _states = []
@@ -209,21 +181,17 @@ class RayEnv(VectorizedEnvironment):
             transitions = _states, observs, rewards, terminals, infos
         return transitions
 
-    def _make_transitions(self, actions, states=None, dt: [np.ndarray, int] = 1):
+    def make_transitions(self, actions, states=None, dt: [np.ndarray, int] = 1):
+        """Implement the logic for stepping the environment in parallel."""
         no_states = states is None or states[0] is None
-        states_chunks, actions_chunks, dt_chunks = self.batch_step_data(
+        chunks = self.batch_step_data(
             actions=actions,
             states=states,
             dt=dt,
             batch_size=len(self.workers),
         )
         results_ids = []
-        for env, states_batch, actions_batch, dt in zip(
-            self.workers,
-            states_chunks,
-            actions_chunks,
-            dt_chunks,
-        ):
+        for env, states_batch, actions_batch, dt in zip(self.workers, *chunks):
             result = env.step_batch.remote(actions=actions_batch, states=states_batch, dt=dt)
             results_ids.append(result)
         results = ray.get(results_ids)
