@@ -170,6 +170,24 @@ class PlanEnvironment(ABC):
         self.run_autoreset(step_data)  # Resets at the end to preserve the environment state.
         return step_data
 
+    def reset(
+        self,
+        return_state: bool = True,
+    ) -> Union[numpy.ndarray, Tuple[numpy.ndarray, numpy.ndarray]]:
+        """
+        Restart the environment.
+
+        Args:
+            return_state: If ``True`` it will return the state of the environment.
+
+        Returns:
+            ``obs`` if ```return_state`` is ``True`` else return ``(state, obs)``.
+
+        """
+        obs = self.apply_reset()  # Returning info upon reset is not yet supported
+        obs = self.process_obs(obs)
+        return (self.get_state(), obs) if return_state else obs
+
     def step_with_dt(self, action: Union[numpy.ndarray, int, float], dt: int = 1):
         """
         Take ``dt`` simulation steps and make the environment evolve in multiples\
@@ -282,12 +300,52 @@ class PlanEnvironment(ABC):
         """
         default_mode = self._state_step is not None and self._return_state_step is None
         return_state = self._return_state_step or default_mode
+        obs = self.process_obs(
+            obs=obs,
+            reward=reward,
+            terminal=terminal,
+            info=info,
+        )
+        reward = self.process_reward(
+            obs=obs,
+            reward=reward,
+            terminal=terminal,
+            info=info,
+        )
+        terminal = self.process_terminal(
+            obs=obs,
+            reward=reward,
+            terminal=terminal,
+            info=info,
+        )
+        info = self.process_info(
+            obs=obs,
+            reward=reward,
+            terminal=terminal,
+            info=info,
+        )
         step_data = (
             (self.get_state(), obs, reward, terminal, info)
             if return_state
             else (obs, reward, terminal, info)
         )
         return step_data
+
+    def process_obs(self, obs, **kwargs):
+        """Perform optional computation for computing the observation returned by step."""
+        return obs
+
+    def process_reward(self, reward, **kwargs) -> float:
+        """Perform optional computation for computing the reward returned by step."""
+        return reward
+
+    def process_terminal(self, terminal, **kwargs) -> bool:
+        """Perform optional computation for computing the terminal flag returned by step."""
+        return terminal
+
+    def process_info(self, info, **kwargs) -> Dict[str, Any]:
+        """Perform optional computation for computing the info dictionary returned by step."""
+        return info
 
     def step_batch(
         self,
@@ -357,20 +415,8 @@ class PlanEnvironment(ABC):
         """Evolve the environment for one time step applying the provided action."""
         raise NotImplementedError()
 
-    def reset(
-        self,
-        return_state: bool = True,
-    ) -> Union[numpy.ndarray, Tuple[numpy.ndarray, numpy.ndarray]]:
-        """
-        Restart the environment.
-
-        Args:
-            return_state: If ``True`` it will return the state of the environment.
-
-        Returns:
-            ``obs`` if ```return_state`` is ``True`` else return ``(state, obs)``.
-
-        """
+    def apply_reset(self, **kwargs):
+        """Perform the resetting operation on the environment."""
         raise NotImplementedError()
 
     def get_state(self) -> Any:
@@ -450,12 +496,18 @@ class PlangymEnv(PlanEnvironment):
     @property
     def obs_shape(self) -> Tuple[int, ...]:
         """Tuple containing the shape of the observations returned by the Environment."""
-        return self.observation_space.shape
+        try:
+            return self.observation_space.shape
+        except AttributeError:
+            return ()
 
     @property
     def action_shape(self) -> Tuple[int, ...]:
         """Tuple containing the shape of the actions applied to the Environment."""
-        return self.action_space.shape
+        try:
+            return self.action_space.shape
+        except AttributeError:
+            return ()
 
     @property
     def action_space(self) -> Space:
@@ -508,7 +560,7 @@ class PlangymEnv(PlanEnvironment):
         if hasattr(self.gym_env, "render"):
             return self.gym_env.render(mode="rgb_array")
 
-    def reset(
+    def apply_reset(
         self,
         return_state: bool = True,
     ) -> Union[numpy.ndarray, Tuple[numpy.ndarray, numpy.ndarray]]:
@@ -524,8 +576,7 @@ class PlangymEnv(PlanEnvironment):
         """
         if self.gym_env is None and self.delay_setup:
             self.setup()
-        obs = self.gym_env.reset()
-        return (self.get_state(), obs) if return_state else obs
+        return self.gym_env.reset()
 
     def apply_action(self, action):
         """Accumulate rewards and calculate terminal flag after stepping the environment."""
@@ -586,10 +637,6 @@ class PlangymEnv(PlanEnvironment):
     @staticmethod
     def get_win_condition(info: Dict[str, Any]) -> bool:
         """Return ``True`` if the current state corresponds to winning the game."""
-        return False
-
-    def terminal_condition(self, old_info, new_info, terminal, *args, **kwargs) -> bool:
-        """Calculate a new terminal condition using the info data."""
         return False
 
     def render(self, mode="human"):
@@ -715,67 +762,9 @@ class VideogameEnvironment(PlangymEnv):
             self._gym_env = GrayScaleObservation(self._gym_env)
         self._obs_space = self._obs_space or self._gym_env.observation_space
 
-    def reset(
-        self,
-        return_state: bool = True,
-    ) -> Union[numpy.ndarray, Tuple[numpy.ndarray, numpy.ndarray]]:
-        """
-        Restart the environment.
-
-        Args:
-            return_state: If ``True`` it will return the state of the environment.
-
-        Returns:
-            ``obs`` if ```return_state`` is ``True`` else return ``(state, obs)``.
-
-        """
-        if self.gym_env is None and self.delay_setup:
-            self.setup()
-        obs = self.gym_env.reset()
-        obs = self.get_ram() if self.obs_type == "ram" else obs
-        return (self.get_state(), obs) if return_state else obs
-
-    def get_step_tuple(
-        self,
-        obs,
-        reward,
-        terminal,
-        info,
-    ):
-        """
-        Prepare the tuple that step returns.
-
-        This is a post processing state to have fine-grained control over what data \
-        that step is returning.
-
-        By default it determines:
-         - Return the state in the tuple.
-         - Adding the "rgb" key in the `info` dictionary containing an RGB \
-         representation of the environment.
-
-        Args:
-            obs: Observation of the environment.
-            reward: Reward signal.
-            terminal: Boolean indicating if the environment is finished.
-            info: Dictionary containing additional information about the environment.
-
-        Returns:
-            Tuple containing the environment data after calling `step`.
-        """
-        data = super(VideogameEnvironment, self).get_step_tuple(
-            obs=obs,
-            reward=reward,
-            terminal=terminal,
-            info=info,
-        )
-        *new_state, obs, reward, terminal, info = data
-        if self.obs_type == "ram":
-            obs = self.get_ram()
-        return (
-            (new_state[0], obs, reward, terminal, info)
-            if new_state
-            else (obs, reward, terminal, info)
-        )
+    def process_obs(self, obs, **kwargs):
+        """Return the ram vector if obs_type == "ram" or and image otherwise."""
+        return self.get_ram() if self.obs_type == "ram" else obs
 
     def get_ram(self) -> np.ndarray:
         """Return the ram of the emulator as a numpy array."""

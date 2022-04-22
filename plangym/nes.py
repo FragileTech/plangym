@@ -1,5 +1,5 @@
 """Environment for playing Mario bros using gym-super-mario-bros."""
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, Optional
 
 import gym
 import numpy
@@ -60,11 +60,6 @@ class NesEnvironment(VideogameEnvironment):
 class MarioEnvironment(NesEnvironment):
     """Interface for using gym-super-mario-bros in plangym."""
 
-    @property
-    def obs_shape(self) -> Tuple[int, ...]:
-        """Return the shape of the environment observations."""
-        return tuple([7])
-
     def get_state(self, state: Optional[np.ndarray] = None) -> np.ndarray:
         """
         Recover the internal state of the simulation.
@@ -75,8 +70,14 @@ class MarioEnvironment(NesEnvironment):
         state[-2:] = 0  # Some states use the last two bytes. Set to zero by default.
         return super(MarioEnvironment, self).get_state(state)
 
+    def setup(self) -> None:
+        """Initialize the target :class:`NESEnv` instance."""
+        super(MarioEnvironment, self).setup()
+        if self.obs_type == "info":
+            self._obs_space = gym.spaces.Box(low=0, high=np.inf, dtype=numpy.float32, shape=7)
+
     def init_gym_env(self) -> gym.Env:
-        """Initialize the :class:`gym.Env`` instance that the current class is wrapping."""
+        """Initialize the :class:`NESEnv`` instance that the current class is wrapping."""
         import gym_super_mario_bros
         from gym_super_mario_bros.actions import COMPLEX_MOVEMENT  # , SIMPLE_MOVEMENT
         from nes_py.wrappers import JoypadSpace
@@ -99,76 +100,59 @@ class MarioEnvironment(NesEnvironment):
         info["in_pipe"] = (info["player_state"] == 0x02) or (info["player_state"] == 0x03)
         return info
 
-    def _get_obs(self, obs: numpy.ndarray, info: Dict[str, Any]) -> numpy.ndarray:
-        obs = np.array(
-            [
-                info["x_pos"],
-                info["y_pos"],
-                info["world"] * 10,
-                info["stage"],
-                info["life"],
-                int(info["flag_get"]),
-                info["coins"],
-            ],
-        )
+    def _get_info(
+        self,
+    ):
+        info = {
+            "x_pos": 0,
+            "y_pos": 0,
+            "world": 0,
+            "stage": 0,
+            "life": 0,
+            "coins": 0,
+            "flag_get": False,
+            "in_pipe": False,
+        }
+        return self._update_info(info)
+
+    def process_obs(
+        self,
+        obs: numpy.ndarray,
+        info: Dict[str, Any] = None,
+        **kwargs,
+    ) -> numpy.ndarray:
+        """Return the information contained in info as an observation if obs_type == "info"."""
+        if self.obs_type == "info":
+            info = info or self._get_info()
+            obs = np.array(
+                [
+                    info.get("x_pos", 0),
+                    info.get("y_pos", 0),
+                    info.get("world" * 10, 0),
+                    info.get("stage", 0),
+                    info.get("life", 0),
+                    int(info.get("flag_get", 0)),
+                    info.get("coins", 0),
+                ],
+            )
         return obs
 
-    def step(
-        self,
-        action: Union[numpy.ndarray, int, float],
-        state: numpy.ndarray = None,
-        dt: int = 1,
-    ) -> tuple:
-        """
-        Step the environment applying the supplied action.
-
-        Optionally set the state to the supplied state before stepping it.
-
-        Take ``dt`` simulation steps and make the environment evolve in multiples \
-        of ``self.frameskip`` for a total of ``dt`` * ``self.frameskip`` steps.
-
-        Args:
-            action: Chosen action applied to the environment.
-            state: Set the environment to the given state before stepping it.
-            dt: Consecutive number of times that the action will be applied.
-
-        Returns:
-            if state is None returns ``(observs, reward, terminal, info)``
-            else returns ``(new_state, observs, reward, terminal, info)``
-
-        """
-        data = super(MarioEnvironment, self).step(action=action, state=state, dt=dt)
-        *new_state, obs, reward, terminal, info = data
-        info = self._update_info(info)
-        obs = self._get_obs(obs, info)
+    def process_reward(self, reward, info, **kwargs) -> float:
+        """Return a custom reward based on the x, y coordinates and level mario is in."""
         reward = (
-            (info["world"] * 25000)
-            + (info["stage"] * 5000)
-            + info["x_pos"]
-            + 10 * int(bool(info["in_pipe"]))
-            + 100 * int(bool(info["flag_get"]))
+            (info.get("world", 0) * 25000)
+            + (info.get("stage", 0) * 5000)
+            + info.get("x_pos", 0)
+            + 10 * int(bool(info.get("in_pipe", 0)))
+            + 100 * int(bool(info.get("flag_get", 0)))
             # + (abs(info["x_pos"] - info["x_position_last"]))
         )
-        terminal = terminal or info["is_dying"] or info["is_dead"]
-        ret_data = obs, reward, terminal, info
-        return ret_data if state is None else (new_state[0], obs, reward, terminal, info)
+        return reward
 
-    def reset(
-        self,
-        return_state: bool = True,
-    ) -> Union[numpy.ndarray, Tuple[numpy.ndarray, numpy.ndarray]]:
-        """
-        Reset the environment and returns the first observation, or the first \
-        (state, obs) tuple.
+    def process_terminal(self, terminal, info, **kwargs) -> bool:
+        """Return True if terminal or mario is dying."""
+        return terminal or info.get("is_dying", False) or info.get("is_dead", False)
 
-        Args:
-            return_state: If true return a also the initial state of the env.
-
-        Returns:
-            Observation of the environment if `return_state` is False. Otherwise,
-            return (state, obs) after reset.
-
-        """
-        data = super(MarioEnvironment, self).reset(return_state=return_state)
-        obs = np.zeros(7)
-        return (data[0], obs) if return_state else obs
+    def process_info(self, info, **kwargs) -> Dict[str, Any]:
+        """Add additional data to the info dictionary."""
+        return self._update_info(info)

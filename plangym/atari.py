@@ -401,35 +401,10 @@ class AtariPyEnvironment(AtariEnvironment):
         else:
             self.gym_env.unwrapped.restore_state(state)
 
-    def step(
-        self,
-        action: Union[numpy.ndarray, int],
-        state: numpy.ndarray = None,
-        dt: int = 1,
-    ) -> tuple:  # pragma: no cover
+    def get_ram(self) -> numpy.ndarray:
         """
-        Take ``dt`` simulation steps and make the environment evolve in multiples \
-        of ``self.frameskip``.
+        Return a numpy array containing the content of the emulator's RAM.
 
-        The info dictionary will contain a boolean called `lost_live` that will
-        be ``True`` if a life was lost during the current step.
-
-        Args:
-            action: Chosen action applied to the environment.
-            state: Set the environment to the given state before stepping it.
-            dt: Consecutive number of times that the action will be applied.
-
-        Returns:
-            if states is `None` returns ``(observs, rewards, ends, infos)``
-            else returns ``(new_states, observs, rewards, ends, infos)``
-
+        The RAM is a vector array interpreted as the memory of the emulator.
         """
-        data = super(AtariPyEnvironment, self).step(action=action, state=state, dt=dt)
-        if state is None:
-            observ, reward, terminal, info = data
-            observ = ale_to_ram(self.gym_env.unwrapped.ale) if self.obs_type == "ram" else observ
-            return observ, reward, terminal, info
-        else:
-            state, observ, reward, terminal, info = data
-            observ = ale_to_ram(self.gym_env.unwrapped.ale) if self.obs_type == "ram" else observ
-            return state, observ, reward, terminal, info
+        return ale_to_ram(self.gym_env.unwrapped.ale)

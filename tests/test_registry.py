@@ -84,11 +84,11 @@ class TestMake:
 
     @pytest.mark.skipif(SKIP_ATARI_TESTS, reason="Atari not installed")
     def test_custom_atari_make(self):
-        from plangym.minimal import MinimalPacman, MinimalPong
+        # from plangym.minimal import MinimalPacman, MinimalPong
         from plangym.montezuma import Montezuma
 
-        _test_env_class("MinimalPacman-v0", MinimalPacman)
-        _test_env_class("MinimalPong-v0", MinimalPong)
+        # _test_env_class("MinimalPacman-v0", MinimalPacman)
+        #  _test_env_class("MinimalPong-v0", MinimalPong)
         _test_env_class("PlanMontezuma-v0", Montezuma)
 
     @pytest.mark.skipif(SKIP_DM_CONTROL_TESTS, reason="dm_control not installed")

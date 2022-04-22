@@ -1,5 +1,5 @@
 """Implement the ``plangym`` API for ``dm_control`` environments."""
-from typing import Iterable, Union
+from typing import Iterable
 import warnings
 
 from gym.spaces import Box, Space
@@ -58,7 +58,6 @@ class DMControlEnv(PlangymEnv):
             render_mode: None|human|rgb_array
         """
         self._visualize_reward = visualize_reward
-        self._render_i = 0
         self.viewer = []
         self._last_time_step = None
         self._viewer = None
@@ -120,10 +119,6 @@ class DMControlEnv(PlangymEnv):
         name = "-".join([domain_name, task_name])
         return name, domain_name, task_name
 
-    def sample_action(self) -> Union[int, np.ndarray]:
-        """Return a valid action that can be used to step the Environment."""
-        return self.action_space.sample()
-
     def init_gym_env(self):
         """Initialize the environment instance that the current class is wrapping."""
         from dm_control import suite
@@ -133,7 +128,6 @@ class DMControlEnv(PlangymEnv):
             task_name=self.task_name,
             visualize_reward=self._visualize_reward,
         )
-        self._render_i = 0
         self.viewer = []
         self._last_time_step = None
         self._viewer = None if novideo_mode else rendering.SimpleImageViewer()
@@ -143,29 +137,18 @@ class DMControlEnv(PlangymEnv):
         """Initialize the target :class:`gym.Env` instance."""
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            self._gym_env = self.init_gym_env()
-            if self._wrappers is not None:
-                self.apply_wrappers(self._wrappers)
-            self._action_space = Box(
-                low=self.action_spec().minimum,
-                high=self.action_spec().maximum,
-                dtype=np.float32,
-            )
-            shape = self.reset(return_state=False).shape
-            self._observation_space = Box(low=-np.inf, high=np.inf, shape=shape, dtype=np.float32)
+            super(DMControlEnv, self).setup()
+        self._action_space = Box(
+            low=self.action_spec().minimum,
+            high=self.action_spec().maximum,
+            dtype=np.float32,
+        )
+        shape = self.reset(return_state=False).shape
+        self._observation_space = Box(low=-np.inf, high=np.inf, shape=shape, dtype=np.float32)
 
     def action_spec(self):
         """Alias for the environment's ``action_spec``."""
         return self.gym_env.action_spec()
-
-    def seed(self, seed=None):
-        """Seed the underlying :class:`gym.Env`."""
-        np.random.seed(seed)
-        # self.gym_env.seed(seed)
-
-    def get_image(self) -> np.ndarray:
-        """Return and RGB array representing the current state of the environment."""
-        return self.render(mode="rgb_array")
 
     def render(self, mode="human"):
         """
@@ -195,26 +178,18 @@ class DMControlEnv(PlangymEnv):
             self._viewer.imshow(img)
             time.sleep(sleep)
 
-    def reset(self, return_state: bool = True) -> [np.ndarray, tuple]:
+    def process_obs(self, obs, **kwargs) -> np.ndarray:
         """
-        Reset the environment and returns the first observation, or the first\
-         (state, obs) tuple.
+        Get the environment observation from a time_step object.
 
         Args:
-            return_state: If true return a also the initial state of the env.
+            obs: Time step object returned after stepping the environment.
+            **kwargs: Ignored
 
         Returns:
-            Observation of the environment if `return_state` is False. Otherwise,
-            return (state, obs) after reset.
+            Numpy array containing the environment observation.
         """
-        time_step = self.gym_env.reset()
-        # observed, *_ = self.step_with_dt(action=self.sample_action(), dt=20)
-        observed = self._time_step_to_obs(time_step)
-        self._render_i = 0
-        if not return_state:
-            return observed
-        else:
-            return self.get_state(), observed
+        return self._time_step_to_obs(time_step=obs)
 
     def set_state(self, state: np.ndarray) -> None:
         """
@@ -247,10 +222,9 @@ class DMControlEnv(PlangymEnv):
         """Transform the returned time_step object to a compatible gym tuple."""
         info = {}
         time_step = self.gym_env.step(action)
-        obs = self._time_step_to_obs(time_step)  # TODO: Optimize this so we only do it once
-        env_end = time_step.last()
+        obs = time_step
+        terminal = time_step.last()
         _reward = time_step.reward if time_step.reward is not None else 0.0
-        terminal = self.terminal_condition(obs, _reward, env_end, info, action)
         reward = _reward + self._reward_step
         return obs, reward, terminal, info
 

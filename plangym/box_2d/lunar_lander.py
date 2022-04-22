@@ -1,7 +1,7 @@
 """Implementation of LunarLander with no fire coming out of the engines that steps faster."""
 import copy
 import math
-from typing import Any, Dict, Iterable, Optional, Union
+from typing import Any, Dict, Iterable, Optional
 
 import numpy as np
 import numpy as numpy
@@ -438,22 +438,10 @@ class LunarLander(PlangymEnv):
         """Return ``True`` if the current state corresponds to winning the game."""
         return False
 
-    def _lunar_lander_end(self, obs):
+    def _lunar_lander_end(self, obs=None):
+        obs = [0] if obs is None else obs
         return self.gym_env.game_over or abs(obs[0]) >= 1.0 or not self.gym_env.lander.awake
 
-    def step_with_dt(self, action: Union[numpy.ndarray, int, float], dt: int = 1) -> tuple:
-        """
-        Take ``dt`` simulation steps and make the environment evolve in multiples\
-         of ``self.frameskip`` for a total of ``dt`` * ``self.frameskip`` steps.
-
-        Args:
-            action: Chosen action applied to the environment.
-            dt: Consecutive number of times that the action will be applied.
-
-        Returns:
-            tuple containing ``(observs, reward, terminal, info)``.
-        """
-        obs, reward, terminal, info = super(LunarLander, self).step_with_dt(action, dt)
-        terminal = terminal or self._lunar_lander_end(obs)
-        info["oob"] = terminal
-        return obs, reward, terminal, info
+    def process_terminal(self, terminal, obs=None, **kwargs) -> bool:
+        """Return the terminal condition considering the lunar lander state."""
+        return terminal or self._lunar_lander_end(obs)

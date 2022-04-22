@@ -1,5 +1,5 @@
 """Implement the ``plangym`` API for retro environments."""
-from typing import Any, Dict, Iterable, Optional, Tuple
+from typing import Any, Dict, Iterable, Optional
 
 import gym
 from gym import spaces
@@ -93,14 +93,9 @@ class RetroEnvironment(VideogameEnvironment):
             **kwargs,
         )
 
-    @property
-    def action_shape(self) -> Tuple[int, ...]:
-        """Tuple containing the shape of the actions applied to the Environment."""
-        return self.action_space.shape if self.gym_env is not None else ()
-
     def get_ram(self) -> numpy.ndarray:
         """Return the ram of the emulator as a numpy array."""
-        return self.get_state().copy()
+        return self.get_state()  # .copy()
 
     def clone(self) -> "RetroEnvironment":
         """Return a copy of the environment with its initialization delayed."""
