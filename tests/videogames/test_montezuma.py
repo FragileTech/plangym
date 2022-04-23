@@ -7,7 +7,7 @@ from tests import SKIP_ATARI_TESTS
 
 if SKIP_ATARI_TESTS:
     pytest.skip("Atari not installed, skipping", allow_module_level=True)
-from plangym.api_tests import batch_size, display, TestBaseEnvironment, TestGymEnvironment
+from plangym.api_tests import batch_size, display, TestPlanEnvironment, TestPlangymEnv
 
 
 def montezuma():
@@ -24,7 +24,7 @@ def parallel_montezuma():
     )
 
 
-environments = [montezuma, parallel_montezuma, montezuma_unproc]
+environments = [montezuma, montezuma_unproc, parallel_montezuma]
 
 
 @pytest.fixture(params=environments, scope="class")

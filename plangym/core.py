@@ -18,7 +18,7 @@ class PlanEnvironment(ABC):
     """Inherit from this class to adapt environments to different problems."""
 
     STATE_IS_ARRAY = True
-    RETURNS_GYM_TUPLE = True
+    OBS_IS_ARRAY = True
     SINGLETON = False
 
     def __init__(
@@ -181,6 +181,7 @@ class PlanEnvironment(ABC):
         actions: Union[numpy.ndarray, Iterable[Union[numpy.ndarray, int]]],
         states: Union[numpy.ndarray, Iterable] = None,
         dt: Union[int, numpy.ndarray] = 1,
+        return_state: bool = True,
     ) -> Tuple[Union[list, numpy.ndarray], ...]:
         """
         Vectorized version of the `step` method. It allows to step a vector of \
@@ -193,6 +194,8 @@ class PlanEnvironment(ABC):
             actions: Iterable containing the different actions to be applied.
             states: Iterable containing the different states to be set.
             dt: int or array containing the consecutive that will be applied to each state.
+            return_state: Whether to return the state in the returned tuple. \
+                If None, `step` will return the state if `state` was passed as a parameter.
 
         Returns:
             if states is `None` returns `(observs, rewards, ends, infos)`
@@ -203,10 +206,12 @@ class PlanEnvironment(ABC):
         dt = dt if dt_is_array else numpy.ones(len(actions), dtype=int) * dt
         no_states = states is None or states[0] is None
         states = [None] * len(actions) if no_states else states
-        data = [self.step(action, state, dt=dt) for action, state, dt in zip(actions, states, dt)]
+        data = [
+            self.step(action, state, dt=dt, return_state=return_state)
+            for action, state, dt in zip(actions, states, dt)
+        ]
         return tuple(list(x) for x in zip(*data))
 
-    # Internal API -----------------------------------------------------------------------------
     def clone(self, **kwargs) -> "PlanEnvironment":
         """Return a copy of the environment."""
         clone_kwargs = dict(
@@ -227,6 +232,7 @@ class PlanEnvironment(ABC):
         """
         pass
 
+    # Internal API -----------------------------------------------------------------------------
     def step_with_dt(self, action: Union[numpy.ndarray, int, float], dt: int = 1):
         """
         Take ``dt`` simulation steps and make the environment evolve in multiples\
@@ -329,8 +335,6 @@ class PlanEnvironment(ABC):
         """
         pass
 
-    # Developer API -----------------------------------------------------------------------------
-
     def begin_step(self, action=None, dt=None, state=None, return_state: bool = None):
         """Perform setup of step variables before starting `step_with_dt`."""
         self._n_step = 0
@@ -364,6 +368,7 @@ class PlanEnvironment(ABC):
         """
         terminal = terminal or self._terminal_step
         reward = self._reward_step + reward
+        info["n_step"] = int(self._n_step)
         return obs, reward, terminal, info
 
     def process_step(
@@ -388,12 +393,17 @@ class PlanEnvironment(ABC):
         Returns:
             Tuple containing the environment data after calling `step`.
         """
-        info["n_step"] = int(self._n_step)
+        info["n_step"] = info.get("n_step", int(self._n_step))
         info["dt"] = self._dt_step
         if self.return_image:
             info["rgb"] = self.get_image()
         return obs, reward, terminal, info
 
+    def close(self) -> None:
+        """Tear down the current environment."""
+        pass
+
+    # Developer API -----------------------------------------------------------------------------
     def process_obs(self, obs, **kwargs):
         """Perform optional computation for computing the observation returned by step."""
         return obs
@@ -409,10 +419,6 @@ class PlanEnvironment(ABC):
     def process_info(self, info, **kwargs) -> Dict[str, Any]:
         """Perform optional computation for computing the info dictionary returned by step."""
         return info
-
-    def close(self) -> None:
-        """Tear down the current environment."""
-        pass
 
     def apply_action(self, action):
         """Evolve the environment for one time step applying the provided action."""
@@ -522,6 +528,11 @@ class PlangymEnv(PlanEnvironment):
         return self._obs_type
 
     @property
+    def observation_space(self) -> Space:
+        """Return the observation_space of the environment."""
+        return self._obs_space
+
+    @property
     def action_shape(self) -> Tuple[int, ...]:
         """Tuple containing the shape of the actions applied to the Environment."""
         try:
@@ -533,11 +544,6 @@ class PlangymEnv(PlanEnvironment):
     def action_space(self) -> Space:
         """Return the action_space of the environment."""
         return self._action_space
-
-    @property
-    def observation_space(self) -> Space:
-        """Return the observation_space of the environment."""
-        return self._obs_space
 
     @property
     def reward_range(self):

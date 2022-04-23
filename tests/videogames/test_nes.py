@@ -1,6 +1,6 @@
 import pytest
 
-from plangym.api_tests import batch_size, display, TestBaseEnvironment
+from plangym.api_tests import batch_size, display, TestPlanEnvironment
 from plangym.vectorization import ParallelEnvironment
 from plangym.videogames.nes import MarioEnv
 

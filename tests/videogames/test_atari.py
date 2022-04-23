@@ -9,7 +9,7 @@ from tests import SKIP_ATARI_TESTS
 
 if SKIP_ATARI_TESTS:
     pytest.skip("Atari not installed, skipping", allow_module_level=True)
-from plangym.api_tests import batch_size, display, TestBaseEnvironment, TestGymEnvironment
+from plangym.api_tests import batch_size, display, TestPlanEnvironment, TestPlangymEnv
 
 
 def pacman_obs():

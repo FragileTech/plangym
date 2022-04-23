@@ -40,7 +40,7 @@ class RemoteEnv(PlanEnvironment):
         """Init the wrapped environment."""
         self.env = self._env_callable()
 
-    def step(self, action, state=None, dt: int = 1) -> tuple:
+    def step(self, action, state=None, dt: int = 1, return_state: bool = None) -> tuple:
         """
         Take a simulation step and make the environment evolve.
 
@@ -50,14 +50,22 @@ class RemoteEnv(PlanEnvironment):
                 If state is None the behaviour of this function will be the
                 same as in OpenAI gym.
             dt: Consecutive number of times to apply an action.
+            return_state: Whether to return the state in the returned tuple. \
+                If None, `step` will return the state if `state` was passed as a parameter.
 
         Returns:
             if states is None returns (observs, rewards, ends, infos)
             else returns(new_states, observs, rewards, ends, infos)
         """
-        return self.env.step(action=action, state=state, dt=dt)
+        return self.env.step(action=action, state=state, dt=dt, return_state=return_state)
 
-    def step_batch(self, actions: [np.ndarray, list], states=None, dt: int = 1) -> tuple:
+    def step_batch(
+        self,
+        actions: [np.ndarray, list],
+        states=None,
+        dt: int = 1,
+        return_state: bool = None,
+    ) -> tuple:
         """
         Take a step on a batch of states and actions.
 
@@ -68,12 +76,19 @@ class RemoteEnv(PlanEnvironment):
                 as in OpenAI gym.
             dt: Consecutive number of times that the action will be
                 applied.
+            return_state: Whether to return the state in the returned tuple. \
+                If None, `step` will return the state if `state` was passed as a parameter.
 
         Returns:
             if states is None returns (observs, rewards, ends, infos)
             else returns(new_states, observs, rewards, ends, infos)
         """
-        return self.env.step_batch(actions=actions, states=states, dt=dt)
+        return self.env.step_batch(
+            actions=actions,
+            states=states,
+            dt=dt,
+            return_state=return_state,
+        )
 
     def reset(self, return_state: bool = True) -> [np.ndarray, tuple]:
         """Restart the environment."""
@@ -156,9 +171,16 @@ class RayEnv(VectorizedEnvironment):
         # Initialize local copy last to tolerate singletons better
         super(RayEnv, self).setup()
 
-    def make_transitions(self, actions, states=None, dt: [np.ndarray, int] = 1):
+    def make_transitions(
+        self,
+        actions,
+        states=None,
+        dt: [np.ndarray, int] = 1,
+        return_state: bool = None,
+    ):
         """Implement the logic for stepping the environment in parallel."""
         no_states = states is None or states[0] is None
+        _return_state = ((not no_states) and return_state is None) or return_state
         chunks = self.batch_step_data(
             actions=actions,
             states=states,
@@ -167,10 +189,15 @@ class RayEnv(VectorizedEnvironment):
         )
         results_ids = []
         for env, states_batch, actions_batch, dt in zip(self.workers, *chunks):
-            result = env.step_batch.remote(actions=actions_batch, states=states_batch, dt=dt)
+            result = env.step_batch.remote(
+                actions=actions_batch,
+                states=states_batch,
+                dt=dt,
+                return_state=return_state,
+            )
             results_ids.append(result)
         results = ray.get(results_ids)
-        return self.unpack_transitions(results=results, no_states=no_states)
+        return self.unpack_transitions(results=results, return_states=_return_state)
 
     def reset(self, return_state: bool = True) -> [np.ndarray, tuple]:
         """Restart the environment."""

@@ -5,7 +5,7 @@ import pytest
 
 
 pytest.importorskip("Box2D")
-from plangym.api_tests import batch_size, display, TestBaseEnvironment, TestGymEnvironment
+from plangym.api_tests import batch_size, display, TestPlanEnvironment, TestPlangymEnv
 from plangym.control.box_2d import Box2DEnv
 from plangym.control.lunar_lander import LunarLander
 
@@ -37,6 +37,11 @@ environments = [
     lunar_lander_random_discrete,
     lunar_lander_random_continuous,
 ]
+
+try:
+    bipedal_walker().get_image()
+except Exception:
+    pytest.skip(allow_module_level=True)
 
 
 @pytest.fixture(params=environments, scope="class")

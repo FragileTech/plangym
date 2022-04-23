@@ -98,9 +98,9 @@ class RetroEnv(VideogameEnv):
         """Return the ram of the emulator as a numpy array."""
         return self.get_state()  # .copy()
 
-    def clone(self) -> "RetroEnv":
+    def clone(self, **kwargs) -> "RetroEnv":
         """Return a copy of the environment with its initialization delayed."""
-        return RetroEnv(
+        default_kwargs = dict(
             name=self.name,
             frameskip=self.frameskip,
             wrappers=self._wrappers,
@@ -111,6 +111,8 @@ class RetroEnv(VideogameEnv):
             height=self.height,
             width=self.width,
         )
+        default_kwargs.update(kwargs)
+        return super(RetroEnv, self).clone(**default_kwargs)
 
     def init_gym_env(self) -> gym.Env:
         """Initialize the retro environment."""

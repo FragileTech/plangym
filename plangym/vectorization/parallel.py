@@ -118,7 +118,14 @@ class ExternalProcess:
         promise = self.call("set_state", state)
         return promise() if blocking else promise
 
-    def step_batch(self, actions, states=None, dt: [numpy.ndarray, int] = None, blocking=True):
+    def step_batch(
+        self,
+        actions,
+        states=None,
+        dt: [numpy.ndarray, int] = None,
+        return_state: bool = None,
+        blocking=True,
+    ):
         """
         Vectorized version of the ``step`` method.
 
@@ -131,13 +138,15 @@ class ExternalProcess:
            states: Iterable containing the different states to be set.
            dt: int or array containing the frameskips that will be applied.
            blocking: If True, execute sequentially.
+           return_state: Whether to return the state in the returned tuple. \
+                If None, `step` will return the state if `state` was passed as a parameter.
 
         Returns:
           if states is None returns ``(observs, rewards, ends, infos)``
           else returns ``(new_states, observs, rewards, ends, infos)``
 
         """
-        promise = self.call("step_batch", actions, states, dt)
+        promise = self.call("step_batch", actions, states, dt, return_state)
         return promise() if blocking else promise
 
     def step(self, action, state=None, dt: int = 1, blocking=True):
@@ -295,10 +304,17 @@ class BatchEnv:
         """
         return getattr(self._envs[0], name)
 
-    def make_transitions(self, actions, states=None, dt: [numpy.ndarray, int] = 1):
+    def make_transitions(
+        self,
+        actions,
+        states=None,
+        dt: [numpy.ndarray, int] = 1,
+        return_state: bool = None,
+    ):
         """Implement the logic for stepping the environment in parallel."""
         results = []
         no_states = states is None or states[0] is None
+        _return_state = ((not no_states) and return_state is None) or return_state
         chunks = ParallelEnvironment.batch_step_data(
             actions=actions,
             states=states,
@@ -311,10 +327,11 @@ class BatchEnv:
                 states=states_batch,
                 dt=dt,
                 blocking=self._blocking,
+                return_state=return_state,
             )
             results.append(result)
         results = [res if self._blocking else res() for res in results]
-        return ParallelEnvironment.unpack_transitions(results=results, no_states=no_states)
+        return ParallelEnvironment.unpack_transitions(results=results, return_states=_return_state)
 
     def sync_states(self, state, blocking: bool = True) -> None:
         """
@@ -450,15 +467,18 @@ class ParallelEnvironment(VectorizedEnvironment):
         # Initialize local copy last to tolerate singletons better
         super(ParallelEnvironment, self).setup()
 
-    def clone(self) -> "PlanEnvironment":
+    def clone(self, **kwargs) -> "PlanEnvironment":
         """Return a copy of the environment."""
-        return super(ParallelEnvironment, self).clone(blocking=self.blocking)
+        default_kwargs = dict(blocking=self.blocking)
+        default_kwargs.update(kwargs)
+        return super(ParallelEnvironment, self).clone(**default_kwargs)
 
     def make_transitions(
         self,
         actions: numpy.ndarray,
         states: numpy.ndarray = None,
         dt: [numpy.ndarray, int] = 1,
+        return_state: bool = None,
     ):
         """
         Vectorized version of the ``step`` method.
@@ -471,13 +491,20 @@ class ParallelEnvironment(VectorizedEnvironment):
             actions: Iterable containing the different actions to be applied.
             states: Iterable containing the different states to be set.
             dt: int or array containing the frameskips that will be applied.
+            return_state: Whether to return the state in the returned tuple. \
+                If None, `step` will return the state if `state` was passed as a parameter.
 
         Returns:
             if states is None returns ``(observs, rewards, ends, infos)`` else \
             ``(new_states, observs, rewards, ends, infos)``
 
         """
-        return self._batch_env.make_transitions(actions=actions, states=states, dt=dt)
+        return self._batch_env.make_transitions(
+            actions=actions,
+            states=states,
+            dt=dt,
+            return_state=return_state,
+        )
 
     def sync_states(self, state: None):
         """

@@ -1,19 +1,14 @@
-from typing import Iterable, Tuple, Union
+from typing import Tuple
 
-import gym
 import numpy
 import pytest
 
-from plangym.api_tests import batch_size, display, TestBaseEnvironment
+from plangym.api_tests import batch_size, display, TestPlanEnvironment  # noqa: F401
 from plangym.core import PlanEnvironment
 
 
-class DummyEnv(PlanEnvironment):
-    RETURNS_GYM_TUPLE = False
-    action_space = gym.spaces.Discrete(2)
-    observation_space = gym.spaces.Box(low=0, high=255, dtype=numpy.uint8, shape=(128,))
-    dt = 1
-    frameskip = 1
+class DummyPlanEnvironment(PlanEnvironment):
+    _step_count = 0
 
     @property
     def obs_shape(self) -> Tuple[int]:
@@ -25,47 +20,46 @@ class DummyEnv(PlanEnvironment):
         """Tuple containing the shape of the actions applied to the Environment."""
         return tuple()
 
-    def reset(self, return_state=True):
-        obs = numpy.ones(10)
-        return (obs, obs) if return_state else obs
+    def get_image(self):
+        return numpy.zeros((10, 10, 3))
 
     def get_state(self):
-        return numpy.ones(10)
+        state = numpy.ones(10)
+        state[-1] = self._step_count
+        return state
 
     def set_state(self, state: numpy.ndarray) -> None:
         pass
 
-    def step_batch(
-        self,
-        actions: Union[numpy.ndarray, Iterable[Union[numpy.ndarray, int]]],
-        states: Union[numpy.ndarray, Iterable] = None,
-        dt=None,
-    ) -> Tuple[numpy.ndarray, ...]:
-        x = numpy.ones(len(actions))
-        return (x, x, x, x) if states is None else (x, x, x, x, x)
+    def sample_action(self):
+        return 0
 
-    def step(
-        self, action: Union[numpy.ndarray, int], state=None, dt=1
-    ) -> Tuple[numpy.ndarray, ...]:
-        return (1, 1, 1, False) if state is None else (self.get_state(), 1, 1, 1, False)
+    def apply_reset(self, **kwargs):
+        self._step_count = 0
+        return numpy.zeros(10)
 
-    def step_with_dt(self, action: Union[numpy.ndarray, int, float], dt: int = 1) -> tuple:
-        return 1, 1, 1, False
-
-    @staticmethod
-    def get_lives_from_info(info):
-        return info.get("lives", -1)
+    def apply_action(self, action) -> tuple:
+        self._step_count += 1
+        obs, reward, end, info = numpy.ones(10), 1, False, {}
+        return obs, reward, end, info
 
     def clone(self):
         return self
 
-    def get_image(self):
-        return numpy.zeros((10, 10, 3))
 
-
-environments = [lambda: DummyEnv(name="dummy")]
+environments = [lambda: DummyPlanEnvironment(name="dummy")]
 
 
 @pytest.fixture(params=environments, scope="class")
 def env(request) -> PlanEnvironment:
     return request.param()
+
+
+class TestPrivateAPI:
+    @pytest.mark.parametrize("dt", [1, 3])
+    def test_step_with_dt(self, env, dt):
+        _ = env.reset(return_state=False)
+        action = env.sample_action()
+        assert env.action_shape == numpy.array(action).shape
+        data = env.step_with_dt(action, dt=dt)
+        assert isinstance(data, tuple)

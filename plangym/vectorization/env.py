@@ -55,9 +55,9 @@ class VectorizedEnvironment(PlangymEnv, ABC):
         self._env_kwargs = kwargs
         self._plangym_env = None
         self.SINGLETON = env_class.SINGLETON if hasattr(env_class, "SINGLETON") else False
-        self.RETURNS_GYM_TUPLE = (
-            env_class.RETURNS_GYM_TUPLE if hasattr(env_class, "RETURNS_GYM_TUPLE") else True
-        )
+        # self.RETURNS_GYM_TUPLE = (
+        #    env_class.RETURNS_GYM_TUPLE if hasattr(env_class, "RETURNS_GYM_TUPLE") else True
+        # )
         self.STATE_IS_ARRAY = (
             env_class.STATE_IS_ARRAY if hasattr(env_class, "STATE_IS_ARRAY") else True
         )
@@ -142,11 +142,11 @@ class VectorizedEnvironment(PlangymEnv, ABC):
         return states_chunks, actions_chunks, dt_chunks
 
     @staticmethod
-    def unpack_transitions(results: list, no_states: bool):
+    def unpack_transitions(results: list, return_states: bool):
         """Aggregate the results of stepping across diferent workers."""
         _states, observs, rewards, terminals, infos = [], [], [], [], []
         for result in results:
-            if no_states:
+            if not return_states:
                 obs, rew, ends, info = result
             else:
                 _sts, obs, rew, ends, info = result
@@ -156,7 +156,7 @@ class VectorizedEnvironment(PlangymEnv, ABC):
             rewards += rew
             terminals += ends
             infos += info
-        if no_states:
+        if not return_states:
             transitions = observs, rewards, terminals, infos
         else:
             transitions = _states, observs, rewards, terminals, infos
@@ -187,7 +187,13 @@ class VectorizedEnvironment(PlangymEnv, ABC):
         self._plangym_env: PlangymEnv = self.create_env_callable()()
         self._plangym_env.setup()
 
-    def step(self, action: numpy.ndarray, state: numpy.ndarray = None, dt: int = 1):
+    def step(
+        self,
+        action: numpy.ndarray,
+        state: numpy.ndarray = None,
+        dt: int = 1,
+        return_state: bool = None,
+    ):
         """
         Step the environment applying a given action from an arbitrary state.
 
@@ -197,13 +203,15 @@ class VectorizedEnvironment(PlangymEnv, ABC):
             action: Array containing the action to be applied.
             state: State to be set before stepping the environment.
             dt: Consecutive number of times to apply the given action.
+            return_state: Whether to return the state in the returned tuple. \
+                If None, `step` will return the state if `state` was passed as a parameter.
 
         Returns:
             if states is `None` returns `(observs, rewards, ends, infos)` else
             `(new_states, observs, rewards, ends, infos)`.
 
         """
-        return self.plan_env.step(action=action, state=state, dt=dt)
+        return self.plan_env.step(action=action, state=state, dt=dt, return_state=return_state)
 
     def reset(self, return_state: bool = True):
         """
@@ -298,6 +306,7 @@ class VectorizedEnvironment(PlangymEnv, ABC):
         actions: numpy.ndarray,
         states: numpy.ndarray = None,
         dt: [numpy.ndarray, int] = 1,
+        return_state: bool = None,
     ):
         """
         Vectorized version of the ``step`` method.
@@ -310,6 +319,8 @@ class VectorizedEnvironment(PlangymEnv, ABC):
             actions: Iterable containing the different actions to be applied.
             states: Iterable containing the different states to be set.
             dt: int or array containing the frameskips that will be applied.
+            return_state: Whether to return the state in the returned tuple. \
+                If None, `step` will return the state if `state` was passed as a parameter.
 
         Returns:
             if states is None returns `(observs, rewards, ends, infos)` else
@@ -318,7 +329,7 @@ class VectorizedEnvironment(PlangymEnv, ABC):
         """
         dt_is_array = (isinstance(dt, numpy.ndarray) and dt.shape) or isinstance(dt, (list, tuple))
         dt = dt if dt_is_array else numpy.ones(len(actions), dtype=int) * dt
-        return self.make_transitions(actions, states, dt)
+        return self.make_transitions(actions, states, dt, return_state=return_state)
 
     def clone(self, **kwargs) -> "PlanEnvironment":
         """Return a copy of the environment."""
@@ -334,6 +345,6 @@ class VectorizedEnvironment(PlangymEnv, ABC):
         env = self.__class__(**self_kwargs)
         return env
 
-    def make_transitions(self, actions, states, dt):
+    def make_transitions(self, actions, states, dt, return_state: bool = None):
         """Implement the logic for stepping the environment in parallel."""
         raise NotImplementedError()
