@@ -5,7 +5,8 @@ import gym
 from gym.spaces import Space
 import numpy
 
-from plangym.core import PlangymEnv, VideogameEnvironment, wrap_callable
+from plangym.core import PlangymEnv, wrap_callable
+from plangym.videogames.env import VideogameEnv
 
 
 def ale_to_ram(ale) -> numpy.ndarray:
@@ -16,7 +17,7 @@ def ale_to_ram(ale) -> numpy.ndarray:
     return ram
 
 
-class AtariEnvironment(VideogameEnvironment):
+class AtariEnv(VideogameEnv):
     """
     Create an environment to play OpenAI gym Atari Games that uses AtariALE as the emulator.
 
@@ -110,7 +111,7 @@ class AtariEnvironment(VideogameEnvironment):
 
         Example::
 
-            >>> env = AtariEnvironment(name="ALE/MsPacman-v5", difficulty=2, mode=1)
+            >>> env = AtariEnv(name="ALE/MsPacman-v5", difficulty=2, mode=1)
             >>> type(env.gym_env)
             <class 'gym.envs.atari.environment.AtariEnv'>
             >>> state, obs = env.reset()
@@ -123,7 +124,7 @@ class AtariEnvironment(VideogameEnvironment):
         self._difficulty = difficulty
         self._repeat_action_probability = repeat_action_probability
         self._full_action_space = full_action_space
-        super(AtariEnvironment, self).__init__(
+        super(AtariEnv, self).__init__(
             name=name,
             frameskip=frameskip,
             episodic_life=episodic_life,
@@ -144,7 +145,7 @@ class AtariEnvironment(VideogameEnvironment):
 
         Example::
 
-            >>> env = AtariEnvironment(name="ALE/MsPacman-v5", obs_type="ram")
+            >>> env = AtariEnv(name="ALE/MsPacman-v5", obs_type="ram")
             >>> type(env.ale)
             <class 'ale_py._ale_py.ALEInterface'>
 
@@ -191,7 +192,7 @@ class AtariEnvironment(VideogameEnvironment):
 
         Example::
 
-            >>> env = AtariEnvironment(name="ALE/MsPacman-v5", obs_type="ram")
+            >>> env = AtariEnv(name="ALE/MsPacman-v5", obs_type="ram")
             >>> img = env.get_image()
             >>> img.shape
             (210, 160, 3)
@@ -206,7 +207,7 @@ class AtariEnvironment(VideogameEnvironment):
 
          Example::
 
-            >>> env = AtariEnvironment(name="ALE/MsPacman-v5", obs_type="grayscale")
+            >>> env = AtariEnv(name="ALE/MsPacman-v5", obs_type="grayscale")
             >>> ram = env.get_ram()
             >>> ram.shape, ram.dtype
             ((128,), dtype('uint8'))
@@ -228,7 +229,7 @@ class AtariEnvironment(VideogameEnvironment):
             )
             default_env_kwargs.update(self._gym_env_kwargs)
             self._gym_env_kwargs = default_env_kwargs
-            gym_env = super(AtariEnvironment, self).init_gym_env()
+            gym_env = super(AtariEnv, self).init_gym_env()
         except RuntimeError:
             gym_env: gym.Env = gym.make(self.name)
             gym_env.reset()
@@ -243,12 +244,12 @@ class AtariEnvironment(VideogameEnvironment):
 
         Example::
 
-            >>> env = AtariEnvironment(name="Qbert-v0")
+            >>> env = AtariEnv(name="Qbert-v0")
             >>> env.get_state() #doctest: +ELLIPSIS
             array([<ale_py._ale_py.ALEState object at 0x...>, None],
                   dtype=object)
 
-            >>> env = AtariEnvironment(name="Qbert-v0", array_state=False)
+            >>> env = AtariEnv(name="Qbert-v0", array_state=False)
             >>> env.get_state() #doctest: +ELLIPSIS
             <ale_py._ale_py.ALEState object at 0x...>
 
@@ -267,7 +268,7 @@ class AtariEnvironment(VideogameEnvironment):
 
         Example::
 
-            >>> env = AtariEnvironment(name="Qbert-v0")
+            >>> env = AtariEnv(name="Qbert-v0")
             >>> state, obs = env.reset()
             >>> new_state, obs, reward, end, info = env.step(env.sample_action(), state=state)
             >>> assert not (state == new_state).all()
@@ -294,15 +295,15 @@ class AtariEnvironment(VideogameEnvironment):
 
         Example::
 
-            >>> env = AtariEnvironment(name="Pong-v0")
+            >>> env = AtariEnv(name="Pong-v0")
             >>> obs = env.reset(return_state=False)
             >>> obs, reward, end, info = env.step_with_dt(env.sample_action(), dt=7)
             >>> assert not end
 
         """
-        return super(AtariEnvironment, self).step_with_dt(action=action, dt=dt)
+        return super(AtariEnv, self).step_with_dt(action=action, dt=dt)
 
-    def clone(self, **kwargs) -> "VideogameEnvironment":
+    def clone(self, **kwargs) -> "VideogameEnv":
         """Return a copy of the environment."""
         params = dict(
             mode=self.mode,
@@ -311,7 +312,7 @@ class AtariEnvironment(VideogameEnvironment):
             full_action_space=self.full_action_space,
         )
         params.update(**kwargs)
-        return super(VideogameEnvironment, self).clone(**params)
+        return super(VideogameEnv, self).clone(**params)
 
     def init_spaces(self) -> None:
         """Initialize the observation_space and action_space."""
@@ -322,7 +323,7 @@ class AtariEnvironment(VideogameEnvironment):
         return PlangymEnv.process_obs(self, obs=obs, **kwargs)
 
 
-class AtariPyEnvironment(AtariEnvironment):
+class AtariPyEnvironment(AtariEnv):
     """Create an environment to play OpenAI gym Atari Games that uses AtariPy as the emulator."""
 
     def get_state(self) -> numpy.ndarray:  # pragma: no cover

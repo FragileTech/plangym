@@ -2,9 +2,9 @@ import numpy as np
 import pytest
 
 from plangym.api_tests import batch_size, display, TestBaseEnvironment, TestGymEnvironment
-from plangym.atari import AtariEnvironment
-from plangym.classic_control import ClassicControl
-from plangym.parallel import BatchEnv, ExternalProcess, ParallelEnvironment
+from plangym.videogames.atari import AtariEnv
+from plangym.control.classic_control import ClassicControl
+from plangym.vectorization.parallel import BatchEnv, ExternalProcess, ParallelEnvironment
 
 
 def parallel_cartpole():
@@ -14,7 +14,7 @@ def parallel_cartpole():
 
 
 def parallel_pacman():
-    return ParallelEnvironment(env_class=AtariEnvironment, name="MsPacman-ram-v0", n_workers=2)
+    return ParallelEnvironment(env_class=AtariEnv, name="MsPacman-ram-v0", n_workers=2)
 
 
 environments = [parallel_cartpole, parallel_pacman]

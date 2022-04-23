@@ -1,14 +1,9 @@
 """Functionality for instantiating the environment by passing the environment id."""
-from plangym.atari import AtariEnvironment
-from plangym.box_2d import Box2DEnv, LunarLander
-from plangym.classic_control import ClassicControl
-from plangym.dm_control import DMControlEnv
+from plangym.control import Box2DEnv, ClassicControl, DMControlEnv, LunarLander
+from plangym.core import PlanEnvironment
+from plangym.vectorization import ParallelEnvironment, RayEnv
+from plangym.videogames import AtariEnv, MarioEnv, Montezuma, RetroEnv
 from plangym.environment_names import ATARI, BOX_2D, CLASSIC_CONTROL, DM_CONTROL, RETRO
-from plangym.montezuma import Montezuma
-from plangym.nes import MarioEnvironment
-from plangym.parallel import ParallelEnvironment
-from plangym.ray import RayEnv
-from plangym.retro import RetroEnvironment
 
 
 def get_planenv_class(name, domain_name, state):
@@ -20,7 +15,7 @@ def get_planenv_class(name, domain_name, state):
     if name == "PlanMontezuma-v0":
         return Montezuma
     elif state is not None or name in set(RETRO):
-        return RetroEnvironment
+        return RetroEnv
     elif name in set(CLASSIC_CONTROL):
         return ClassicControl
     elif name in set(BOX_2D):
@@ -28,7 +23,7 @@ def get_planenv_class(name, domain_name, state):
             return LunarLander
         return Box2DEnv
     elif name in ATARI:
-        return AtariEnvironment
+        return AtariEnv
     elif domain_name is not None or any(x[0] in name for x in DM_CONTROL):
         return DMControlEnv
     elif "SuperMarioBros" in name:

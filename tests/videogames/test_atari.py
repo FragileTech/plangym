@@ -3,7 +3,7 @@ import numpy
 import numpy as np
 import pytest
 
-from plangym.atari import ale_to_ram, AtariEnvironment
+from plangym.videogames.atari import ale_to_ram, AtariEnv
 from tests import SKIP_ATARI_TESTS
 
 
@@ -13,16 +13,16 @@ from plangym.api_tests import batch_size, display, TestBaseEnvironment, TestGymE
 
 
 def pacman_obs():
-    return AtariEnvironment(name="MsPacman-v0", clone_seeds=True, autoreset=True)
+    return AtariEnv(name="MsPacman-v0", clone_seeds=True, autoreset=True)
 
 
 def qbert_ram():
-    return AtariEnvironment(name="Qbert-ram-v0", clone_seeds=False, autoreset=False)
+    return AtariEnv(name="Qbert-ram-v0", clone_seeds=False, autoreset=False)
 
 
 def pong_obs_ram():
     timelimit = [(TimeLimit, {"max_episode_steps": 1000})]
-    return AtariEnvironment(
+    return AtariEnv(
         name="PongDeterministic-v4",
         remove_time_limit=True,
         possible_to_win=True,
@@ -31,14 +31,14 @@ def pong_obs_ram():
 
 
 def qbert_new_ale():
-    return AtariEnvironment(name="ALE/Qbert-v5")
+    return AtariEnv(name="ALE/Qbert-v5")
 
 
 environments = [pacman_obs, qbert_ram, pong_obs_ram, qbert_new_ale]
 
 
 @pytest.fixture(params=environments, scope="class")
-def env(request) -> AtariEnvironment:
+def env(request) -> AtariEnv:
     return request.param()
 
 

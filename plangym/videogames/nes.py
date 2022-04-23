@@ -5,10 +5,10 @@ import gym
 import numpy
 import numpy as np
 
-from plangym.core import VideogameEnvironment
+from plangym.videogames.env import VideogameEnv
 
 
-class NesEnvironment(VideogameEnvironment):
+class NesEnv(VideogameEnv):
     """Environment for working with the NES-py emulator."""
 
     @property
@@ -54,10 +54,10 @@ class NesEnvironment(VideogameEnvironment):
         """Close the underlying :class:`gym.Env`."""
         if self.nes_env._env is None:
             return
-        super(NesEnvironment, self).close()
+        super(NesEnv, self).close()
 
 
-class MarioEnvironment(NesEnvironment):
+class MarioEnv(NesEnv):
     """Interface for using gym-super-mario-bros in plangym."""
 
     def get_state(self, state: Optional[np.ndarray] = None) -> np.ndarray:
@@ -68,11 +68,11 @@ class MarioEnvironment(NesEnvironment):
         """
         state = np.empty(250288, dtype=np.byte) if state is None else state
         state[-2:] = 0  # Some states use the last two bytes. Set to zero by default.
-        return super(MarioEnvironment, self).get_state(state)
+        return super(MarioEnv, self).get_state(state)
 
     def init_spaces(self) -> None:
         """Initialize the target :class:`NESEnv` instance."""
-        super(MarioEnvironment, self).init_spaces()
+        super(MarioEnv, self).init_spaces()
         if self.obs_type == "info":
             self._obs_space = gym.spaces.Box(low=0, high=np.inf, dtype=numpy.float32, shape=7)
 

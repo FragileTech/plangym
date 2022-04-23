@@ -6,7 +6,8 @@ import traceback
 
 import numpy
 
-from plangym.core import PlanEnvironment, VectorizedEnvironment
+from plangym.core import PlanEnvironment
+from plangym.vectorization.env import VectorizedEnvironment
 
 
 class ExternalProcess:
@@ -377,8 +378,8 @@ class ParallelEnvironment(VectorizedEnvironment):
 
     Example::
 
-        >>> from plangym import AtariEnvironment
-        >>> env = ParallelEnvironment(env_class=AtariEnvironment,
+        >>> from plangym import AtariEnv
+        >>> env = ParallelEnvironment(env_class=AtariEnv,
         ...                           name="MsPacman-v0",
         ...                           clone_seeds=True,
         ...                           autoreset=True,

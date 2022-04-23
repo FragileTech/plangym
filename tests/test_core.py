@@ -1,4 +1,3 @@
-import copy
 from typing import Iterable, Tuple, Union
 
 import gym

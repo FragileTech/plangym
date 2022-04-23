@@ -9,7 +9,8 @@ try:
 except ImportError:
     pass
 
-from plangym.core import PlanEnvironment, VectorizedEnvironment
+from plangym.core import PlanEnvironment
+from plangym.vectorization.env import VectorizedEnvironment
 
 
 @ray.remote

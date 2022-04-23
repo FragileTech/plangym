@@ -1,10 +1,10 @@
 from typing import Union
 
+import gym
 import pytest
 
-from plangym.parallel import ParallelEnvironment
-from plangym.retro import ActionDiscretizer, RetroEnvironment
-from plangym.utils import Downsample
+from plangym.vectorization.parallel import ParallelEnvironment
+from plangym.videogames.retro import ActionDiscretizer, RetroEnv
 
 
 pytest.importorskip("retro")
@@ -12,12 +12,13 @@ from plangym.api_tests import batch_size, display, TestBaseEnvironment, TestGymE
 
 
 def retro_airstrike():
-    return RetroEnvironment(name="Airstriker-Genesis", wrappers=[(Downsample, {"ratio": 2})])
+    res_obs = gym.wrappers.resize_observation.ResizeObservation
+    return RetroEnv(name="Airstriker-Genesis", wrappers=[(res_obs, {"shape": (90, 90)})])
 
 
 def retro_sonic():
 
-    return RetroEnvironment(
+    return RetroEnv(
         name="SonicTheHedgehog-Genesis",
         state="GreenHillZone.Act3",
         wrappers=[ActionDiscretizer],
@@ -28,7 +29,7 @@ def retro_sonic():
 def parallel_retro():
     return ParallelEnvironment(
         name="Airstriker-Genesis",
-        env_class=RetroEnvironment,
+        env_class=RetroEnv,
         n_workers=2,
         obs_type="ram",
         wrappers=[ActionDiscretizer],
@@ -39,7 +40,7 @@ environments = [retro_airstrike, retro_sonic, parallel_retro]
 
 
 @pytest.fixture(params=environments, scope="class")
-def env(request) -> Union[RetroEnvironment, ParallelEnvironment]:
+def env(request) -> Union[RetroEnv, ParallelEnvironment]:
     env_ = request.param()
     if env_.delay_setup and env_.gym_env is None:
         env_.setup()
@@ -58,7 +59,7 @@ class TestRetro:
         env.em.get_state()
 
     def test_clone(self):
-        env = RetroEnvironment(name="Airstriker-Genesis", obs_type="ram", delay_setup=True)
+        env = RetroEnv(name="Airstriker-Genesis", obs_type="ram", delay_setup=True)
         new_env = env.clone()
         del env
         new_env.reset()

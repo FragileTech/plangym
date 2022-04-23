@@ -58,14 +58,15 @@ def remove_time_limit(gym_env: gym.Env) -> gym.Env:
     return gym_env
 
 
-def resize_frame(
+def process_frame(
     frame: numpy.ndarray,
-    width: int,
-    height: int,
+    width: int = None,
+    height: int = None,
     mode: str = "RGB",
 ) -> numpy.ndarray:
     """
-    Use PIL to resize an RGB frame to an specified height and width.
+    Use PIL to resize an RGB frame to a specified height and width \
+    or changing it to a different mode.
 
     Args:
         frame: Target numpy array representing the image that will be resized.
@@ -77,45 +78,8 @@ def resize_frame(
         The resized frame that matches the provided width and height.
 
     """
+    height = height or frame.shape[0]
+    width = width or frame.shape[1]
     frame = Image.fromarray(frame)
     frame = frame.convert(mode).resize(size=(width, height))
     return numpy.array(frame)
-
-
-class Rgb2gray(gym.ObservationWrapper):
-    """Transform RGB images to greyscale."""
-
-    def __init__(self, env):
-        """Transform RGB images to greyscale."""
-        gym.ObservationWrapper.__init__(self, env)
-        (oldh, oldw, _oldc) = env.observation_space.shape
-        self.observation_space = gym.spaces.Box(
-            low=0,
-            high=255,
-            shape=(oldh, oldw, 1),
-            dtype=numpy.uint8,
-        )
-
-    def observation(self, frame: numpy.ndarray) -> numpy.ndarray:
-        """Return observation as a greyscale image."""
-        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
-        return frame[:, :, None]
-
-
-class Downsample(gym.ObservationWrapper):
-    """Downsample observation by a factor of ratio."""
-
-    def __init__(self, env: gym.Env, ratio: Union[int, float]):
-        """Downsample images by a factor of ratio."""
-        gym.ObservationWrapper.__init__(self, env)
-        (oldh, oldw, oldc) = env.observation_space.shape
-        newshape = (oldh // ratio, oldw // ratio, oldc)
-        self.observation_space = gym.spaces.Box(low=0, high=255, shape=newshape, dtype=numpy.uint8)
-
-    def observation(self, frame: numpy.ndarray) -> numpy.ndarray:
-        """Return the downsampled observation."""
-        height, width, _ = self.observation_space.shape
-        frame = cv2.resize(frame, (width, height), interpolation=cv2.INTER_AREA)
-        if frame.ndim == 2:
-            frame = frame[:, :, None]
-        return frame

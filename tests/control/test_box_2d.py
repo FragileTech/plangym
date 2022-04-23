@@ -6,7 +6,8 @@ import pytest
 
 pytest.importorskip("Box2D")
 from plangym.api_tests import batch_size, display, TestBaseEnvironment, TestGymEnvironment
-from plangym.box_2d import Box2DEnv, LunarLander
+from plangym.control.box_2d import Box2DEnv
+from plangym.control.lunar_lander import LunarLander
 
 
 def bipedal_walker():

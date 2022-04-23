@@ -1,7 +1,7 @@
 import pytest
 
-from plangym.montezuma import CustomMontezuma, Montezuma, MontezumaPosLevel
-from plangym.parallel import ParallelEnvironment
+from plangym.vectorization.parallel import ParallelEnvironment
+from plangym.videogames.montezuma import CustomMontezuma, Montezuma, MontezumaPosLevel
 from tests import SKIP_ATARI_TESTS
 
 

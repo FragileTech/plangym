@@ -5,7 +5,8 @@ import gym
 from gym import spaces
 import numpy
 
-from plangym.core import VideogameEnvironment, wrap_callable
+from plangym.core import wrap_callable
+from plangym.videogames.env import VideogameEnv
 
 
 class ActionDiscretizer(gym.ActionWrapper):
@@ -37,7 +38,7 @@ class ActionDiscretizer(gym.ActionWrapper):
         return self._actions[a].copy()
 
 
-class RetroEnvironment(VideogameEnvironment):
+class RetroEnv(VideogameEnv):
     """Environment for playing ``gym-retro`` games."""
 
     SINGLETON = True
@@ -59,7 +60,7 @@ class RetroEnvironment(VideogameEnvironment):
         **kwargs,
     ):
         """
-        Initialize a :class:`RetroEnvironment`.
+        Initialize a :class:`RetroEnv`.
 
         Args:
             name: Name of the environment. Follows standard gym syntax conventions.
@@ -79,7 +80,7 @@ class RetroEnvironment(VideogameEnvironment):
         """
         self.height = height
         self.width = width
-        super(RetroEnvironment, self).__init__(
+        super(RetroEnv, self).__init__(
             name=name,
             frameskip=frameskip,
             episodic_life=episodic_life,
@@ -96,9 +97,9 @@ class RetroEnvironment(VideogameEnvironment):
         """Return the ram of the emulator as a numpy array."""
         return self.get_state()  # .copy()
 
-    def clone(self) -> "RetroEnvironment":
+    def clone(self) -> "RetroEnv":
         """Return a copy of the environment with its initialization delayed."""
-        return RetroEnvironment(
+        return RetroEnv(
             name=self.name,
             frameskip=self.frameskip,
             wrappers=self._wrappers,
