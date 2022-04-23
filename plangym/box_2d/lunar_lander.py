@@ -1,13 +1,13 @@
 """Implementation of LunarLander with no fire coming out of the engines that steps faster."""
 import copy
 import math
-from typing import Any, Dict, Iterable, Optional, Union
+from typing import Iterable, Optional
 
 import numpy as np
 import numpy as numpy
 
 from plangym.box_2d.env import Box2DState
-from plangym.core import PlanEnvironment, wrap_callable
+from plangym.core import PlangymEnv, wrap_callable
 
 
 try:
@@ -345,7 +345,7 @@ class FastGymLunarLander(GymLunarLander):
         return self.viewer.render(return_rgb_array=mode == "rgb_array")
 
 
-class LunarLander(PlanEnvironment):
+class LunarLander(PlangymEnv):
     """Fast LunarLander that follows the plangym API."""
 
     def __init__(
@@ -384,17 +384,16 @@ class LunarLander(PlanEnvironment):
         """Return true if the LunarLander agent takes continuous actions as input."""
         return self._continuous
 
-    def setup(self):
+    def init_gym_env(self) -> FastGymLunarLander:
         """Initialize the target :class:`gym.Env` instance."""
         if import_error is not None:
             raise import_error
-        self._gym_env = FastGymLunarLander(
+        gym_env = FastGymLunarLander(
             deterministic=self.deterministic,
             continuous=self.continuous,
         )
-        self._gym_env.reset()
-        if self._wrappers is not None:
-            self.apply_wrappers(self._wrappers)
+        gym_env.reset()
+        return gym_env
 
     def get_state(self) -> numpy.ndarray:
         """
@@ -433,27 +432,8 @@ class LunarLander(PlanEnvironment):
         self.gym_env.legs[0].ground_contact = state[0][-2]
         self.gym_env.legs[1].ground_contact = state[0][-1]
 
-    @staticmethod
-    def get_win_condition(info: Dict[str, Any]) -> bool:
-        """Return ``True`` if the current state corresponds to winning the game."""
-        return False
-
-    def _lunar_lander_end(self, obs):
-        return self.gym_env.game_over or abs(obs[0]) >= 1.0 or not self.gym_env.lander.awake
-
-    def step_with_dt(self, action: Union[numpy.ndarray, int, float], dt: int = 1) -> tuple:
-        """
-        Take ``dt`` simulation steps and make the environment evolve in multiples\
-         of ``self.frameskip`` for a total of ``dt`` * ``self.frameskip`` steps.
-
-        Args:
-            action: Chosen action applied to the environment.
-            dt: Consecutive number of times that the action will be applied.
-
-        Returns:
-            tuple containing ``(observs, reward, terminal, info)``.
-        """
-        obs, reward, terminal, info = super(LunarLander, self).step_with_dt(action, dt)
-        terminal = terminal or self._lunar_lander_end(obs)
-        info["oob"] = terminal
-        return obs, reward, terminal, info
+    def process_terminal(self, terminal, obs=None, **kwargs) -> bool:
+        """Return the terminal condition considering the lunar lander state."""
+        obs = [0] if obs is None else obs
+        end = self.gym_env.game_over or abs(obs[0]) >= 1.0 or not self.gym_env.lander.awake
+        return terminal or end

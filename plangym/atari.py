@@ -2,10 +2,10 @@
 from typing import Any, Dict, Iterable, Optional, Union
 
 import gym
+from gym.spaces import Space
 import numpy
 
-from plangym.core import VideogameEnvironment, wrap_callable
-from plangym.utils import remove_time_limit
+from plangym.core import PlangymEnv, VideogameEnvironment, wrap_callable
 
 
 def ale_to_ram(ale) -> numpy.ndarray:
@@ -78,6 +78,7 @@ class AtariEnvironment(VideogameEnvironment):
         wrappers: Iterable[wrap_callable] = None,
         array_state: bool = True,
         clone_seeds: bool = False,
+        **kwargs,
     ):
         """
         Initialize a :class:`AtariEnvironment`.
@@ -117,7 +118,6 @@ class AtariEnvironment(VideogameEnvironment):
             <class 'numpy.ndarray'>
 
         """
-        self._gym_env = None
         self.clone_seeds = clone_seeds
         self._mode = mode
         self._difficulty = difficulty
@@ -133,6 +133,7 @@ class AtariEnvironment(VideogameEnvironment):
             obs_type=obs_type,  # ram | rgb | grayscale
             render_mode=render_mode,  # None | human | rgb_array
             wrappers=wrappers,
+            **kwargs,
         )
         self.STATE_IS_ARRAY = array_state
 
@@ -170,6 +171,11 @@ class AtariEnvironment(VideogameEnvironment):
     def full_action_space(self) -> bool:
         """If True the action space correspond to all possible actions in the Atari emulator."""
         return self._full_action_space
+
+    @property
+    def observation_space(self) -> Space:
+        """Return the observation_space of the environment."""
+        return self.gym_env.observation_space
 
     def get_lifes_from_info(self, info: Dict[str, Any]) -> int:
         """Return the number of lives remaining in the current game."""
@@ -211,8 +217,7 @@ class AtariEnvironment(VideogameEnvironment):
         """Initialize the :class:`gym.Env`` instance that the Environment is wrapping."""
         # Remove any undocumented wrappers
         try:
-            gym_env = gym.make(
-                self.name,
+            default_env_kwargs = dict(
                 obs_type=self.obs_type,  # ram | rgb | grayscale
                 frameskip=self.frameskip,  # frame skip
                 mode=self._mode,  # game mode, see Machado et al. 2018
@@ -221,12 +226,12 @@ class AtariEnvironment(VideogameEnvironment):
                 full_action_space=self.full_action_space,  # Use all actions
                 render_mode=self.render_mode,  # None | human | rgb_array
             )
+            default_env_kwargs.update(self._gym_env_kwargs)
+            self._gym_env_kwargs = default_env_kwargs
+            gym_env = super(AtariEnvironment, self).init_gym_env()
         except RuntimeError:
-            gym_env = gym.make(self.name)
-        if self.remove_time_limit:
-            gym_env = remove_time_limit(gym_env)
-            gym_env = gym_env.unwrapped
-        gym_env.reset()
+            gym_env: gym.Env = gym.make(self.name)
+            gym_env.reset()
         return gym_env
 
     def get_state(self) -> numpy.ndarray:
@@ -308,6 +313,14 @@ class AtariEnvironment(VideogameEnvironment):
         params.update(**kwargs)
         return super(VideogameEnvironment, self).clone(**params)
 
+    def init_spaces(self) -> None:
+        """Initialize the observation_space and action_space."""
+        return PlangymEnv.init_spaces(self)
+
+    def process_obs(self, obs, **kwargs):
+        """Return the observation."""
+        return PlangymEnv.process_obs(self, obs=obs, **kwargs)
+
 
 class AtariPyEnvironment(AtariEnvironment):
     """Create an environment to play OpenAI gym Atari Games that uses AtariPy as the emulator."""
@@ -341,35 +354,10 @@ class AtariPyEnvironment(AtariEnvironment):
         else:
             self.gym_env.unwrapped.restore_state(state)
 
-    def step(
-        self,
-        action: Union[numpy.ndarray, int],
-        state: numpy.ndarray = None,
-        dt: int = 1,
-    ) -> tuple:  # pragma: no cover
+    def get_ram(self) -> numpy.ndarray:
         """
-        Take ``dt`` simulation steps and make the environment evolve in multiples \
-        of ``self.frameskip``.
+        Return a numpy array containing the content of the emulator's RAM.
 
-        The info dictionary will contain a boolean called `lost_live` that will
-        be ``True`` if a life was lost during the current step.
-
-        Args:
-            action: Chosen action applied to the environment.
-            state: Set the environment to the given state before stepping it.
-            dt: Consecutive number of times that the action will be applied.
-
-        Returns:
-            if states is `None` returns ``(observs, rewards, ends, infos)``
-            else returns ``(new_states, observs, rewards, ends, infos)``
-
+        The RAM is a vector array interpreted as the memory of the emulator.
         """
-        data = super(AtariPyEnvironment, self).step(action=action, state=state, dt=dt)
-        if state is None:
-            observ, reward, terminal, info = data
-            observ = ale_to_ram(self.gym_env.unwrapped.ale) if self.obs_type == "ram" else observ
-            return observ, reward, terminal, info
-        else:
-            state, observ, reward, terminal, info = data
-            observ = ale_to_ram(self.gym_env.unwrapped.ale) if self.obs_type == "ram" else observ
-            return state, observ, reward, terminal, info
+        return ale_to_ram(self.gym_env.unwrapped.ale)

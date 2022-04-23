@@ -4,7 +4,6 @@ from plangym.box_2d import Box2DEnv, LunarLander
 from plangym.classic_control import ClassicControl
 from plangym.dm_control import DMControlEnv
 from plangym.environment_names import ATARI, BOX_2D, CLASSIC_CONTROL, DM_CONTROL, RETRO
-from plangym.minimal import MinimalPacman, MinimalPong
 from plangym.montezuma import Montezuma
 from plangym.nes import MarioEnvironment
 from plangym.parallel import ParallelEnvironment
@@ -14,11 +13,11 @@ from plangym.retro import RetroEnvironment
 
 def get_planenv_class(name, domain_name, state):
     """Return the class corresponding to the environment name."""
-    if name == "MinimalPacman-v0":
-        return MinimalPacman
-    elif name == "MinimalPong-v0":
-        return MinimalPong
-    elif name == "PlanMontezuma-v0":
+    # if name == "MinimalPacman-v0":
+    #    return MinimalPacman
+    # elif name == "MinimalPong-v0":
+    #    return MinimalPong
+    if name == "PlanMontezuma-v0":
         return Montezuma
     elif state is not None or name in set(RETRO):
         return RetroEnvironment
@@ -44,7 +43,7 @@ def get_environment_class(
     domain_name: str = None,
     state: str = None,
 ):
-    """Get the class and vectorized environment and PlanEnvironment class from the make params."""
+    """Get the class and vectorized environment and PlangymEnv class from the make params."""
     env_class = get_planenv_class(name, domain_name, state)
     if ray:
         return RayEnv, env_class
@@ -61,7 +60,7 @@ def make(
     state: str = None,
     **kwargs,
 ):
-    """Create the appropriate PlanEnvironment from the environment name and other parameters."""
+    """Create the appropriate PlangymEnv from the environment name and other parameters."""
     parallel_class, env_class = get_environment_class(
         name=name,
         n_workers=n_workers,

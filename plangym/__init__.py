@@ -66,9 +66,8 @@ warnings.filterwarnings(
 from plangym.atari import AtariEnvironment  # noqa: E402
 from plangym.box_2d import Box2DEnv, LunarLander  # noqa: E402
 from plangym.classic_control import ClassicControl  # noqa: E402
-from plangym.core import BaseEnvironment  # noqa: E402
+from plangym.core import PlanEnvironment  # noqa: E402
 from plangym.dm_control import DMControlEnv  # noqa: E402
-from plangym.minimal import MinimalPacman, MinimalPong  # noqa: E402
 from plangym.montezuma import Montezuma  # noqa: E402
 from plangym.parallel import ParallelEnvironment  # noqa: E402
 from plangym.ray import RayEnv  # noqa: E402

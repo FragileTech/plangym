@@ -6,10 +6,10 @@ import numpy
 import pytest
 
 from plangym.api_tests import batch_size, display, TestBaseEnvironment
-from plangym.core import BaseEnvironment
+from plangym.core import PlanEnvironment
 
 
-class DummyEnv(BaseEnvironment):
+class DummyEnv(PlanEnvironment):
     RETURNS_GYM_TUPLE = False
     action_space = gym.spaces.Discrete(2)
     observation_space = gym.spaces.Box(low=0, high=255, dtype=numpy.uint8, shape=(128,))
@@ -65,5 +65,5 @@ environments = [lambda: DummyEnv(name="dummy")]
 
 
 @pytest.fixture(params=environments, scope="class")
-def env(request) -> BaseEnvironment:
+def env(request) -> PlanEnvironment:
     return request.param()
