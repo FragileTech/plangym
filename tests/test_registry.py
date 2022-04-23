@@ -70,14 +70,14 @@ class TestMake:
 
     @pytest.mark.skipif(SKIP_RETRO_TESTS, reason="Retro not installed")
     def test_retro_make_with_state(self):
-        from plangym.retro import RetroEnvironment, SonicDiscretizer
+        from plangym.retro import ActionDiscretizer, RetroEnvironment
 
         try:
             _test_env_class(
                 "SonicTheHedgehog-Genesis",
                 RetroEnvironment,
                 state="GreenHillZone.Act3",
-                wrappers=[SonicDiscretizer],
+                wrappers=[ActionDiscretizer],
             )
         except FileNotFoundError:
             pass

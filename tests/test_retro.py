@@ -3,7 +3,7 @@ from typing import Union
 import pytest
 
 from plangym.parallel import ParallelEnvironment
-from plangym.retro import RetroEnvironment, SonicDiscretizer
+from plangym.retro import ActionDiscretizer, RetroEnvironment
 from plangym.utils import Downsample
 
 
@@ -20,7 +20,7 @@ def retro_sonic():
     return RetroEnvironment(
         name="SonicTheHedgehog-Genesis",
         state="GreenHillZone.Act3",
-        wrappers=[SonicDiscretizer],
+        wrappers=[ActionDiscretizer],
         obs_type="grayscale",
     )
 
@@ -31,7 +31,7 @@ def parallel_retro():
         env_class=RetroEnvironment,
         n_workers=2,
         obs_type="ram",
-        wrappers=[SonicDiscretizer],
+        wrappers=[ActionDiscretizer],
     )
 
 

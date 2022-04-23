@@ -148,38 +148,12 @@ class RayEnv(VectorizedEnvironment):
 
     def setup(self):
         """Run environment initialization and create the subprocesses for stepping in parallel."""
-        import ray
-
         env_callable = self.create_env_callable(autoreset=True, delay_setup=False)
         workers = [RemoteEnv.remote(env_callable=env_callable) for _ in range(self.n_workers)]
         ray.get([w.setup.remote() for w in workers])
         self._workers = workers
         # Initialize local copy last to tolerate singletons better
         super(RayEnv, self).setup()
-
-    @staticmethod
-    def _unpack_transitions(results: list, no_states: bool):
-        _states = []
-        observs = []
-        rewards = []
-        terminals = []
-        infos = []
-        for result in results:
-            if no_states:
-                obs, rew, ends, info = result
-            else:
-                _sts, obs, rew, ends, info = result
-                _states += _sts
-
-            observs += obs
-            rewards += rew
-            terminals += ends
-            infos += info
-        if no_states:
-            transitions = observs, rewards, terminals, infos
-        else:
-            transitions = _states, observs, rewards, terminals, infos
-        return transitions
 
     def make_transitions(self, actions, states=None, dt: [np.ndarray, int] = 1):
         """Implement the logic for stepping the environment in parallel."""
@@ -195,7 +169,7 @@ class RayEnv(VectorizedEnvironment):
             result = env.step_batch.remote(actions=actions_batch, states=states_batch, dt=dt)
             results_ids.append(result)
         results = ray.get(results_ids)
-        return self._unpack_transitions(results=results, no_states=no_states)
+        return self.unpack_transitions(results=results, no_states=no_states)
 
     def reset(self, return_state: bool = True) -> [np.ndarray, tuple]:
         """Restart the environment."""

@@ -907,6 +907,27 @@ class VectorizedEnvironment(PlangymEnv, ABC):
         dt_chunks = cls.split_similar_chunks(dt, n_chunks=batch_size)
         return states_chunks, actions_chunks, dt_chunks
 
+    @staticmethod
+    def unpack_transitions(results: list, no_states: bool):
+        """Aggregate the results of stepping across diferent workers."""
+        _states, observs, rewards, terminals, infos = [], [], [], [], []
+        for result in results:
+            if no_states:
+                obs, rew, ends, info = result
+            else:
+                _sts, obs, rew, ends, info = result
+                _states += _sts
+
+            observs += obs
+            rewards += rew
+            terminals += ends
+            infos += info
+        if no_states:
+            transitions = observs, rewards, terminals, infos
+        else:
+            transitions = _states, observs, rewards, terminals, infos
+        return transitions
+
     def create_env_callable(self, **kwargs) -> Callable[..., PlanEnvironment]:
         """Return a callable that initializes the environment that is being vectorized."""
 
@@ -1065,10 +1086,6 @@ class VectorizedEnvironment(PlangymEnv, ABC):
         dt = dt if dt_is_array else numpy.ones(len(actions), dtype=int) * dt
         return self.make_transitions(actions, states, dt)
 
-    def make_transitions(self, actions, states, dt):
-        """Implement the logic for stepping the environment in parallel."""
-        raise NotImplementedError()
-
     def clone(self, **kwargs) -> "PlanEnvironment":
         """Return a copy of the environment."""
         self_kwargs = dict(
@@ -1082,3 +1099,7 @@ class VectorizedEnvironment(PlangymEnv, ABC):
         self_kwargs.update(kwargs)
         env = self.__class__(**self_kwargs)
         return env
+
+    def make_transitions(self, actions, states, dt):
+        """Implement the logic for stepping the environment in parallel."""
+        raise NotImplementedError()

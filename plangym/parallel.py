@@ -3,42 +3,10 @@ import atexit
 import multiprocessing
 import sys
 import traceback
-from typing import Generator, Union
 
 import numpy
 
 from plangym.core import PlanEnvironment, VectorizedEnvironment
-
-
-def split_similar_chunks(
-    vector: Union[list, numpy.ndarray],
-    n_chunks: int,
-) -> Generator[Union[list, numpy.ndarray], None, None]:
-    """
-    Split an indexable object into similar chunks.
-
-    Args:
-        vector: Target object to be split.
-        n_chunks: Number of similar chunks.
-
-    Returns:
-        Generator that returns the chunks created after splitting the target object.
-
-    """
-    chunk_size = int(numpy.ceil(len(vector) / n_chunks))
-    for i in range(0, len(vector), chunk_size):
-        yield vector[i : i + chunk_size]
-
-
-def batch_step_data(actions, states, dt, batch_size):
-    """Make batches of step data to distribute across workers."""
-    no_states = states is None or states[0] is None
-    states = [None] * len(actions) if no_states else states
-    dt = dt if isinstance(dt, numpy.ndarray) else numpy.ones(len(states), dtype=int) * dt
-    states_chunks = split_similar_chunks(states, n_chunks=batch_size)
-    actions_chunks = split_similar_chunks(actions, n_chunks=batch_size)
-    dt_chunks = split_similar_chunks(dt, n_chunks=batch_size)
-    return states_chunks, actions_chunks, dt_chunks
 
 
 class ExternalProcess:
@@ -147,10 +115,7 @@ class ExternalProcess:
     def set_state(self, state, blocking=True):
         """Set the state of the internal environment."""
         promise = self.call("set_state", state)
-        if blocking:
-            return promise()
-        else:
-            return promise
+        return promise() if blocking else promise
 
     def step_batch(self, actions, states=None, dt: [numpy.ndarray, int] = None, blocking=True):
         """
@@ -172,10 +137,7 @@ class ExternalProcess:
 
         """
         promise = self.call("step_batch", actions, states, dt)
-        if blocking:
-            return promise()
-        else:
-            return promise
+        return promise() if blocking else promise
 
     def step(self, action, state=None, dt: int = 1, blocking=True):
         """
@@ -193,10 +155,7 @@ class ExternalProcess:
 
         """
         promise = self.call("step", action, state, dt)
-        if blocking:
-            return promise()
-        else:
-            return promise
+        return promise() if blocking else promise
 
     def reset(self, blocking=True, return_states: bool = False):
         """
@@ -212,10 +171,7 @@ class ExternalProcess:
 
         """
         promise = self.call("reset", return_state=return_states)
-        if blocking:
-            return promise()
-        else:
-            return promise
+        return promise() if blocking else promise
 
     def _receive(self):
         """
@@ -278,21 +234,7 @@ class ExternalProcess:
                     "Received message of unknown type {}".format(message),
                 )  # pragma: no cover
         except Exception:  # pragma: no cover # pylint: disable=broad-except
-            # import logging
-
             stacktrace = "".join(traceback.format_exception(*sys.exc_info()))
-            # try:
-            #    import tensorflow as tf
-            #
-            #    message = f"Error in environment process: {stacktrace}"
-            #    if hasattr(tf, "logging"):
-            #        tf.logging.error(message)
-            #    else:
-            #        logger = tf.get_logger()
-            #        logger.setLevel(logging.ERROR)
-            #        logger.error(message)
-            # except ImportError:
-            #    pass
             conn.send((self._EXCEPTION, stacktrace))
             conn.close()
 
@@ -352,40 +294,11 @@ class BatchEnv:
         """
         return getattr(self._envs[0], name)
 
-    def _unpack_transitions(self, results, no_states):
-        _states = []
-        observs = []
-        rewards = []
-        terminals = []
-        infos = []
-        for result in results:
-            if self._blocking:
-                if no_states:
-                    obs, rew, ends, info = result
-                else:
-                    _sts, obs, rew, ends, info = result
-                    _states += _sts
-            else:
-                if no_states:
-                    obs, rew, ends, info = result()
-                else:
-                    _sts, obs, rew, ends, info = result()
-                    _states += _sts
-            observs += obs
-            rewards += rew
-            terminals += ends
-            infos += info
-        if no_states:
-            transitions = observs, rewards, terminals, infos
-        else:
-            transitions = _states, observs, rewards, terminals, infos
-        return transitions
-
     def make_transitions(self, actions, states=None, dt: [numpy.ndarray, int] = 1):
         """Implement the logic for stepping the environment in parallel."""
         results = []
         no_states = states is None or states[0] is None
-        chunks = batch_step_data(
+        chunks = ParallelEnvironment.batch_step_data(
             actions=actions,
             states=states,
             dt=dt,
@@ -399,7 +312,8 @@ class BatchEnv:
                 blocking=self._blocking,
             )
             results.append(result)
-        return self._unpack_transitions(results=results, no_states=no_states)
+        results = [res if self._blocking else res() for res in results]
+        return ParallelEnvironment.unpack_transitions(results=results, no_states=no_states)
 
     def sync_states(self, state, blocking: bool = True) -> None:
         """

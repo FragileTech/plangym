@@ -8,12 +8,12 @@ import numpy
 from plangym.core import VideogameEnvironment, wrap_callable
 
 
-class SonicDiscretizer(gym.ActionWrapper):
+class ActionDiscretizer(gym.ActionWrapper):
     """Wrap a gym-retro environment and make it use discrete actions for the Sonic game."""
 
     def __init__(self, env):
-        """Initialize a :class`SonicDiscretizer`."""
-        super(SonicDiscretizer, self).__init__(env)
+        """Initialize a :class`ActionDiscretizer`."""
+        super(ActionDiscretizer, self).__init__(env)
         buttons = ["B", "A", "MODE", "START", "UP", "DOWN", "LEFT", "RIGHT", "C", "Y", "X", "Z"]
         actions = [
             ["LEFT"],
