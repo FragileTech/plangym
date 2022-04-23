@@ -59,6 +59,9 @@ class DummyEnv(PlanEnvironment):
     def clone(self):
         return self
 
+    def get_image(self):
+        return numpy.zeros((10, 10, 3))
+
 
 environments = [lambda: DummyEnv(name="dummy")]
 

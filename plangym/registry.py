@@ -1,9 +1,8 @@
 """Functionality for instantiating the environment by passing the environment id."""
 from plangym.control import Box2DEnv, ClassicControl, DMControlEnv, LunarLander
-from plangym.core import PlanEnvironment
+from plangym.environment_names import ATARI, BOX_2D, CLASSIC_CONTROL, DM_CONTROL, RETRO
 from plangym.vectorization import ParallelEnvironment, RayEnv
 from plangym.videogames import AtariEnv, MarioEnv, Montezuma, RetroEnv
-from plangym.environment_names import ATARI, BOX_2D, CLASSIC_CONTROL, DM_CONTROL, RETRO
 
 
 def get_planenv_class(name, domain_name, state):
@@ -27,7 +26,7 @@ def get_planenv_class(name, domain_name, state):
     elif domain_name is not None or any(x[0] in name for x in DM_CONTROL):
         return DMControlEnv
     elif "SuperMarioBros" in name:
-        return MarioEnvironment
+        return MarioEnv
     raise ValueError(f"Environment {name} is not supported.")
 
 

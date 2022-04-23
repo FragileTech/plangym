@@ -1,9 +1,10 @@
 """Plangym API implementation."""
 from abc import ABC
-from typing import Any, Callable, Dict, Generator, Iterable, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, Optional, Tuple, Union
 
 import gym
-from gym.spaces import Space
+from gym.spaces import Box, Space
+from gym.wrappers.gray_scale_observation import GrayScaleObservation
 import numpy
 import numpy as np
 
@@ -65,6 +66,7 @@ class PlanEnvironment(ABC):
         """Teardown the Environment when it is no longer needed."""
         return self.close()
 
+    # Public API -----------------------------------------------------------------------------
     @property
     def unwrapped(self) -> "PlanEnvironment":
         """
@@ -105,22 +107,10 @@ class PlanEnvironment(ABC):
         """
         Return a numpy array containing the rendered view of the environment.
 
-        Square matrices are interpreted as a greyscale image. Three-dimensional arrays
+        Square matrices are interpreted as a grayscale image. Three-dimensional arrays
         are interpreted as RGB images with channels (Height, Width, RGB)
         """
-        return None
-
-    def begin_step(self, action=None, dt=None, state=None, return_state: bool = None):
-        """Perform setup of step variables before starting `step_with_dt`."""
-        self._n_step = 0
-        self._obs_step = None
-        self._reward_step = 0
-        self._terminal_step = False
-        self._info_step = {}
-        self._action_step = action
-        self._dt_step = dt
-        self._state_step = state
-        self._return_state_step = return_state
+        raise NotImplementedError()
 
     def step(
         self,
@@ -186,6 +176,57 @@ class PlanEnvironment(ABC):
         obs = self.process_obs(obs)
         return (self.get_state(), obs) if return_state else obs
 
+    def step_batch(
+        self,
+        actions: Union[numpy.ndarray, Iterable[Union[numpy.ndarray, int]]],
+        states: Union[numpy.ndarray, Iterable] = None,
+        dt: Union[int, numpy.ndarray] = 1,
+    ) -> Tuple[Union[list, numpy.ndarray], ...]:
+        """
+        Vectorized version of the `step` method. It allows to step a vector of \
+        states and actions.
+
+        The signature and behaviour is the same as `step`, but taking a list of
+        states, actions and dts as input.
+
+        Args:
+            actions: Iterable containing the different actions to be applied.
+            states: Iterable containing the different states to be set.
+            dt: int or array containing the consecutive that will be applied to each state.
+
+        Returns:
+            if states is `None` returns `(observs, rewards, ends, infos)`
+            else returns `(new_states, observs, rewards, ends, infos)`.
+
+        """
+        dt_is_array = (isinstance(dt, numpy.ndarray) and dt.shape) or isinstance(dt, (list, tuple))
+        dt = dt if dt_is_array else numpy.ones(len(actions), dtype=int) * dt
+        no_states = states is None or states[0] is None
+        states = [None] * len(actions) if no_states else states
+        data = [self.step(action, state, dt=dt) for action, state, dt in zip(actions, states, dt)]
+        return tuple(list(x) for x in zip(*data))
+
+    # Internal API -----------------------------------------------------------------------------
+    def clone(self, **kwargs) -> "PlanEnvironment":
+        """Return a copy of the environment."""
+        clone_kwargs = dict(
+            name=self.name,
+            frameskip=self.frameskip,
+            autoreset=self.autoreset,
+            delay_setup=self.delay_setup,
+        )
+        clone_kwargs.update(kwargs)
+        return self.__class__(**clone_kwargs)
+
+    def sample_action(self):
+        """
+        Return a valid action that can be used to step the Environment.
+
+        Implementing this method is optional, and it's only intended to make the
+        testing process of the Environment easier.
+        """
+        pass
+
     def step_with_dt(self, action: Union[numpy.ndarray, int, float], dt: int = 1):
         """
         Take ``dt`` simulation steps and make the environment evolve in multiples\
@@ -217,57 +258,6 @@ class PlanEnvironment(ABC):
         *_, terminal, _ = step_data  # Assumes terminal, info are the last two elements
         if terminal and self.autoreset:
             self.reset(return_state=False)
-
-    def process_apply_action(
-        self,
-        obs,
-        reward,
-        terminal,
-        info,
-    ):
-        """
-        Perform any post-processing to the data returned by `apply_action`.
-
-        Args:
-            obs: Observation of the environment.
-            reward: Reward signal.
-            terminal: Boolean indicating if the environment is finished.
-            info: Dictionary containing additional information about the environment.
-
-        Returns:
-            Tuple containing the processed data.
-        """
-        terminal = terminal or self._terminal_step
-        reward = self._reward_step + reward
-        return obs, reward, terminal, info
-
-    def process_step(
-        self,
-        obs,
-        reward,
-        terminal,
-        info,
-    ):
-        """
-        Prepare the returned info dictionary.
-
-        This is a post processing step to have fine-grained control over what data \
-        the info dictionary contains.
-
-        Args:
-            obs: Observation of the environment.
-            reward: Reward signal.
-            terminal: Boolean indicating if the environment is finished.
-            info: Dictionary containing additional information about the environment.
-
-        Returns:
-            Tuple containing the environment data after calling `step`.
-        """
-        info["n_step"] = int(self._n_step)
-        info["dt"] = self._dt_step
-        if self.return_image:
-            info["rgb"] = self.get_image()
-        return obs, reward, terminal, info
 
     def get_step_tuple(
         self,
@@ -329,6 +319,81 @@ class PlanEnvironment(ABC):
         )
         return step_data
 
+    def setup(self) -> None:
+        """
+        Run environment initialization.
+
+        Including in this function all the code which makes the environment impossible
+        to serialize will allow to dispatch the environment to different workers and
+        initialize it once it's copied to the target process.
+        """
+        pass
+
+    # Developer API -----------------------------------------------------------------------------
+
+    def begin_step(self, action=None, dt=None, state=None, return_state: bool = None):
+        """Perform setup of step variables before starting `step_with_dt`."""
+        self._n_step = 0
+        self._obs_step = None
+        self._reward_step = 0
+        self._terminal_step = False
+        self._info_step = {}
+        self._action_step = action
+        self._dt_step = dt
+        self._state_step = state
+        self._return_state_step = return_state
+
+    def process_apply_action(
+        self,
+        obs,
+        reward,
+        terminal,
+        info,
+    ):
+        """
+        Perform any post-processing to the data returned by `apply_action`.
+
+        Args:
+            obs: Observation of the environment.
+            reward: Reward signal.
+            terminal: Boolean indicating if the environment is finished.
+            info: Dictionary containing additional information about the environment.
+
+        Returns:
+            Tuple containing the processed data.
+        """
+        terminal = terminal or self._terminal_step
+        reward = self._reward_step + reward
+        return obs, reward, terminal, info
+
+    def process_step(
+        self,
+        obs,
+        reward,
+        terminal,
+        info,
+    ):
+        """
+        Prepare the returned info dictionary.
+
+        This is a post processing step to have fine-grained control over what data \
+        the info dictionary contains.
+
+        Args:
+            obs: Observation of the environment.
+            reward: Reward signal.
+            terminal: Boolean indicating if the environment is finished.
+            info: Dictionary containing additional information about the environment.
+
+        Returns:
+            Tuple containing the environment data after calling `step`.
+        """
+        info["n_step"] = int(self._n_step)
+        info["dt"] = self._dt_step
+        if self.return_image:
+            info["rgb"] = self.get_image()
+        return obs, reward, terminal, info
+
     def process_obs(self, obs, **kwargs):
         """Perform optional computation for computing the observation returned by step."""
         return obs
@@ -345,68 +410,8 @@ class PlanEnvironment(ABC):
         """Perform optional computation for computing the info dictionary returned by step."""
         return info
 
-    def step_batch(
-        self,
-        actions: Union[numpy.ndarray, Iterable[Union[numpy.ndarray, int]]],
-        states: Union[numpy.ndarray, Iterable] = None,
-        dt: Union[int, numpy.ndarray] = 1,
-    ) -> Tuple[Union[list, numpy.ndarray], ...]:
-        """
-        Vectorized version of the `step` method. It allows to step a vector of \
-        states and actions.
-
-        The signature and behaviour is the same as `step`, but taking a list of
-        states, actions and dts as input.
-
-        Args:
-            actions: Iterable containing the different actions to be applied.
-            states: Iterable containing the different states to be set.
-            dt: int or array containing the consecutive that will be applied to each state.
-
-        Returns:
-            if states is `None` returns `(observs, rewards, ends, infos)`
-            else returns `(new_states, observs, rewards, ends, infos)`.
-
-        """
-        dt_is_array = (isinstance(dt, numpy.ndarray) and dt.shape) or isinstance(dt, (list, tuple))
-        dt = dt if dt_is_array else numpy.ones(len(actions), dtype=int) * dt
-        no_states = states is None or states[0] is None
-        states = [None] * len(actions) if no_states else states
-        data = [self.step(action, state, dt=dt) for action, state, dt in zip(actions, states, dt)]
-        return tuple(list(x) for x in zip(*data))
-
-    def clone(self, **kwargs) -> "PlanEnvironment":
-        """Return a copy of the environment."""
-        clone_kwargs = dict(
-            name=self.name,
-            frameskip=self.frameskip,
-            autoreset=self.autoreset,
-            delay_setup=self.delay_setup,
-        )
-        clone_kwargs.update(kwargs)
-        return self.__class__(**clone_kwargs)
-
-    def setup(self) -> None:
-        """
-        Run environment initialization.
-
-        Including in this function all the code which makes the environment impossible
-        to serialize will allow to dispatch the environment to different workers and
-        initialize it once it's copied to the target process.
-        """
-        pass
-
     def close(self) -> None:
         """Tear down the current environment."""
-        pass
-
-    def sample_action(self):
-        """
-        Return a valid action that can be used to step the Environment.
-
-        Implementing this method is optional, and it's only intended to make the
-        testing process of the Environment easier.
-        """
         pass
 
     def apply_action(self, action):
@@ -482,7 +487,12 @@ class PlangymEnv(PlanEnvironment):
         self._wrappers = wrappers
         self._obs_space = None
         self._action_space = None
-        self._obs_type = obs_type
+        if obs_type is not None:
+            assert obs_type in self.AVAILABLE_OBS_TYPE, (
+                f"obs_type {obs_type} is not accepted. Available "
+                f"values are: {self.AVAILABLE_OBS_TYPE}"
+            )
+        self._obs_type = obs_type or self.DEFAULT_OBS_TYPE
         super(PlangymEnv, self).__init__(
             name=name,
             frameskip=frameskip,
@@ -561,21 +571,45 @@ class PlangymEnv(PlanEnvironment):
             self.apply_wrappers(self._wrappers)
         self.init_spaces()
 
-    def __init_spaces(self) -> None:
-        """Initialize the action_space and the observation_space of the environment."""
-        from gym.wrappers.gray_scale_observation import GrayScaleObservation
-
-        if self.obs_type == "ram":
-            ram_size = self.get_ram().shape
-            self._obs_space = gym.spaces.Box(low=0, high=255, dtype=numpy.uint8, shape=ram_size)
-        elif self.obs_type == "grayscale":
-            self._gym_env = GrayScaleObservation(self._gym_env)
-            self._obs_space = self._gym_env.observation_space
-
     def init_spaces(self):
         """Initialize the action_space and observation_space of the environment."""
-        self._obs_space = self.gym_env.observation_space
+        self._init_action_space()
+        if self.obs_type == "rgb":
+            self._init_obs_space_rgb()
+        elif self.obs_type == "grayscale":
+            self._init_obs_space_grayscale()
+        elif self.obs_type == "coords":
+            self._init_obs_space_coords()
+
+    def _init_action_space(self):
         self._action_space = self.gym_env.action_space
+
+    def _init_obs_space_rgb(self):
+        if self.DEFAULT_OBS_TYPE == "rgb":
+            self._obs_space = self.gym_env.observation_space
+        else:
+            img_shape = self.get_image().shape
+            self._obs_space = Box(low=0, high=255, dtype=numpy.uint8, shape=img_shape)
+
+    def _init_obs_space_grayscale(self):
+
+        if self.DEFAULT_OBS_TYPE == "grayscale":
+            self._obs_space = self.gym_env.observation_space
+        elif self.DEFAULT_OBS_TYPE == "rgb":
+            self._obs_space = self.gym_env.observation_space
+            self._gym_env = GrayScaleObservation(self._gym_env)
+            self._obs_space = self._gym_env.observation_space
+        else:
+            img_shape = self.get_image().shape
+            self._obs_space = Box(low=0, high=255, dtype=numpy.uint8, shape=img_shape)
+
+    def _init_obs_space_coords(self):
+        if self.DEFAULT_OBS_TYPE == "coords":
+            self._obs_space = self.gym_env.observation_space
+        else:
+            img = self.reset(return_state=False)
+            cords = self.get_coords_obs(img)
+            self._obs_space = Box(low=-np.inf, high=np.inf, dtype=numpy.float32, shape=cords.shape)
 
     def get_image(self) -> np.ndarray:
         """
@@ -660,23 +694,13 @@ class PlangymEnv(PlanEnvironment):
         """Apply a single OpenAI gym wrapper to the environment."""
         self._gym_env = wrapper(self.gym_env, *args, **kwargs)
 
-    @staticmethod
-    def get_lifes_from_info(info: Dict[str, Any]) -> int:
-        """Return the number of lifes remaining in the current game."""
-
-        return info.get("life", -1)
-
-    @staticmethod
-    def get_win_condition(info: Dict[str, Any]) -> bool:
-        """Return ``True`` if the current state corresponds to winning the game."""
-        return False
-
     def render(self, mode="human"):
         """Render the environment using OpenGL. This wraps the OpenAI render method."""
         if hasattr(self.gym_env, "render"):
             return self.gym_env.render(mode=mode)
 
     def process_obs(self, obs, **kwargs):
+        """Perform optional computation for computing the observation returned by step."""
         if self.obs_type == "coords":
             return self.get_coords_obs(obs, **kwargs)
         elif self.obs_type == "rgb":
@@ -686,15 +710,18 @@ class PlangymEnv(PlanEnvironment):
         return obs
 
     def get_coords_obs(self, obs, **kwargs):
+        """Calculate the observation returned by `step` when obs_type == "coords"."""
         if self.DEFAULT_OBS_TYPE == "coords":
             return obs
         raise NotImplementedError()
 
     def get_rgb_obs(self, obs, **kwargs):
+        """Calculate the observation returned by `step` when obs_type == "rgb"."""
         if self.DEFAULT_OBS_TYPE == "rgb":
             return obs
         return self.get_image()
 
     def get_grayscale_obs(self, obs, **kwargs):
+        """Calculate the observation returned by `step` when obs_type == "grayscale"."""
         obs = self.get_rgb_obs(obs, **kwargs)
         return process_frame(obs, mode="L")

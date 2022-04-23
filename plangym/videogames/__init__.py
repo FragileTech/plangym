@@ -1,3 +1,4 @@
+"""Module that contains environments representing video games."""
 from plangym.videogames.atari import AtariEnv  # noqa: E402
 from plangym.videogames.montezuma import Montezuma  # noqa: E402
 from plangym.videogames.nes import MarioEnv  # noqa: E402

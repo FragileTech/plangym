@@ -406,6 +406,8 @@ class CustomMontezuma:
 class Montezuma(AtariEnv):
     """Plangym implementation of the Montezuma environment optimized for planning."""
 
+    AVAILABLE_OBS_TYPE = {"coords", "rgb", "grayscale", "ram"}
+
     def __init__(
         self,
         name="PlanMontezuma-v0",

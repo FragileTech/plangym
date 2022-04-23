@@ -178,6 +178,17 @@ class AtariEnv(VideogameEnv):
         """Return the observation_space of the environment."""
         return self.gym_env.observation_space
 
+    @property
+    def DEFAULT_OBS_TYPE(self) -> str:
+        """Return the observation type of the initialize Atari gym environment."""
+        if "ram" in self.name or self.obs_type == "ram":
+            return "ram"
+        elif self.obs_type == "grayscale":
+            return "grayscale"
+        elif self.obs_type == "rgb":
+            return "rgb"
+        return self.__class__.DEFAULT_OBS_TYPE
+
     def get_lifes_from_info(self, info: Dict[str, Any]) -> int:
         """Return the number of lives remaining in the current game."""
         return info.get("ale.lives", super().get_lifes_from_info(info))

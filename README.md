@@ -58,7 +58,7 @@ new_states, observs, rewards, ends, infos = data
 ## Installation 
 Plangym is tested on Ubuntu 20.04 and Ubuntu 21.04 for python versions 3.7 and 3.8.
 
-Installing it with Python 3.6 will break AtariEnvironment, and RetroEnvironment does not support 
+Installing it with Python 3.6 will break AtariEnv, and RetroEnv does not support 
 python 3.9 yet.
 
 ### Installing from Pip

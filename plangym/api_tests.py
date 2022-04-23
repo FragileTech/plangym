@@ -77,14 +77,14 @@ class TestBaseEnvironment:
 
     @pytest.mark.parametrize("dt", [1, 3])
     def test_step_with_dt(self, env, dt):
-        obs = env.reset(return_state=False)
+        _ = env.reset(return_state=False)
         action = env.sample_action()
         assert env.action_shape == np.array(action).shape
         data = env.step_with_dt(action, dt=dt)
         assert isinstance(data, tuple)
-        #assert (
+        # assert (
         #    env.obs_shape == obs.shape
-        #), f"env.obs_shape {tuple(env.obs_shape)}, obs: {obs.shape}"
+        # ), f"env.obs_shape {tuple(env.obs_shape)}, obs: {obs.shape}"
 
     @pytest.mark.parametrize("dt", [1, 3])
     def test_step(self, env, dt):

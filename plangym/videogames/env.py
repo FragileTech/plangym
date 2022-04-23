@@ -1,5 +1,6 @@
 """Plangym API implementation."""
-from typing import Iterable, Optional
+from abc import ABC
+from typing import Any, Dict, Iterable, Optional
 
 import gym
 import numpy
@@ -11,11 +12,11 @@ from plangym.core import PlangymEnv, wrap_callable
 LIFE_KEY = "lifes"
 
 
-class VideogameEnv(PlangymEnv):
+class VideogameEnv(PlangymEnv, ABC):
     """Common interface for working with video games that run using an emulator."""
 
-    AVAILABLE_OBS_TYPE = {"coords", "rgb", "grayscale"}
-    DEFAULT_OBS_TYPE = "coords"
+    AVAILABLE_OBS_TYPE = {"rgb", "grayscale", "ram"}
+    DEFAULT_OBS_TYPE = "rgb"
 
     def __init__(
         self,
@@ -76,6 +77,16 @@ class VideogameEnv(PlangymEnv):
         except AttributeError:
             return 0
 
+    @staticmethod
+    def __get_win_condition(info: Dict[str, Any]) -> bool:
+        """Return ``True`` if the current state corresponds to winning the game."""
+        return False
+
+    @staticmethod
+    def get_lifes_from_info(info: Dict[str, Any]) -> int:
+        """Return the number of lifes remaining in the current game."""
+        return info.get("life", -1)
+
     def apply_action(self, action):
         """Evolve the environment for one time step applying the provided action."""
         obs, reward, terminal, info = super(VideogameEnv, self).apply_action(action=action)
@@ -108,15 +119,14 @@ class VideogameEnv(PlangymEnv):
 
     def init_spaces(self) -> None:
         """Initialize the action_space and the observation_space of the environment."""
-        from gym.wrappers.gray_scale_observation import GrayScaleObservation
-
         super(VideogameEnv, self).init_spaces()
         if self.obs_type == "ram":
-            ram_size = self.get_ram().shape
-            self._obs_space = gym.spaces.Box(low=0, high=255, dtype=numpy.uint8, shape=ram_size)
-        elif self.obs_type == "grayscale":
-            self._gym_env = GrayScaleObservation(self._gym_env)
-            self._obs_space = self._gym_env.observation_space
+            if self.DEFAULT_OBS_TYPE == "ram":
+                space = self.gym_env.obs_space
+            else:
+                ram_size = self.get_ram().shape
+                space = gym.spaces.Box(low=0, high=255, dtype=numpy.uint8, shape=ram_size)
+            self._obs_space = space
 
     def process_obs(self, obs, **kwargs):
         """Return the ram vector if obs_type == "ram" or and image otherwise."""

@@ -47,7 +47,7 @@ test-parallel:
 .PHONY: test-ray
 test-ray:
 	find -name "*.pyc" -delete
-	pytest tests/test_ray.py -n 1 -s -o log_cli=true -o log_cli_level=info
+	pytest tests/vectorization/test_ray.py -n 1 -s -o log_cli=true -o log_cli_level=info
 
 .PHONY: doctest
 doctest:

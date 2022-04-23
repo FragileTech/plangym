@@ -2,9 +2,9 @@ import numpy as np
 import pytest
 
 from plangym.api_tests import batch_size, display, TestBaseEnvironment, TestGymEnvironment
-from plangym.videogames.atari import AtariEnv
 from plangym.control.classic_control import ClassicControl
 from plangym.vectorization.parallel import BatchEnv, ExternalProcess, ParallelEnvironment
+from plangym.videogames.atari import AtariEnv
 
 
 def parallel_cartpole():

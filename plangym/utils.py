@@ -1,6 +1,4 @@
 """Generic utilities for working with environments."""
-from typing import Union
-
 import cv2
 import gym
 from gym.wrappers.time_limit import TimeLimit
