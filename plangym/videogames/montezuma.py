@@ -6,8 +6,8 @@ import cv2
 from gym.envs.registration import registry as gym_registry
 import numpy as np
 
-from plangym.atari import AtariEnvironment
 from plangym.core import wrap_callable
+from plangym.videogames.atari import AtariEnv
 
 
 # ------------------------------------------------------------------------------
@@ -403,8 +403,10 @@ class CustomMontezuma:
 # ------------------------------------------------------------------------------
 
 
-class Montezuma(AtariEnvironment):
+class Montezuma(AtariEnv):
     """Plangym implementation of the Montezuma environment optimized for planning."""
+
+    AVAILABLE_OBS_TYPE = {"coords", "rgb", "grayscale", "ram"}
 
     def __init__(
         self,

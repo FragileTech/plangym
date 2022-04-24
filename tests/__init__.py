@@ -13,9 +13,9 @@ except ImportError:
     SKIP_RAY_TESTS = True
 
 try:
-    from plangym.atari import AtariEnvironment
+    from plangym.atari import AtariEnv
 
-    AtariEnvironment(name="MsPacman-v0", clone_seeds=True, autoreset=True)
+    AtariEnv(name="MsPacman-v0", clone_seeds=True, autoreset=True)
     SKIP_ATARI_TESTS = False
 except Exception:
     SKIP_ATARI_TESTS = True

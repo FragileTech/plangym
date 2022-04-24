@@ -3,10 +3,10 @@ import warnings
 
 import pytest
 
-from plangym.classic_control import ClassicControl
+from plangym.control.classic_control import ClassicControl
 from plangym.environment_names import ATARI, BOX_2D, CLASSIC_CONTROL, DM_CONTROL, RETRO
-from plangym.parallel import ParallelEnvironment
 from plangym.registry import make
+from plangym.vectorization.parallel import ParallelEnvironment
 from tests import (
     SKIP_ATARI_TESTS,
     SKIP_BOX2D_TESTS,
@@ -24,7 +24,7 @@ def _test_env_class(name, cls, **kwargs):
     assert env._env_class == cls
     assert env.n_workers == n_workers
     if not SKIP_RAY_TESTS:
-        from plangym.ray import RayEnv
+        from plangym.vectorization.ray import RayEnv
 
         env = make(name=name, n_workers=n_workers, ray=True, delay_setup=True, **kwargs)
         assert isinstance(env, RayEnv)
@@ -40,14 +40,15 @@ class TestMake:
     @pytest.mark.skipif(SKIP_ATARI_TESTS, reason="Atari not installed")
     @pytest.mark.parametrize("name", ATARI[::10])
     def test_atari_make(self, name):
-        from plangym.atari import AtariEnvironment
+        from plangym.videogames.atari import AtariEnv
 
-        _test_env_class(name, AtariEnvironment)
+        _test_env_class(name, AtariEnv)
 
     @pytest.mark.skipif(SKIP_BOX2D_TESTS, reason="BOX_2D not installed")
     @pytest.mark.parametrize("name", BOX_2D)
     def test_box2d_make(self, name):
-        from plangym.box_2d import Box2DEnv, LunarLander
+        from plangym.control.box_2d import Box2DEnv
+        from plangym.control.lunar_lander import LunarLander
 
         if name == "FastLunarLander-v0":
             _test_env_class(name, LunarLander)
@@ -61,21 +62,21 @@ class TestMake:
     @pytest.mark.skipif(SKIP_RETRO_TESTS, reason="Retro not installed")
     @pytest.mark.parametrize("name", RETRO[::10])
     def test_retro_make(self, name):
-        from plangym.retro import RetroEnvironment
+        from plangym.videogames.retro import RetroEnv
 
         try:
-            _test_env_class(name, RetroEnvironment)
+            _test_env_class(name, RetroEnv)
         except FileNotFoundError:
             pass
 
     @pytest.mark.skipif(SKIP_RETRO_TESTS, reason="Retro not installed")
     def test_retro_make_with_state(self):
-        from plangym.retro import ActionDiscretizer, RetroEnvironment
+        from plangym.videogames.retro import ActionDiscretizer, RetroEnv
 
         try:
             _test_env_class(
                 "SonicTheHedgehog-Genesis",
-                RetroEnvironment,
+                RetroEnv,
                 state="GreenHillZone.Act3",
                 wrappers=[ActionDiscretizer],
             )
@@ -85,7 +86,7 @@ class TestMake:
     @pytest.mark.skipif(SKIP_ATARI_TESTS, reason="Atari not installed")
     def test_custom_atari_make(self):
         # from plangym.minimal import MinimalPacman, MinimalPong
-        from plangym.montezuma import Montezuma
+        from plangym.videogames import Montezuma
 
         # _test_env_class("MinimalPacman-v0", MinimalPacman)
         #  _test_env_class("MinimalPong-v0", MinimalPong)
@@ -94,7 +95,7 @@ class TestMake:
     @pytest.mark.skipif(SKIP_DM_CONTROL_TESTS, reason="dm_control not installed")
     @pytest.mark.parametrize("name", DM_CONTROL)
     def test_dmcontrol_make(self, name):
-        from plangym.dm_control import DMControlEnv
+        from plangym.control.dm_control import DMControlEnv
 
         domain_name, task_name = name
         if task_name is not None:
@@ -105,7 +106,7 @@ class TestMake:
     @pytest.mark.skipif(SKIP_DM_CONTROL_TESTS, reason="dm_control not installed")
     @pytest.mark.parametrize("name", DM_CONTROL)
     def test_dmcontrol_domain_name_make(self, name):
-        from plangym.dm_control import DMControlEnv
+        from plangym.control.dm_control import DMControlEnv
 
         domain_name, task_name = name
         if task_name is not None:

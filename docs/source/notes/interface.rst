@@ -1,6 +1,6 @@
 Atari 2600
 ==================
-.. autoclass:: plangym.atari.AtariEnvironment
+.. autoclass:: plangym.atari.AtariEnv
    :members:
 
 Classic control
@@ -12,7 +12,7 @@ Classic control
 Gym retro
 =======================
 
-.. autoclass:: plangym.retro.RetroEnvironment
+.. autoclass:: plangym.retro.RetroEnv
    :members:
 
 Box2D
@@ -35,7 +35,7 @@ Abstract classes defining plangym's API
 .. autoclass:: plangym.core.PlangymEnv
    :members:
 
-.. autoclass:: plangym.parallel.VideogameEnvironment
+.. autoclass:: plangym.parallel.VideogameEnv
    :members:
 
 .. autoclass:: plangym.parallel.VectorizedEnvironment

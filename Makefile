@@ -47,7 +47,7 @@ test-parallel:
 .PHONY: test-ray
 test-ray:
 	find -name "*.pyc" -delete
-	pytest tests/test_ray.py -n 1 -s -o log_cli=true -o log_cli_level=info
+	pytest tests/vectorization/test_ray.py -n 1 -s -o log_cli=true -o log_cli_level=info
 
 .PHONY: doctest
 doctest:
@@ -93,7 +93,7 @@ docker-build:
 docker-test:
 	find -name "*.pyc" -delete
 	docker run --rm --network host -w /${PROJECT} -e MUJOCO_GL=egl -e SKIP_RENDER=True -e DISABLE_RAY=True --entrypoint python3 ${DOCKER_ORG}/${PROJECT}:${VERSION} -m pytest -n $n -s -o log_cli=true -o log_cli_level=info
-	docker run --rm --network host -w /${PROJECT} -e MUJOCO_GL=egl -e SKIP_RENDER=True -e DISABLE_RAY=False --entrypoint python3 ${DOCKER_ORG}/${PROJECT}:${VERSION} -m pytest tests/test_ray.py -n 1 -s -o log_cli=true -o log_cli_level=info
+	docker run --rm --network host -w /${PROJECT} -e MUJOCO_GL=egl -e SKIP_RENDER=True -e DISABLE_RAY=False --entrypoint python3 ${DOCKER_ORG}/${PROJECT}:${VERSION} -m pytest tests/vectorization/test_ray.py -n 1 -s -o log_cli=true -o log_cli_level=info
 
 .PHONY: docker-push
 docker-push:

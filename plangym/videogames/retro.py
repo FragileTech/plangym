@@ -5,7 +5,8 @@ import gym
 from gym import spaces
 import numpy
 
-from plangym.core import VideogameEnvironment, wrap_callable
+from plangym.core import wrap_callable
+from plangym.videogames.env import VideogameEnv
 
 
 class ActionDiscretizer(gym.ActionWrapper):
@@ -37,9 +38,10 @@ class ActionDiscretizer(gym.ActionWrapper):
         return self._actions[a].copy()
 
 
-class RetroEnvironment(VideogameEnvironment):
+class RetroEnv(VideogameEnv):
     """Environment for playing ``gym-retro`` games."""
 
+    AVAILABLE_OBS_TYPE = {"coords", "rgb", "grayscale", "ram"}
     SINGLETON = True
 
     def __init__(
@@ -59,7 +61,7 @@ class RetroEnvironment(VideogameEnvironment):
         **kwargs,
     ):
         """
-        Initialize a :class:`RetroEnvironment`.
+        Initialize a :class:`RetroEnv`.
 
         Args:
             name: Name of the environment. Follows standard gym syntax conventions.
@@ -79,7 +81,7 @@ class RetroEnvironment(VideogameEnvironment):
         """
         self.height = height
         self.width = width
-        super(RetroEnvironment, self).__init__(
+        super(RetroEnv, self).__init__(
             name=name,
             frameskip=frameskip,
             episodic_life=episodic_life,
@@ -96,9 +98,9 @@ class RetroEnvironment(VideogameEnvironment):
         """Return the ram of the emulator as a numpy array."""
         return self.get_state()  # .copy()
 
-    def clone(self) -> "RetroEnvironment":
+    def clone(self, **kwargs) -> "RetroEnv":
         """Return a copy of the environment with its initialization delayed."""
-        return RetroEnvironment(
+        default_kwargs = dict(
             name=self.name,
             frameskip=self.frameskip,
             wrappers=self._wrappers,
@@ -109,6 +111,8 @@ class RetroEnvironment(VideogameEnvironment):
             height=self.height,
             width=self.width,
         )
+        default_kwargs.update(kwargs)
+        return super(RetroEnv, self).clone(**default_kwargs)
 
     def init_gym_env(self) -> gym.Env:
         """Initialize the retro environment."""

@@ -6,7 +6,7 @@ from typing import Iterable, Optional
 import numpy as np
 import numpy as numpy
 
-from plangym.box_2d.env import Box2DState
+from plangym.control.box_2d import Box2DState
 from plangym.core import PlangymEnv, wrap_callable
 
 

@@ -5,8 +5,8 @@ import pytest
 
 
 pytest.importorskip("dm_control")
-from plangym.api_tests import batch_size, display, TestBaseEnvironment, TestGymEnvironment
-from plangym.dm_control import DMControlEnv
+from plangym.api_tests import batch_size, display, TestPlanEnvironment, TestPlangymEnv
+from plangym.control.dm_control import DMControlEnv
 
 
 class DummyTimeLimit:

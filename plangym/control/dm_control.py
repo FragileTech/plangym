@@ -2,7 +2,7 @@
 from typing import Iterable
 import warnings
 
-from gym.spaces import Box, Space
+from gym.spaces import Box
 import numpy as np
 
 from plangym.core import PlangymEnv, wrap_callable
@@ -70,16 +70,6 @@ class DMControlEnv(PlangymEnv):
             autoreset=autoreset,
             render_mode=render_mode,
         )
-
-    @property
-    def action_space(self) -> Space:
-        """Return the action_space of the environment."""
-        return self._action_space
-
-    @property
-    def observation_space(self) -> Space:
-        """Return the observation_space of the environment."""
-        return self._obs_space
 
     @property
     def physics(self):

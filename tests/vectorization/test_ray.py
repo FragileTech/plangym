@@ -5,15 +5,15 @@ import numpy
 import pytest
 import ray
 
-from plangym.atari import AtariEnvironment
-from plangym.classic_control import ClassicControl
-from plangym.ray import RayEnv, RemoteEnv
+from plangym.control.classic_control import ClassicControl
+from plangym.vectorization.ray import RayEnv, RemoteEnv
+from plangym.videogames.atari import AtariEnv
 
 
 pytest.importorskip("ray")
 if os.getenv("DISABLE_RAY", False) and str(os.getenv("DISABLE_RAY", False)).lower() != "false":
     pytest.skip("Ray not installed or disabled", allow_module_level=True)
-from plangym.api_tests import batch_size, display, TestBaseEnvironment, TestGymEnvironment
+from plangym.api_tests import batch_size, display, TestPlanEnvironment, TestPlangymEnv
 
 
 def ray_cartpole():
@@ -21,13 +21,13 @@ def ray_cartpole():
 
 
 def ray_retro():
-    from plangym.retro import RetroEnvironment
+    from plangym.videogames.retro import RetroEnv
 
-    return RayEnv(env_class=RetroEnvironment, name="Airstriker-Genesis", n_workers=2)
+    return RayEnv(env_class=RetroEnv, name="Airstriker-Genesis", n_workers=2)
 
 
 def ray_dm_control():
-    from plangym.dm_control import DMControlEnv
+    from plangym.control.dm_control import DMControlEnv
 
     return RayEnv(env_class=DMControlEnv, name="walker-walk", n_workers=2)
 
@@ -36,7 +36,7 @@ environments = [(ray_cartpole, True), (ray_retro, False), (ray_dm_control, True)
 
 
 @pytest.fixture(params=environments, scope="class")
-def env(request) -> AtariEnvironment:
+def env(request) -> AtariEnv:
     env_call, local = request.param
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")

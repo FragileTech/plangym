@@ -5,10 +5,49 @@ import gym
 import numpy
 import numpy as np
 
-from plangym.core import VideogameEnvironment
+from plangym.videogames.env import VideogameEnv
 
 
-class NesEnvironment(VideogameEnvironment):
+# actions for the simple run right environment
+RIGHT_ONLY = [
+    ["NOOP"],
+    ["right"],
+    ["right", "A"],
+    ["right", "B"],
+    ["right", "A", "B"],
+]
+
+
+# actions for very simple movement
+SIMPLE_MOVEMENT = [
+    ["NOOP"],
+    ["right"],
+    ["right", "A"],
+    ["right", "B"],
+    ["right", "A", "B"],
+    ["A"],
+    ["left"],
+]
+
+
+# actions for more complex movement
+COMPLEX_MOVEMENT = [
+    ["NOOP"],
+    ["right"],
+    ["right", "A"],
+    ["right", "B"],
+    ["right", "A", "B"],
+    ["A"],
+    ["left"],
+    ["left", "A"],
+    ["left", "B"],
+    ["left", "A", "B"],
+    ["down"],
+    ["up"],
+]
+
+
+class NesEnv(VideogameEnv):
     """Environment for working with the NES-py emulator."""
 
     @property
@@ -54,11 +93,38 @@ class NesEnvironment(VideogameEnvironment):
         """Close the underlying :class:`gym.Env`."""
         if self.nes_env._env is None:
             return
-        super(NesEnvironment, self).close()
+        super(NesEnv, self).close()
 
 
-class MarioEnvironment(NesEnvironment):
+class MarioEnv(NesEnv):
     """Interface for using gym-super-mario-bros in plangym."""
+
+    AVAILABLE_OBS_TYPE = {"coords", "rgb", "grayscale", "ram"}
+    MOVEMENTS = {
+        "complex": COMPLEX_MOVEMENT,
+        "simple": SIMPLE_MOVEMENT,
+        "right": RIGHT_ONLY,
+    }
+
+    def __init__(
+        self,
+        name: str,
+        movement_type: str = "simple",
+        original_reward: bool = False,
+        **kwargs,
+    ):
+        """
+        Initialize a MarioEnv.
+
+        Args:
+            name: Name of the environment.
+            movement_type: One of {complex|simple|right}
+            original_reward: If False return a custom reward based on mario position and level.
+            **kwargs: passed to super().__init__.
+        """
+        self._movement_type = movement_type
+        self._original_reward = original_reward
+        super(MarioEnv, self).__init__(name=name, **kwargs)
 
     def get_state(self, state: Optional[np.ndarray] = None) -> np.ndarray:
         """
@@ -68,13 +134,7 @@ class MarioEnvironment(NesEnvironment):
         """
         state = np.empty(250288, dtype=np.byte) if state is None else state
         state[-2:] = 0  # Some states use the last two bytes. Set to zero by default.
-        return super(MarioEnvironment, self).get_state(state)
-
-    def init_spaces(self) -> None:
-        """Initialize the target :class:`NESEnv` instance."""
-        super(MarioEnvironment, self).init_spaces()
-        if self.obs_type == "info":
-            self._obs_space = gym.spaces.Box(low=0, high=np.inf, dtype=numpy.float32, shape=7)
+        return super(MarioEnv, self).get_state(state)
 
     def init_gym_env(self) -> gym.Env:
         """Initialize the :class:`NESEnv`` instance that the current class is wrapping."""
@@ -115,14 +175,14 @@ class MarioEnvironment(NesEnvironment):
         }
         return self._update_info(info)
 
-    def process_obs(
+    def get_coords_obs(
         self,
         obs: numpy.ndarray,
         info: Dict[str, Any] = None,
         **kwargs,
     ) -> numpy.ndarray:
         """Return the information contained in info as an observation if obs_type == "info"."""
-        if self.obs_type == "info":
+        if self.obs_type == "coords":
             info = info or self._get_info()
             obs = np.array(
                 [
@@ -139,14 +199,15 @@ class MarioEnvironment(NesEnvironment):
 
     def process_reward(self, reward, info, **kwargs) -> float:
         """Return a custom reward based on the x, y coordinates and level mario is in."""
-        reward = (
-            (info.get("world", 0) * 25000)
-            + (info.get("stage", 0) * 5000)
-            + info.get("x_pos", 0)
-            + 10 * int(bool(info.get("in_pipe", 0)))
-            + 100 * int(bool(info.get("flag_get", 0)))
-            # + (abs(info["x_pos"] - info["x_position_last"]))
-        )
+        if not self._original_reward:
+            reward = (
+                (info.get("world", 0) * 25000)
+                + (info.get("stage", 0) * 5000)
+                + info.get("x_pos", 0)
+                + 10 * int(bool(info.get("in_pipe", 0)))
+                + 100 * int(bool(info.get("flag_get", 0)))
+                # + (abs(info["x_pos"] - info["x_position_last"]))
+            )
         return reward
 
     def process_terminal(self, terminal, info, **kwargs) -> bool:
