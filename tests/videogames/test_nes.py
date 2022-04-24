@@ -1,21 +1,17 @@
 import pytest
 
-from plangym.api_tests import batch_size, display, TestPlanEnvironment
+from plangym.api_tests import batch_size, display, generate_test_cases, TestPlanEnv  # noqa: F401
 from plangym.vectorization import ParallelEnvironment
 from plangym.videogames.nes import MarioEnv
 
 
-def single_core_mario():
-    return MarioEnv("SuperMarioBros-v0")
+env_names = ["SuperMarioBros-v0", "SuperMarioBros-v1", "SuperMarioBros2-v0"]
 
 
-def parallel_mario():
-    return ParallelEnvironment(env_class=MarioEnv, name="SuperMarioBros-v0", n_workers=2)
-
-
-environments = [single_core_mario, parallel_mario]
-
-
-@pytest.fixture(params=environments, scope="class")
+@pytest.fixture(
+    params=generate_test_cases(env_names, MarioEnv, n_workers_values=[None, 2]), scope="module"
+)
 def env(request):
-    return request.param()
+    env = request.param()
+    yield env
+    env.close()

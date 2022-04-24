@@ -68,4 +68,4 @@ from plangym.core import PlanEnv  # noqa: E402
 from plangym.registry import make  # noqa: E402
 from plangym.vectorization import ParallelEnvironment, RayEnv  # noqa: E402
 from plangym.version import __version__  # noqa: E402
-from plangym.videogames import AtariEnv, MarioEnv, Montezuma, RetroEnv  # noqa: E402
+from plangym.videogames import AtariEnv, MarioEnv, MontezumaEnv, RetroEnv  # noqa: E402

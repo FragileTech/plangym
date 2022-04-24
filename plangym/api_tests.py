@@ -1,4 +1,5 @@
 import copy
+from itertools import product
 import os
 from typing import Iterable
 import warnings
@@ -8,9 +9,49 @@ import numpy as np
 import pytest
 from pyvirtualdisplay import Display
 
-from plangym.core import PlanEnv
+import plangym
+from plangym.core import PlanEnv, PlangymEnv
 from plangym.vectorization.env import VectorizedEnvironment
 from plangym.videogames.env import LIFE_KEY
+
+
+def generate_test_cases(
+    names,
+    env_class,
+    n_workers_values=None,
+    render_modes=None,
+    obs_types=None,
+) -> PlangymEnv:
+    n_workers_vals = [None] if n_workers_values is None else n_workers_values
+    names = [names] if isinstance(names, str) else names
+    available_render_modes = (
+        env_class.AVAILABLE_RENDER_MODES if os.getenv("SKIP_RENDER", False) else [None]
+    )
+    available_obs_types = (
+        env_class.AVAILABLE_OBS_TYPES if os.getenv("SKIP_RENDER", False) else [None]
+    )
+    render_modes = available_render_modes if render_modes is None else render_modes
+    obs_types = available_obs_types if obs_types is None else obs_types
+    for i, (n_workers, obs_type, render_mode) in enumerate(
+        product(
+            n_workers_vals,
+            obs_types,
+            render_modes,
+        ),
+    ):
+        name = names[i % len(names)]
+        if isinstance(name, tuple):
+            name = "-".join(name)
+
+        def _make_env():
+            return plangym.make(
+                name,
+                n_workers=n_workers,
+                obs_type=obs_type,
+                render_mode=render_mode,
+            )
+
+        yield _make_env
 
 
 @pytest.fixture(scope="class")
@@ -29,7 +70,7 @@ def display():
 def step_tuple_test(env, obs, reward, terminal, info, dt=None):
     obs_is_array = isinstance(obs, np.ndarray)
     assert obs_is_array if env.OBS_IS_ARRAY else not obs_is_array
-    assert obs.shape == env.obs_shape
+    assert obs.shape == env.obs_shape, (obs.shape, env.obs_shape)
     assert float(reward) + 1 == float(reward) + 1
     assert isinstance(terminal, bool)
     assert isinstance(info, dict)
@@ -54,7 +95,7 @@ def step_batch_tuple_test(env, batch_size, observs, rewards, terminals, infos, d
         step_tuple_test(env=env, obs=obs, reward=reward, terminal=terminal, info=info, dt=dt)
 
 
-class TestPlanEnvironment:
+class TestPlanEnv:
 
     CLASS_ATTRIBUTES = ("OBS_IS_ARRAY", "STATE_IS_ARRAY", "SINGLETON")
     PROPERTIES = (
@@ -137,13 +178,13 @@ class TestPlanEnvironment:
     def test_set_state(self, env):
         env.reset()
         state = env.get_state()
-        env.set_state(state)
         env.step(env.sample_action())
+        env.set_state(state)
         if env.STATE_IS_ARRAY:
             env_state = env.get_state()
             assert state.shape == env_state.shape
-            if state.dtype != object:
-                assert not (state == env_state).all(), (state, env.get_state())
+            if state.dtype != object and not env.SINGLETON:
+                assert (state == env_state).all(), (state, env.get_state())
 
     def test_reset(self, env):
         _ = env.reset(return_state=False)
@@ -300,6 +341,13 @@ class TestPlangymEnv:
         if env.action_space.shape:
             assert env.action_space.shape == env.sample_action().shape
 
+    def test_gym_env(self, env):
+        assert hasattr(env.gym_env, "reset")
+        assert hasattr(env.gym_env, "step")
+
+    def test_reward_range(self, env):
+        env.reward_range
+
     @pytest.mark.parametrize("delay_setup", [True, False])
     def test_delay_setup(self, env, delay_setup):
         if env.SINGLETON or isinstance(env, VectorizedEnvironment):
@@ -313,33 +361,14 @@ class TestPlangymEnv:
 
     def test_render_mode(self, env):
         assert hasattr(env, "render_mode")
+        if env.render_mode is not None:
+            assert isinstance(env.render_mode, str)
         assert env.render_mode in env.AVAILABLE_RENDER_MODES
 
     def test_remove_time_limit(self, env):
         assert isinstance(env.remove_time_limit, bool)
         if env.remove_time_limit and not env._wrappers:
             assert "TimeLimit" not in str(env.gym_env), env.gym_env
-
-    def test_api_kwargs(self, env):
-        if isinstance(env, VectorizedEnvironment):
-            return
-        cls = env.__class__
-        kwargs = {
-            "name": env.name,
-            "frameskip": 1,
-            "autoreset": True,
-            "delay_setup": True,
-            "wrappers": None,
-        }
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            cls(**kwargs)
-
-    def test_attributes(self, env):
-        assert hasattr(env, "reward_range")
-        assert hasattr(env, "metadata")
-        # assert hasattr(env, "episodic_life")
-        assert hasattr(env, "gym_env")
 
     def __test_get_lifes_from_info(self, env):
         info = {"lifes": 3}
@@ -363,10 +392,22 @@ class TestPlangymEnv:
             warnings.simplefilter("ignore")
             env.render()
 
-    # TODO: add after finishing wrappers
-    def _test_wrap_environment(self, env):
-        wrappers = []
-        env.apply_wrappers(wrappers)
+    def test_wrap_environment(self, env):
+        if isinstance(env, VectorizedEnvironment):
+            return
+        from gym.wrappers.transform_reward import TransformReward
 
-    def _test_apply_wrappers(self, env):
-        pass
+        wrappers = [(TransformReward, {"f": lambda x: x})]
+        env.apply_wrappers(wrappers)
+        assert isinstance(env.gym_env, TransformReward)
+        env._gym_env = env.gym_env.env
+
+        wrappers = [(TransformReward, [lambda x: x])]
+        env.apply_wrappers(wrappers)
+        assert isinstance(env.gym_env, TransformReward)
+        env._gym_env = env.gym_env.env
+
+        wrappers = [(TransformReward, lambda x: x)]
+        env.apply_wrappers(wrappers)
+        assert isinstance(env.gym_env, TransformReward)
+        env._gym_env = env.gym_env.env

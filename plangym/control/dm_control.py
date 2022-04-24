@@ -1,5 +1,5 @@
 """Implement the ``plangym`` API for ``dm_control`` environments."""
-from typing import Iterable
+from typing import Iterable, Optional
 import warnings
 
 from gym.spaces import Box
@@ -35,6 +35,7 @@ class DMControlEnv(PlangymEnv):
         domain_name=None,
         task_name=None,
         render_mode=None,
+        obs_type: Optional[str] = None,
         remove_time_limit=None,
     ):
         """
@@ -69,6 +70,7 @@ class DMControlEnv(PlangymEnv):
             delay_setup=delay_setup,
             autoreset=autoreset,
             render_mode=render_mode,
+            obs_type=obs_type,
         )
 
     @property

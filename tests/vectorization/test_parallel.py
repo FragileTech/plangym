@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from plangym.api_tests import batch_size, display, TestPlanEnvironment, TestPlangymEnv
+from plangym.api_tests import batch_size, display, TestPlanEnv, TestPlangymEnv
 from plangym.control.classic_control import ClassicControl
 from plangym.vectorization.parallel import BatchEnv, ExternalProcess, ParallelEnvironment
 from plangym.videogames.atari import AtariEnv
@@ -20,7 +20,7 @@ def parallel_pacman():
 environments = [parallel_cartpole, parallel_pacman]
 
 
-@pytest.fixture(params=environments, scope="class")
+@pytest.fixture(params=environments, scope="module")
 def env(request) -> ClassicControl:
     return request.param()
 

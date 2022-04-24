@@ -5,8 +5,15 @@ import pytest
 
 
 pytest.importorskip("dm_control")
-from plangym.api_tests import batch_size, display, TestPlanEnvironment, TestPlangymEnv
+from plangym.api_tests import (  # noqa: F401
+    batch_size,
+    display,
+    generate_test_cases,
+    TestPlanEnv,
+    TestPlangymEnv,
+)
 from plangym.control.dm_control import DMControlEnv
+from plangym.environment_names import DM_CONTROL
 
 
 class DummyTimeLimit:
@@ -31,7 +38,10 @@ def parallel_dm():
 environments = [walker_run, parallel_dm]
 
 
-@pytest.fixture(params=environments, scope="class")
+@pytest.fixture(
+    params=generate_test_cases(DM_CONTROL, DMControlEnv, n_workers_values=[None, 2]),
+    scope="module",
+)
 def env(request) -> DMControlEnv:
     return request.param()
 

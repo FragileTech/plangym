@@ -3,13 +3,20 @@ import numpy
 import numpy as np
 import pytest
 
+from plangym.environment_names import ATARI
 from plangym.videogames.atari import ale_to_ram, AtariEnv
 from tests import SKIP_ATARI_TESTS
 
 
 if SKIP_ATARI_TESTS:
     pytest.skip("Atari not installed, skipping", allow_module_level=True)
-from plangym.api_tests import batch_size, display, TestPlanEnvironment, TestPlangymEnv
+from plangym.api_tests import (  # noqa: F401
+    batch_size,
+    display,
+    generate_test_cases,
+    TestPlanEnv,
+    TestPlangymEnv,
+)
 
 
 def pacman_obs():
@@ -34,12 +41,14 @@ def qbert_new_ale():
     return AtariEnv(name="ALE/Qbert-v5")
 
 
-environments = [pacman_obs, qbert_ram, pong_obs_ram, qbert_new_ale]
+# environments = [pacman_obs, qbert_ram, pong_obs_ram, qbert_new_ale]
 
 
-@pytest.fixture(params=environments, scope="class")
+@pytest.fixture(params=generate_test_cases(ATARI, AtariEnv), scope="module")
 def env(request) -> AtariEnv:
-    return request.param()
+    env = request.param()
+    yield env
+    env.close()
 
 
 class TestAtariEnv:

@@ -518,10 +518,7 @@ class PlangymEnv(PlanEnv):
     @property
     def obs_shape(self) -> Tuple[int, ...]:
         """Tuple containing the shape of the observations returned by the Environment."""
-        try:
-            return self.observation_space.shape
-        except AttributeError:
-            return ()
+        return self.observation_space.shape
 
     @property
     def obs_type(self) -> str:
@@ -536,10 +533,7 @@ class PlangymEnv(PlanEnv):
     @property
     def action_shape(self) -> Tuple[int, ...]:
         """Tuple containing the shape of the actions applied to the Environment."""
-        try:
-            return self.action_space.shape
-        except AttributeError:
-            return ()
+        return self.action_space.shape
 
     @property
     def action_space(self) -> Space:
@@ -609,8 +603,8 @@ class PlangymEnv(PlanEnv):
             self._gym_env = GrayScaleObservation(self._gym_env)
             self._obs_space = self._gym_env.observation_space
         else:
-            img_shape = self.get_image().shape
-            self._obs_space = Box(low=0, high=255, dtype=numpy.uint8, shape=img_shape)
+            shape = self.get_image().shape
+            self._obs_space = Box(low=0, high=255, dtype=numpy.uint8, shape=(shape[0], shape[1]))
 
     def _init_obs_space_coords(self):
         if self.DEFAULT_OBS_TYPE == "coords":
@@ -657,10 +651,7 @@ class PlangymEnv(PlanEnv):
         """Return a valid action that can be used to step the Environment chosen at random."""
         if hasattr(self.action_space, "sample"):
             return self.action_space.sample()
-        try:
-            return self.gym_env.action_space.sample()
-        except AttributeError:
-            pass
+        return self.gym_env.action_space.sample()
 
     def clone(self, **kwargs) -> "PlangymEnv":
         """Return a copy of the environment."""
@@ -695,7 +686,12 @@ class PlangymEnv(PlanEnv):
         for item in wrappers:
             if isinstance(item, tuple):
                 wrapper, kwargs = item
-                self.wrap(wrapper, **kwargs)
+                if isinstance(kwargs, dict):
+                    self.wrap(wrapper, **kwargs)
+                elif isinstance(kwargs, (list, tuple)):
+                    self.wrap(wrapper, *kwargs)
+                else:
+                    self.wrap(wrapper, kwargs)
             else:
                 self.wrap(item)
 

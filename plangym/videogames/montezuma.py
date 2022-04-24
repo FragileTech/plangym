@@ -87,7 +87,7 @@ KEY_BITS = 0x8 | 0x4 | 0x2
 
 
 class CustomMontezuma:
-    """Montezuma environment that tracks the room and position of Panama Joe."""
+    """MontezumaEnv environment that tracks the room and position of Panama Joe."""
 
     TARGET_SHAPE = (190, 210)
     MAX_PIX_VALUE = 255
@@ -403,8 +403,8 @@ class CustomMontezuma:
 # ------------------------------------------------------------------------------
 
 
-class Montezuma(AtariEnv):
-    """Plangym implementation of the Montezuma environment optimized for planning."""
+class MontezumaEnv(AtariEnv):
+    """Plangym implementation of the MontezumaEnv environment optimized for planning."""
 
     AVAILABLE_OBS_TYPES = {"coords", "rgb", "grayscale", "ram"}
 
@@ -428,9 +428,9 @@ class Montezuma(AtariEnv):
         clone_seeds: bool = False,
         **kwargs,
     ):
-        """Initialize a :class:`Montezuma`."""
+        """Initialize a :class:`MontezumaEnv`."""
         self._env_kwargs = kwargs
-        super(Montezuma, self).__init__(
+        super(MontezumaEnv, self).__init__(
             name="MontezumaRevengeDeterministic-v4",
             frameskip=frameskip,
             autoreset=autoreset,
@@ -461,6 +461,39 @@ class Montezuma(AtariEnv):
     def init_gym_env(self) -> CustomMontezuma:
         """Initialize the :class:`gum.Env`` instance that the current clas is wrapping."""
         return CustomMontezuma(**self._env_kwargs)
+
+    def get_coords_obs(self, obs, **kwargs):
+        """Get an observation based on Panama Joe position and state."""
+        data = self.gym_env.get_restore()
+        (
+            _,
+            score,
+            steps,
+            pos,
+            room_time,
+            ram_death_state,
+            score_objects,
+            cur_lives,
+        ) = data
+        room_time = room_time if room_time[0] is not None else (-1, -1)
+        assert len(room_time) == 2
+        metadata = np.array(
+            [
+                float(score),
+                float(steps),
+                float(room_time[0]),
+                float(room_time[1]),
+                float(ram_death_state),
+                float(score_objects),
+                float(cur_lives),
+            ],
+            dtype=float,
+        )
+        assert len(metadata) == 7
+        posarray = np.array(pos.tuple, dtype=float)
+        assert len(posarray) == 5
+        array = np.concatenate([metadata, posarray]).astype(np.float32)
+        return array
 
     def get_state(self) -> np.ndarray:
         """
@@ -497,7 +530,7 @@ class Montezuma(AtariEnv):
         assert len(metadata) == 7
         posarray = np.array(pos.tuple, dtype=float)
         assert len(posarray) == 5
-        array = np.concatenate([full_state, metadata, posarray]).astype(float)
+        array = np.concatenate([full_state, metadata, posarray]).astype(np.float32)
         return array
 
     def set_state(self, state: np.ndarray):
