@@ -1,20 +1,8 @@
 """Generic utilities for working with environments."""
-import cv2
 import gym
 from gym.wrappers.time_limit import TimeLimit
 import numpy
 from PIL import Image
-
-
-cv2.ocl.setUseOpenCL(False)
-
-
-def has_time_limit(gym_env: gym.Env) -> bool:
-    """Return True if the environment has a TimeLimit wrapper."""
-    return hasattr(gym_env, "_max_episode_steps") and isinstance(
-        gym_env,
-        gym.wrappers.time_limit.TimeLimit,
-    )
 
 
 def remove_time_limit_from_spec(spec):
@@ -39,17 +27,19 @@ def remove_time_limit(gym_env: gym.Env) -> gym.Env:
                 return gym_env.env
             elif isinstance(gym_env.env, gym.Wrapper) and isinstance(gym_env.env, TimeLimit):
                 gym_env.env = gym_env.env.env
+            # This is an ugly hack to make sure that we can remove the TimeLimit even
+            # if somebody is crazy enough to apply three other wrappers on top of the TimeLimit
             elif isinstance(gym_env.env.env, gym.Wrapper) and isinstance(
                 gym_env.env.env,
                 TimeLimit,
-            ):
+            ):  # pragma: no cover
                 gym_env.env.env = gym_env.env.env.env
             elif isinstance(gym_env.env.env.env, gym.Wrapper) and isinstance(
                 gym_env.env.env.env,
                 TimeLimit,
-            ):
+            ):  # pragma: no cover
                 gym_env.env.env.env = gym_env.env.env.env.env
-            else:
+            else:  # pragma: no cover
                 break
         except AttributeError:
             break

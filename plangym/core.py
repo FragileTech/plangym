@@ -14,7 +14,7 @@ from plangym.utils import process_frame, remove_time_limit
 wrap_callable = Union[Callable[[], gym.Wrapper], Tuple[Callable[..., gym.Wrapper], Dict[str, Any]]]
 
 
-class PlanEnvironment(ABC):
+class PlanEnv(ABC):
     """Inherit from this class to adapt environments to different problems."""
 
     STATE_IS_ARRAY = True
@@ -68,7 +68,22 @@ class PlanEnvironment(ABC):
 
     # Public API -----------------------------------------------------------------------------
     @property
-    def unwrapped(self) -> "PlanEnvironment":
+    def name(self) -> str:
+        """Return is the name of the environment."""
+        return self._name
+
+    @property
+    def obs_shape(self) -> Tuple[int]:
+        """Tuple containing the shape of the observations returned by the Environment."""
+        raise NotImplementedError()
+
+    @property
+    def action_shape(self) -> Tuple[int]:
+        """Tuple containing the shape of the actions applied to the Environment."""
+        raise NotImplementedError()
+
+    @property
+    def unwrapped(self) -> "PlanEnv":
         """
         Completely unwrap this Environment.
 
@@ -87,21 +102,6 @@ class PlanEnvironment(ABC):
         that contains an RGB representation of the environment state.
         """
         return self._return_image
-
-    @property
-    def name(self) -> str:
-        """Return is the name of the environment."""
-        return self._name
-
-    @property
-    def obs_shape(self) -> Tuple[int]:
-        """Tuple containing the shape of the observations returned by the Environment."""
-        raise NotImplementedError()
-
-    @property
-    def action_shape(self) -> Tuple[int]:
-        """Tuple containing the shape of the actions applied to the Environment."""
-        raise NotImplementedError()
 
     def get_image(self) -> Union[None, np.ndarray]:
         """
@@ -212,7 +212,7 @@ class PlanEnvironment(ABC):
         ]
         return tuple(list(x) for x in zip(*data))
 
-    def clone(self, **kwargs) -> "PlanEnvironment":
+    def clone(self, **kwargs) -> "PlanEnv":
         """Return a copy of the environment."""
         clone_kwargs = dict(
             name=self.name,
@@ -450,10 +450,11 @@ class PlanEnvironment(ABC):
         raise NotImplementedError()
 
 
-class PlangymEnv(PlanEnvironment):
+class PlangymEnv(PlanEnv):
     """Base class for implementing OpenAI ``gym`` environments in ``plangym``."""
 
-    AVAILABLE_OBS_TYPE = {"coords", "rgb", "grayscale"}
+    AVAILABLE_RENDER_MODES = {"human", "rgb_array", None}
+    AVAILABLE_OBS_TYPES = {"coords", "rgb", "grayscale"}
     DEFAULT_OBS_TYPE = "coords"
 
     def __init__(
@@ -494,9 +495,9 @@ class PlangymEnv(PlanEnvironment):
         self._obs_space = None
         self._action_space = None
         if obs_type is not None:
-            assert obs_type in self.AVAILABLE_OBS_TYPE, (
+            assert obs_type in self.AVAILABLE_OBS_TYPES, (
                 f"obs_type {obs_type} is not accepted. Available "
-                f"values are: {self.AVAILABLE_OBS_TYPE}"
+                f"values are: {self.AVAILABLE_OBS_TYPES}"
             )
         self._obs_type = obs_type or self.DEFAULT_OBS_TYPE
         super(PlangymEnv, self).__init__(
@@ -586,6 +587,8 @@ class PlangymEnv(PlanEnvironment):
             self._init_obs_space_grayscale()
         elif self.obs_type == "coords":
             self._init_obs_space_coords()
+        if self.observation_space is None:
+            self._obs_space = self.gym_env.observation_space
 
     def _init_action_space(self):
         self._action_space = self.gym_env.action_space

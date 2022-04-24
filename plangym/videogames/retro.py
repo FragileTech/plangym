@@ -41,7 +41,7 @@ class ActionDiscretizer(gym.ActionWrapper):
 class RetroEnv(VideogameEnv):
     """Environment for playing ``gym-retro`` games."""
 
-    AVAILABLE_OBS_TYPE = {"coords", "rgb", "grayscale", "ram"}
+    AVAILABLE_OBS_TYPES = {"coords", "rgb", "grayscale", "ram"}
     SINGLETON = True
 
     def __init__(

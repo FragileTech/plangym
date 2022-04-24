@@ -4,10 +4,10 @@ import numpy
 import pytest
 
 from plangym.api_tests import batch_size, display, TestPlanEnvironment  # noqa: F401
-from plangym.core import PlanEnvironment
+from plangym.core import PlanEnv
 
 
-class DummyPlanEnvironment(PlanEnvironment):
+class DummyPlanEnv(PlanEnv):
     _step_count = 0
 
     @property
@@ -47,11 +47,11 @@ class DummyPlanEnvironment(PlanEnvironment):
         return self
 
 
-environments = [lambda: DummyPlanEnvironment(name="dummy")]
+environments = [lambda: DummyPlanEnv(name="dummy")]
 
 
 @pytest.fixture(params=environments, scope="class")
-def env(request) -> PlanEnvironment:
+def env(request) -> PlanEnv:
     return request.param()
 
 

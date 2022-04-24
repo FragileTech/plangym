@@ -6,7 +6,7 @@ import traceback
 
 import numpy
 
-from plangym.core import PlanEnvironment
+from plangym.core import PlanEnv
 from plangym.vectorization.env import VectorizedEnvironment
 
 
@@ -467,7 +467,7 @@ class ParallelEnvironment(VectorizedEnvironment):
         # Initialize local copy last to tolerate singletons better
         super(ParallelEnvironment, self).setup()
 
-    def clone(self, **kwargs) -> "PlanEnvironment":
+    def clone(self, **kwargs) -> "PlanEnv":
         """Return a copy of the environment."""
         default_kwargs = dict(blocking=self.blocking)
         default_kwargs.update(kwargs)

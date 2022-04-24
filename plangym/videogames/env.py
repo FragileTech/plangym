@@ -15,7 +15,7 @@ LIFE_KEY = "lifes"
 class VideogameEnv(PlangymEnv, ABC):
     """Common interface for working with video games that run using an emulator."""
 
-    AVAILABLE_OBS_TYPE = {"rgb", "grayscale", "ram"}
+    AVAILABLE_OBS_TYPES = {"rgb", "grayscale", "ram"}
     DEFAULT_OBS_TYPE = "rgb"
 
     def __init__(

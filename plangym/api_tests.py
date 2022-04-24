@@ -3,11 +3,12 @@ import os
 from typing import Iterable
 import warnings
 
+import gym
 import numpy as np
 import pytest
 from pyvirtualdisplay import Display
 
-from plangym.core import PlanEnvironment
+from plangym.core import PlanEnv
 from plangym.vectorization.env import VectorizedEnvironment
 from plangym.videogames.env import LIFE_KEY
 
@@ -84,6 +85,17 @@ class TestPlanEnvironment:
     def test_name(self, env):
         assert isinstance(env.name, str)
 
+    def test_obs_shape(self, env):
+        assert hasattr(env, "obs_shape")
+        assert isinstance(env.obs_shape, tuple)
+        if env.obs_shape:
+            for val in env.obs_shape:
+                assert isinstance(val, int)
+        obs = env.reset(return_state=False)
+        assert obs.shape == env.obs_shape
+        obs, *_ = env.step(env.sample_action())
+        assert obs.shape == env.obs_shape
+
     def test_action_shape(self, env):
         assert hasattr(env, "action_shape")
         assert isinstance(env.action_shape, tuple)
@@ -91,15 +103,8 @@ class TestPlanEnvironment:
             for val in env.action_shape:
                 assert isinstance(val, int)
 
-    def test_obs_shape(self, env):
-        assert hasattr(env, "obs_shape")
-        assert isinstance(env.obs_shape, tuple)
-        if env.obs_shape:
-            for val in env.obs_shape:
-                assert isinstance(val, int)
-
     def test_unwrapped(self, env):
-        assert isinstance(env.unwrapped, PlanEnvironment)
+        assert isinstance(env.unwrapped, PlanEnv)
 
     @pytest.mark.skipif(os.getenv("SKIP_RENDER", False), reason="No display in CI.")
     @pytest.mark.parametrize("return_image", [True, False])
@@ -147,9 +152,6 @@ class TestPlanEnvironment:
         obs_is_array = isinstance(obs, np.ndarray)
         assert state_is_array if env.STATE_IS_ARRAY else not state_is_array
         assert obs_is_array if env.OBS_IS_ARRAY else not obs_is_array
-        # assert (
-        #    env.obs_shape == obs.shape
-        # ), f"env.obs_shape {tuple(env.obs_shape)}, obs: {obs.shape}"
 
     @pytest.mark.parametrize("dt", [1, 3])
     @pytest.mark.parametrize("state", [None, True])
@@ -243,8 +245,8 @@ class TestPlanEnvironment:
             assert len(img.shape) == 2 or len(img.shape) == 3
 
 
-class TestPlangymEnv(TestPlanEnvironment):
-    CLASS_ATTRIBUTES = ("AVAILABLE_OBS_TYPE", "DEFAULT_OBS_TYPE")
+class TestPlangymEnv:
+    CLASS_ATTRIBUTES = ("AVAILABLE_OBS_TYPES", "DEFAULT_OBS_TYPE")
     PROPERTIES = (
         "gym_env",
         "obs_shape",
@@ -272,6 +274,32 @@ class TestPlangymEnv(TestPlanEnvironment):
         for name in self.PROPERTIES:
             assert hasattr(env, name), f"Env {env.name} does not have property {name}"
 
+    def test_obs_type(self, env):
+        assert isinstance(env.obs_type, str)
+        assert env.obs_type in env.AVAILABLE_OBS_TYPES
+        assert env.DEFAULT_OBS_TYPE in env.AVAILABLE_OBS_TYPES
+
+    def test_obvervation_space(self, env):
+        assert hasattr(env, "observation_space")
+        if env.observation_space is None:
+            env.setup()
+        assert isinstance(env.observation_space, gym.Space), (
+            env.observation_space,
+            env.DEFAULT_OBS_TYPE,
+        )
+        assert env.observation_space.shape == env.obs_shape
+        if env.observation_space.shape:
+            assert env.observation_space.shape == env.reset(return_state=False).shape
+
+    def test_action_space(self, env):
+        assert hasattr(env, "action_space")
+        if env.action_space is None:
+            env.setup()
+        assert isinstance(env.action_space, gym.Space)
+        assert env.action_space.shape == env.action_shape
+        if env.action_space.shape:
+            assert env.action_space.shape == env.sample_action().shape
+
     @pytest.mark.parametrize("delay_setup", [True, False])
     def test_delay_setup(self, env, delay_setup):
         if env.SINGLETON or isinstance(env, VectorizedEnvironment):
@@ -280,12 +308,17 @@ class TestPlangymEnv(TestPlanEnvironment):
         assert new_env._gym_env is None if delay_setup else new_env._gym_env is not None
         assert env.gym_env is not None
 
-    def test_action_space(self, env):
-        assert hasattr(env, "action_space")
-        # Singleton / delayed envs may not be properly initialized. In that case test separately
-        if env.sample_action() is not None:
-            action = env.action_space.sample()
-            assert action is not None
+    def test_has_metadata(self, env):
+        assert hasattr(env, "metadata")
+
+    def test_render_mode(self, env):
+        assert hasattr(env, "render_mode")
+        assert env.render_mode in env.AVAILABLE_RENDER_MODES
+
+    def test_remove_time_limit(self, env):
+        assert isinstance(env.remove_time_limit, bool)
+        if env.remove_time_limit and not env._wrappers:
+            assert "TimeLimit" not in str(env.gym_env), env.gym_env
 
     def test_api_kwargs(self, env):
         if isinstance(env, VectorizedEnvironment):
@@ -302,9 +335,6 @@ class TestPlangymEnv(TestPlanEnvironment):
             warnings.simplefilter("ignore")
             cls(**kwargs)
 
-    def test_obs_space(self, env):
-        assert hasattr(env, "observation_space")
-
     def test_attributes(self, env):
         assert hasattr(env, "reward_range")
         assert hasattr(env, "metadata")
@@ -318,9 +348,9 @@ class TestPlangymEnv(TestPlanEnvironment):
         lifes = env.get_lifes_from_info({})
         assert lifes == -1
 
-    def test_seed(self, env):
-        env.seed()
-        env.seed(1)
+    # def test_seed(self, env):
+    #    env.seed()
+    #    env.seed(1)
 
     def test_terminal(self, env):
         if env.autoreset:

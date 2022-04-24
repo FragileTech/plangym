@@ -64,7 +64,7 @@ warnings.filterwarnings(
 
 
 from plangym.control import Box2DEnv, ClassicControl, DMControlEnv, LunarLander  # noqa: E402
-from plangym.core import PlanEnvironment  # noqa: E402
+from plangym.core import PlanEnv  # noqa: E402
 from plangym.registry import make  # noqa: E402
 from plangym.vectorization import ParallelEnvironment, RayEnv  # noqa: E402
 from plangym.version import __version__  # noqa: E402
