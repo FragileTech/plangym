@@ -78,11 +78,6 @@ class VideogameEnv(PlangymEnv, ABC):
             return 0
 
     @staticmethod
-    def __get_win_condition(info: Dict[str, Any]) -> bool:
-        """Return ``True`` if the current state corresponds to winning the game."""
-        return False
-
-    @staticmethod
     def get_lifes_from_info(info: Dict[str, Any]) -> int:
         """Return the number of lifes remaining in the current game."""
         return info.get("life", -1)

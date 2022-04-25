@@ -3,6 +3,7 @@ import pickle
 from typing import Iterable, Optional, Tuple, Union
 
 import cv2
+import gym
 from gym.envs.registration import registry as gym_registry
 import numpy as np
 
@@ -126,6 +127,14 @@ class CustomMontezuma:
         self.objects_remember_rooms = objects_remember_rooms
         self.only_keys = only_keys
         self.pos = MontezumaPosLevel(0, 0, 0, 0, 0)
+        if self.coords_obs:
+            shape = self.get_coords().shape
+            self.observation_space = gym.spaces.Box(
+                low=-np.inf,
+                high=np.inf,
+                dtype=np.float32,
+                shape=shape,
+            )
 
     def __getattr__(self, e):
         """Forward to gym environment."""
@@ -454,7 +463,9 @@ class MontezumaEnv(AtariEnv):
 
     def init_gym_env(self) -> CustomMontezuma:
         """Initialize the :class:`gum.Env`` instance that the current clas is wrapping."""
-        return CustomMontezuma(**self._gym_env_kwargs)
+        kwargs = self._gym_env_kwargs
+        kwargs["obs_type"] = self.obs_type
+        return CustomMontezuma(**kwargs)
 
     def get_state(self) -> np.ndarray:
         """
