@@ -21,7 +21,9 @@ def generate_test_cases(
     n_workers_values=None,
     render_modes=None,
     obs_types=None,
+    custom_tests=None,
 ) -> PlangymEnv:
+    custom_tests = custom_tests or []
     n_workers_vals = [None] if n_workers_values is None else n_workers_values
     names = [names] if isinstance(names, str) else names
     available_render_modes = (
@@ -52,6 +54,8 @@ def generate_test_cases(
             )
 
         yield _make_env
+    for custom_test in custom_tests:
+        yield custom_test
 
 
 @pytest.fixture(scope="class")
@@ -224,33 +228,6 @@ class TestPlanEnv:
             assert len(new_state) == 0
         step_tuple_test(env, obs, reward, terminal, info, dt=dt)
 
-    def test_step_dt_values(self, env, dt=3, return_state=None):
-        state = None
-        _state, *_ = env.reset(return_state=True)
-        action = env.sample_action()
-
-        data = env.step(action, dt=dt, state=state, return_state=return_state)
-        *new_state, obs, reward, terminal, info = data
-        assert isinstance(data, tuple)
-        # Test return state works correctly
-        should_return_state = (return_state is None and state is not None) or return_state
-        if should_return_state:
-            assert len(new_state) == 1
-            new_state = new_state[0]
-            state_is_array = isinstance(new_state, np.ndarray)
-            assert state_is_array if env.STATE_IS_ARRAY else not state_is_array
-            if state_is_array:
-                assert _state.shape == new_state.shape
-            if not env.SINGLETON:
-                curr_state = env.get_state()
-                assert (new_state == curr_state).all(), (
-                    f"original: {new_state[new_state!= curr_state]} "
-                    f"env: {curr_state[new_state!= curr_state]}"
-                )
-        else:
-            assert len(new_state) == 0
-        step_tuple_test(env, obs, reward, terminal, info, dt=dt)
-
     @pytest.mark.parametrize("states", [None, True, "None_list"])
     @pytest.mark.parametrize("return_state", [None, True, False])
     def test_step_batch(self, env, states, return_state, batch_size):
@@ -293,36 +270,27 @@ class TestPlanEnv:
             dt=dt,
         )
 
+    def test_step_dt_values(self, env, dt=3, return_state=None):
+        state = None
+        _state, *_ = env.reset(return_state=True)
+        action = env.sample_action()
+
+        data = env.step(action, dt=dt, state=state, return_state=return_state)
+        *new_state, obs, reward, terminal, info = data
+        assert isinstance(data, tuple)
+        assert len(new_state) == 0
+        step_tuple_test(env, obs, reward, terminal, info, dt=dt)
+
     @pytest.mark.parametrize("dt", [3, "array"])
-    def test_step_batch_dt(self, env, dt, batch_size, states=None, return_state=None):
+    def test_step_batch_dt_values(self, env, dt, batch_size, states=None, return_state=None):
         dt = dt if dt != "array" else np.random.randint(1, 4, batch_size).astype(int)
         state, _ = env.reset()
-        if states == "None_list":
-            states = [None] * batch_size
-        elif states:
-            states = [copy.deepcopy(state) for _ in range(batch_size)]
-
         actions = [env.sample_action() for _ in range(batch_size)]
 
         data = env.step_batch(actions, dt=dt, states=states, return_state=return_state)
         *new_states, observs, rewards, terminals, infos = data
         assert isinstance(data, tuple)
-        # Test return state works correctly
-        default_returns_state = (
-            return_state is None and isinstance(states, list) and states[0] is not None
-        )
-        should_return_state = return_state or default_returns_state
-        if should_return_state:
-            assert len(new_states) == 1
-            new_states = new_states[0]
-            # Todo: update check when returning batch arrays is available
-            assert isinstance(new_states, list)
-            state_is_array = isinstance(new_states[0], np.ndarray)
-            assert state_is_array if env.STATE_IS_ARRAY else not state_is_array
-            if env.STATE_IS_ARRAY:
-                assert state.shape == new_states[0].shape
-        else:
-            assert len(new_states) == 0, (len(new_states), should_return_state, return_state)
+        assert len(new_states) == 0, (len(new_states), return_state)
 
         step_batch_tuple_test(
             env=env,
@@ -441,16 +409,9 @@ class TestPlangymEnv:
         if env.remove_time_limit and not env._wrappers:
             assert "TimeLimit" not in str(env.gym_env), env.gym_env
 
-    def __test_get_lifes_from_info(self, env):
-        info = {"lifes": 3}
-        lifes = env.get_lifes_from_info(info)
-        assert lifes == 3
-        lifes = env.get_lifes_from_info({})
-        assert lifes == -1
-
-    # def test_seed(self, env):
-    #    env.seed()
-    #    env.seed(1)
+    def test_seed(self, env):
+        env.seed()
+        env.seed(1)
 
     def test_terminal(self, env):
         if env.autoreset:
