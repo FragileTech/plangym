@@ -124,6 +124,8 @@ class AtariEnv(VideogameEnv):
         self._difficulty = difficulty
         self._repeat_action_probability = repeat_action_probability
         self._full_action_space = full_action_space
+        self.STATE_IS_ARRAY = array_state
+        self.DEFAULT_OBS_TYPE = self._get_default_obs_type(name, obs_type)
         super(AtariEnv, self).__init__(
             name=name,
             frameskip=frameskip,
@@ -136,7 +138,6 @@ class AtariEnv(VideogameEnv):
             wrappers=wrappers,
             **kwargs,
         )
-        self.STATE_IS_ARRAY = array_state
 
     @property
     def ale(self):
@@ -178,16 +179,14 @@ class AtariEnv(VideogameEnv):
         """Return the observation_space of the environment."""
         return self.gym_env.observation_space
 
-    @property
-    def DEFAULT_OBS_TYPE(self) -> str:
+    @staticmethod
+    def _get_default_obs_type(name, obs_type) -> str:
         """Return the observation type of the initialize Atari gym environment."""
-        if "ram" in self.name or self.obs_type == "ram":
+        if "ram" in name or obs_type == "ram":
             return "ram"
-        elif self.obs_type == "grayscale":
+        elif obs_type == "grayscale":
             return "grayscale"
-        elif self.obs_type == "rgb":
-            return "rgb"
-        return self.__class__.DEFAULT_OBS_TYPE
+        return "rgb"
 
     def get_lifes_from_info(self, info: Dict[str, Any]) -> int:
         """Return the number of lives remaining in the current game."""

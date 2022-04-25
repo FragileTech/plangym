@@ -15,9 +15,8 @@ except ImportError:
 try:
     from plangym.videogames.atari import AtariEnv
 
-    AtariEnv(name="MsPacman-v0", clone_seeds=True, autoreset=True)
     SKIP_ATARI_TESTS = False
-except Exception:
+except ImportError:
     SKIP_ATARI_TESTS = True
 
 try:

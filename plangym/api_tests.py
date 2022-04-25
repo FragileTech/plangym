@@ -25,10 +25,10 @@ def generate_test_cases(
     n_workers_vals = [None] if n_workers_values is None else n_workers_values
     names = [names] if isinstance(names, str) else names
     available_render_modes = (
-        env_class.AVAILABLE_RENDER_MODES if os.getenv("SKIP_RENDER", False) else [None]
+        [None] if os.getenv("SKIP_RENDER", False) else env_class.AVAILABLE_RENDER_MODES
     )
     available_obs_types = (
-        env_class.AVAILABLE_OBS_TYPES if os.getenv("SKIP_RENDER", False) else [None]
+        [None] if os.getenv("SKIP_RENDER", False) else env_class.AVAILABLE_OBS_TYPES
     )
     render_modes = available_render_modes if render_modes is None else render_modes
     obs_types = available_obs_types if obs_types is None else obs_types
@@ -194,10 +194,9 @@ class TestPlanEnv:
         assert state_is_array if env.STATE_IS_ARRAY else not state_is_array
         assert obs_is_array if env.OBS_IS_ARRAY else not obs_is_array
 
-    @pytest.mark.parametrize("dt", [1, 3])
     @pytest.mark.parametrize("state", [None, True])
     @pytest.mark.parametrize("return_state", [None, True, False])
-    def test_step(self, env, state, dt, return_state):
+    def test_step(self, env, state, return_state, dt=1):
         _state, *_ = env.reset(return_state=True)
         if state is not None:
             state = _state
@@ -216,17 +215,86 @@ class TestPlanEnv:
             if state_is_array:
                 assert _state.shape == new_state.shape
             if not env.SINGLETON:
-                assert (
-                    new_state == env.get_state()
-                ).all(), f"original: {state} env: {env.get_state()}"
+                curr_state = env.get_state()
+                assert (new_state == curr_state).all(), (
+                    f"original: {new_state[new_state!= curr_state]} "
+                    f"env: {curr_state[new_state!= curr_state]}"
+                )
         else:
             assert len(new_state) == 0
         step_tuple_test(env, obs, reward, terminal, info, dt=dt)
 
-    @pytest.mark.parametrize("dt", [1, 3, "array"])
+    def test_step_dt_values(self, env, dt=3, return_state=None):
+        state = None
+        _state, *_ = env.reset(return_state=True)
+        action = env.sample_action()
+
+        data = env.step(action, dt=dt, state=state, return_state=return_state)
+        *new_state, obs, reward, terminal, info = data
+        assert isinstance(data, tuple)
+        # Test return state works correctly
+        should_return_state = (return_state is None and state is not None) or return_state
+        if should_return_state:
+            assert len(new_state) == 1
+            new_state = new_state[0]
+            state_is_array = isinstance(new_state, np.ndarray)
+            assert state_is_array if env.STATE_IS_ARRAY else not state_is_array
+            if state_is_array:
+                assert _state.shape == new_state.shape
+            if not env.SINGLETON:
+                curr_state = env.get_state()
+                assert (new_state == curr_state).all(), (
+                    f"original: {new_state[new_state!= curr_state]} "
+                    f"env: {curr_state[new_state!= curr_state]}"
+                )
+        else:
+            assert len(new_state) == 0
+        step_tuple_test(env, obs, reward, terminal, info, dt=dt)
+
     @pytest.mark.parametrize("states", [None, True, "None_list"])
     @pytest.mark.parametrize("return_state", [None, True, False])
-    def test_step_batch(self, env, dt, states, return_state, batch_size):
+    def test_step_batch(self, env, states, return_state, batch_size):
+        dt = 1
+        state, _ = env.reset()
+        if states == "None_list":
+            states = [None] * batch_size
+        elif states:
+            states = [copy.deepcopy(state) for _ in range(batch_size)]
+
+        actions = [env.sample_action() for _ in range(batch_size)]
+
+        data = env.step_batch(actions, dt=dt, states=states, return_state=return_state)
+        *new_states, observs, rewards, terminals, infos = data
+        assert isinstance(data, tuple)
+        # Test return state works correctly
+        default_returns_state = (
+            return_state is None and isinstance(states, list) and states[0] is not None
+        )
+        should_return_state = return_state or default_returns_state
+        if should_return_state:
+            assert len(new_states) == 1
+            new_states = new_states[0]
+            # Todo: update check when returning batch arrays is available
+            assert isinstance(new_states, list)
+            state_is_array = isinstance(new_states[0], np.ndarray)
+            assert state_is_array if env.STATE_IS_ARRAY else not state_is_array
+            if env.STATE_IS_ARRAY:
+                assert state.shape == new_states[0].shape
+        else:
+            assert len(new_states) == 0, (len(new_states), should_return_state, return_state)
+
+        step_batch_tuple_test(
+            env=env,
+            batch_size=batch_size,
+            observs=observs,
+            rewards=rewards,
+            terminals=terminals,
+            infos=infos,
+            dt=dt,
+        )
+
+    @pytest.mark.parametrize("dt", [3, "array"])
+    def test_step_batch_dt(self, env, dt, batch_size, states=None, return_state=None):
         dt = dt if dt != "array" else np.random.randint(1, 4, batch_size).astype(int)
         state, _ = env.reset()
         if states == "None_list":
@@ -318,7 +386,10 @@ class TestPlangymEnv:
     def test_obs_type(self, env):
         assert isinstance(env.obs_type, str)
         assert env.obs_type in env.AVAILABLE_OBS_TYPES
-        assert env.DEFAULT_OBS_TYPE in env.AVAILABLE_OBS_TYPES
+        assert env.DEFAULT_OBS_TYPE in env.AVAILABLE_OBS_TYPES, (
+            str(env.DEFAULT_OBS_TYPE),
+            env.AVAILABLE_OBS_TYPES,
+        )
 
     def test_obvervation_space(self, env):
         assert hasattr(env, "observation_space")
