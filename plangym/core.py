@@ -223,7 +223,7 @@ class PlanEnv(ABC):
         clone_kwargs.update(kwargs)
         return self.__class__(**clone_kwargs)
 
-    def sample_action(self):
+    def sample_action(self):  # pragma: no cover
         """
         Return a valid action that can be used to step the Environment.
 
@@ -669,6 +669,7 @@ class PlangymEnv(PlanEnv):
         """Close the underlying :class:`gym.Env`."""
         if hasattr(self, "_gym_env") and hasattr(self._gym_env, "close"):
             return self._gym_env.close()
+        self._gym_env = None
 
     def init_gym_env(self) -> gym.Env:
         """Initialize the :class:`gym.Env`` instance that the current class is wrapping."""

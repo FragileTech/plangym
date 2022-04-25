@@ -72,10 +72,7 @@ class VideogameEnv(PlangymEnv, ABC):
     @property
     def n_actions(self) -> int:
         """Return the number of actions available."""
-        try:
-            return self.action_space.n
-        except AttributeError:
-            return 0
+        return self.action_space.n
 
     @staticmethod
     def get_lifes_from_info(info: Dict[str, Any]) -> int:

@@ -383,6 +383,8 @@ class TestPlangymEnv:
     def test_gym_env(self, env):
         assert hasattr(env.gym_env, "reset")
         assert hasattr(env.gym_env, "step")
+        if not isinstance(env, VectorizedEnvironment) and not env.SINGLETON:
+            env.close()
 
     def test_reward_range(self, env):
         env.reward_range

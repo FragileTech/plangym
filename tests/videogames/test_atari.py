@@ -19,32 +19,13 @@ from plangym.api_tests import (  # noqa: F401
 )
 
 
-def pacman_obs():
-    return AtariEnv(name="MsPacman-v0", clone_seeds=True, autoreset=True)
-
-
 def qbert_ram():
-    return AtariEnv(name="Qbert-ram-v0", clone_seeds=False, autoreset=False)
+    return AtariEnv(name="Qbert-ram-v4", clone_seeds=False, autoreset=False)
 
 
-def pong_obs_ram():
-    timelimit = [(TimeLimit, {"max_episode_steps": 1000})]
-    return AtariEnv(
-        name="PongDeterministic-v4",
-        remove_time_limit=True,
-        possible_to_win=True,
-        wrappers=timelimit,
-    )
-
-
-def qbert_new_ale():
-    return AtariEnv(name="ALE/Qbert-v5")
-
-
-# environments = [pacman_obs, qbert_ram, pong_obs_ram, qbert_new_ale]
-
-
-@pytest.fixture(params=generate_test_cases(ATARI, AtariEnv), scope="module")
+@pytest.fixture(
+    params=generate_test_cases(ATARI, AtariEnv, custom_tests=[qbert_ram]), scope="module"
+)
 def env(request) -> AtariEnv:
     env = request.param()
     yield env
@@ -58,7 +39,7 @@ class TestAtariEnv:
         assert (ram == env.get_ram()).all()
 
     def test_get_image(self):
-        env = pacman_obs()
+        env = qbert_ram()
         obs = env.get_image()
         assert isinstance(obs, np.ndarray)
 

@@ -225,7 +225,7 @@ class ExternalProcess:
                     if not conn.poll(0.1):
                         continue
                     message, payload = conn.recv()
-                except (EOFError, KeyboardInterrupt):
+                except (EOFError, KeyboardInterrupt):  # pragma: no cover
                     break
                 if message == self._ACCESS:
                     name = payload

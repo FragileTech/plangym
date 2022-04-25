@@ -15,7 +15,7 @@ def montezuma():
 
 
 def montezuma_unproc():
-    return MontezumaEnv(obs_type="rgb", autoreset=True)
+    return MontezumaEnv(obs_type="rgb", autoreset=True, only_keys=True)
 
 
 def parallel_montezuma():

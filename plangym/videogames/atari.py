@@ -365,7 +365,7 @@ class AtariPyEnvironment(AtariEnv):
         else:
             self.gym_env.unwrapped.restore_state(state)
 
-    def get_ram(self) -> numpy.ndarray:
+    def get_ram(self) -> numpy.ndarray:  # pragma: no cover
         """
         Return a numpy array containing the content of the emulator's RAM.
 
