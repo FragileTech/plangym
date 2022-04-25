@@ -3,6 +3,7 @@ CLASSIC_CONTROL = [
     "CartPole-v0",
     "CartPole-v1",
     "MountainCarContinuous-v0",
+    "MountainCar-v0",
     "Pendulum-v1",
     "Acrobot-v1",
 ]

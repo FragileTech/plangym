@@ -3,12 +3,13 @@ from typing import Tuple
 import numpy
 import pytest
 
-from plangym.api_tests import batch_size, display, TestPlanEnvironment  # noqa: F401
-from plangym.core import PlanEnvironment
+from plangym.api_tests import batch_size, display, TestPlanEnv  # noqa: F401
+from plangym.core import PlanEnv
 
 
-class DummyPlanEnvironment(PlanEnvironment):
+class DummyPlanEnv(PlanEnv):
     _step_count = 0
+    _state = None
 
     @property
     def obs_shape(self) -> Tuple[int]:
@@ -24,12 +25,15 @@ class DummyPlanEnvironment(PlanEnvironment):
         return numpy.zeros((10, 10, 3))
 
     def get_state(self):
-        state = numpy.ones(10)
-        state[-1] = self._step_count
-        return state
+        if self._state is None:
+            state = numpy.ones(10)
+            state[-1] = self._step_count
+            self._state = state
+            return state
+        return self._state
 
     def set_state(self, state: numpy.ndarray) -> None:
-        pass
+        self._state = state
 
     def sample_action(self):
         return 0
@@ -47,11 +51,16 @@ class DummyPlanEnvironment(PlanEnvironment):
         return self
 
 
-environments = [lambda: DummyPlanEnvironment(name="dummy")]
+environments = [lambda: DummyPlanEnv(name="dummy")]
 
 
 @pytest.fixture(params=environments, scope="class")
-def env(request) -> PlanEnvironment:
+def env(request) -> PlanEnv:
+    return request.param()
+
+
+@pytest.fixture(params=environments, scope="class")
+def plangym_env(request) -> PlanEnv:
     return request.param()
 
 

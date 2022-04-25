@@ -13,15 +13,14 @@ except ImportError:
     SKIP_RAY_TESTS = True
 
 try:
-    from plangym.atari import AtariEnv
+    from plangym.videogames.atari import AtariEnv
 
-    AtariEnv(name="MsPacman-v0", clone_seeds=True, autoreset=True)
     SKIP_ATARI_TESTS = False
-except Exception:
+except ImportError:
     SKIP_ATARI_TESTS = True
 
 try:
-    from plangym.dm_control import DMControlEnv
+    from plangym.control.dm_control import DMControlEnv
 
     DMControlEnv(name="walker-run", frameskip=3)
     SKIP_DM_CONTROL_TESTS = False

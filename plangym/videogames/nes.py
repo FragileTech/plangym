@@ -99,7 +99,7 @@ class NesEnv(VideogameEnv):
 class MarioEnv(NesEnv):
     """Interface for using gym-super-mario-bros in plangym."""
 
-    AVAILABLE_OBS_TYPE = {"coords", "rgb", "grayscale", "ram"}
+    AVAILABLE_OBS_TYPES = {"coords", "rgb", "grayscale", "ram"}
     MOVEMENTS = {
         "complex": COMPLEX_MOVEMENT,
         "simple": SIMPLE_MOVEMENT,

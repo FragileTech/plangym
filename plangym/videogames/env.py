@@ -15,7 +15,7 @@ LIFE_KEY = "lifes"
 class VideogameEnv(PlangymEnv, ABC):
     """Common interface for working with video games that run using an emulator."""
 
-    AVAILABLE_OBS_TYPE = {"rgb", "grayscale", "ram"}
+    AVAILABLE_OBS_TYPES = {"rgb", "grayscale", "ram"}
     DEFAULT_OBS_TYPE = "rgb"
 
     def __init__(
@@ -72,15 +72,7 @@ class VideogameEnv(PlangymEnv, ABC):
     @property
     def n_actions(self) -> int:
         """Return the number of actions available."""
-        try:
-            return self.action_space.n
-        except AttributeError:
-            return 0
-
-    @staticmethod
-    def __get_win_condition(info: Dict[str, Any]) -> bool:
-        """Return ``True`` if the current state corresponds to winning the game."""
-        return False
+        return self.action_space.n
 
     @staticmethod
     def get_lifes_from_info(info: Dict[str, Any]) -> int:

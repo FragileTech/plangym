@@ -41,7 +41,7 @@ class ActionDiscretizer(gym.ActionWrapper):
 class RetroEnv(VideogameEnv):
     """Environment for playing ``gym-retro`` games."""
 
-    AVAILABLE_OBS_TYPE = {"coords", "rgb", "grayscale", "ram"}
+    AVAILABLE_OBS_TYPES = {"coords", "rgb", "grayscale", "ram"}
     SINGLETON = True
 
     def __init__(
@@ -139,7 +139,7 @@ class RetroEnv(VideogameEnv):
         return state
 
     @staticmethod
-    def get_win_condition(info: Dict[str, Any]) -> bool:
+    def get_win_condition(info: Dict[str, Any]) -> bool:  # pragma: no cover
         """Get win condition for games that have the end of the screen available."""
         end_screen = info.get("screen_x", 0) >= info.get("screen_x_end", 1e6)
         terminal = info.get("x", 0) >= info.get("screen_x_end", 1e6) or end_screen

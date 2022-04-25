@@ -6,7 +6,7 @@ from gym.spaces import Space
 import numpy
 import numpy as np
 
-from plangym.core import PlanEnvironment, PlangymEnv
+from plangym.core import PlanEnv, PlangymEnv
 
 
 class VectorizedEnvironment(PlangymEnv, ABC):
@@ -17,7 +17,7 @@ class VectorizedEnvironment(PlangymEnv, ABC):
     when calling ``step_batch``.
 
     It creates a local copy of the environment that is the target of all the other
-    methods of :class:`PlanEnvironment`. In practise, a :class:`VectorizedEnvironment`
+    methods of :class:`PlanEnv`. In practise, a :class:`VectorizedEnvironment`
     acts as a wrapper of an environment initialized with the provided parameters when calling
     __init__.
 
@@ -74,7 +74,7 @@ class VectorizedEnvironment(PlangymEnv, ABC):
         return self._n_workers
 
     @property
-    def plan_env(self) -> PlanEnvironment:
+    def plan_env(self) -> PlanEnv:
         """Environment that is wrapped by the current instance."""
         return self._plangym_env
 
@@ -162,7 +162,7 @@ class VectorizedEnvironment(PlangymEnv, ABC):
             transitions = _states, observs, rewards, terminals, infos
         return transitions
 
-    def create_env_callable(self, **kwargs) -> Callable[..., PlanEnvironment]:
+    def create_env_callable(self, **kwargs) -> Callable[..., PlanEnv]:
         """Return a callable that initializes the environment that is being vectorized."""
 
         def create_env_callable(env_class, **env_kwargs):
@@ -331,7 +331,7 @@ class VectorizedEnvironment(PlangymEnv, ABC):
         dt = dt if dt_is_array else numpy.ones(len(actions), dtype=int) * dt
         return self.make_transitions(actions, states, dt, return_state=return_state)
 
-    def clone(self, **kwargs) -> "PlanEnvironment":
+    def clone(self, **kwargs) -> "PlanEnv":
         """Return a copy of the environment."""
         self_kwargs = dict(
             name=self.name,

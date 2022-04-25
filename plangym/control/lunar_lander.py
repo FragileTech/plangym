@@ -360,6 +360,7 @@ class LunarLander(PlangymEnv):
         continuous: bool = False,
         render_mode: Optional[str] = None,
         remove_time_limit=None,
+        **kwargs,
     ):
         """Initialize a :class:`LunarLander`."""
         self._deterministic = deterministic
@@ -372,6 +373,7 @@ class LunarLander(PlangymEnv):
             wrappers=wrappers,
             delay_setup=delay_setup,
             render_mode=render_mode,
+            **kwargs,
         )
 
     @property
@@ -435,5 +437,9 @@ class LunarLander(PlangymEnv):
     def process_terminal(self, terminal, obs=None, **kwargs) -> bool:
         """Return the terminal condition considering the lunar lander state."""
         obs = [0] if obs is None else obs
-        end = self.gym_env.game_over or abs(obs[0]) >= 1.0 or not self.gym_env.lander.awake
+        end = (
+            self.gym_env.game_over
+            or (self.obs_type == "coords" and abs(obs[0]) >= 1.0)
+            or not self.gym_env.lander.awake
+        )
         return terminal or end

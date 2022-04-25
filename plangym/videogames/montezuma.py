@@ -1,8 +1,9 @@
 """Implementation of the montezuma environment adapted for planning problems."""
 import pickle
-import typing
+from typing import Iterable, Optional, Tuple, Union
 
 import cv2
+import gym
 from gym.envs.registration import registry as gym_registry
 import numpy as np
 
@@ -87,26 +88,23 @@ KEY_BITS = 0x8 | 0x4 | 0x2
 
 
 class CustomMontezuma:
-    """Montezuma environment that tracks the room and position of Panama Joe."""
-
-    TARGET_SHAPE = (190, 210)
-    MAX_PIX_VALUE = 255
+    """MontezumaEnv environment that tracks the room and position of Panama Joe."""
 
     def __init__(
         self,
         check_death: bool = True,
-        unprocessed_state: bool = False,
+        obs_type: str = "rgb",
         score_objects: bool = False,
-        x_repeat=2,
-        objects_from_pixels=False,
-        objects_remember_rooms=False,
-        only_keys=False,
+        objects_from_pixels: bool = False,
+        objects_remember_rooms: bool = False,
+        only_keys: bool = False,
+        death_room_8: bool = True,
     ):  # TODO: version that also considers the room objects were found in
         """Initialize a :class:`CustomMontezuma`."""
         spec = gym_registry.spec("MontezumaRevengeDeterministic-v4")
         # not actually needed, but we feel safer
-        spec.max_episode_steps = None
-        spec.max_episode_time = None
+        spec.max_episode_steps = int(1e100)
+        spec.max_episode_time = int(1e100)
         self.env = spec.make()
         self.env.reset()
         self.score_objects = score_objects
@@ -118,49 +116,91 @@ class CustomMontezuma:
         self.room_time = (None, None)
         self.room_threshold = 40
         self.unwrapped.seed(0)
-        self.unprocessed_state = unprocessed_state
+        self.coords_obs = obs_type == "coords"
         self.state = []
         self.ram_death_state = -1
-        self.x_repeat = x_repeat
+        self._x_repeat = 2
+        self._death_room_8 = death_room_8
         self.cur_lives = 5
         self.ignore_ram_death = False
         self.objects_from_pixels = objects_from_pixels
         self.objects_remember_rooms = objects_remember_rooms
         self.only_keys = only_keys
         self.pos = MontezumaPosLevel(0, 0, 0, 0, 0)
+        if self.coords_obs:
+            shape = self.get_coords().shape
+            self.observation_space = gym.spaces.Box(
+                low=-np.inf,
+                high=np.inf,
+                dtype=np.float32,
+                shape=shape,
+            )
 
     def __getattr__(self, e):
         """Forward to gym environment."""
         return getattr(self.env, e)
 
-    def reset(self) -> np.ndarray:
+    def reset(self, seed=None, return_info: bool = False) -> np.ndarray:
         """Reset the environment."""
-        unprocessed_state = self.env.reset()
+        obs = self.env.reset()
         self.cur_lives = 5
         for _ in range(3):
-            unprocessed_state = self.env.step(0)[0]
+            obs, *_, info = self.env.step(0)
         self.ram = self.env.unwrapped.ale.getRAM()
         self.cur_score = 0
         self.cur_steps = 0
         self.ram_death_state = -1
         self.pos = None
-        self.pos = self.pos_from_unprocessed_state(
-            self.get_face_pixels(unprocessed_state),
-            unprocessed_state,
+        self.pos = self.pos_from_obs(
+            self.get_face_pixels(obs),
+            obs,
         )
         if self.get_pos().room not in self.rooms:
             self.rooms[self.get_pos().room] = (
                 False,
-                unprocessed_state[50:].repeat(self.x_repeat, axis=1),
+                obs[50:].repeat(self._x_repeat, axis=1),
             )
         self.room_time = (self.get_pos().room, 0)
-        if self.unprocessed_state:
-            return unprocessed_state
-        return self.get_observation(unprocessed_state)
+        if self.coords_obs:
+            return self.get_coords()
+        return obs
 
-    def pos_from_unprocessed_state(self, face_pixels, unprocessed_state) -> MontezumaPosLevel:
+    def step(self, action) -> Tuple[np.ndarray, float, bool, dict]:
+        """Step the environment."""
+        obs, reward, done, info = self.env.step(action)
+        self.ram = self.env.unwrapped.ale.getRAM()
+        self.cur_steps += 1
+
+        face_pixels = self.get_face_pixels(obs)
+        pixel_death = self.is_pixel_death(obs, face_pixels)
+        ram_death = self.is_ram_death()
+        # TODO: remove all this stuff
+        if self.check_death and pixel_death:
+            done = True
+        elif self.check_death and not pixel_death and ram_death:
+            done = True
+
+        self.cur_score += reward
+        self.pos = self.pos_from_obs(face_pixels, obs)
+        if self.pos.room != self.room_time[0]:
+            self.room_time = (self.pos.room, 0)
+        self.room_time = (self.pos.room, self.room_time[1] + 1)
+        if self.pos.room not in self.rooms or (
+            self.room_time[1] == self.room_threshold and not self.rooms[self.pos.room][0]
+        ):
+            self.rooms[self.pos.room] = (
+                self.room_time[1] == self.room_threshold,
+                obs[50:].repeat(self._x_repeat, axis=1),
+            )
+        if self._death_room_8:
+            done = done or self.pos.room == 8
+        if self.coords_obs:
+            return self.get_coords(), reward, done, info
+        return obs, reward, done, info
+
+    def pos_from_obs(self, face_pixels, obs) -> MontezumaPosLevel:
         """Extract the information of the position of Panama Joe."""
-        face_pixels = [(y, x * self.x_repeat) for y, x in face_pixels]
+        face_pixels = [(y, x * self._x_repeat) for y, x in face_pixels]
         if len(face_pixels) == 0:
             assert self.pos is not None, "No face pixel and no previous pos"
             return self.pos  # Simply re-use the same position
@@ -190,16 +230,16 @@ class CustomMontezuma:
         if self.score_objects:  # TODO: detect objects from the frame!
             if not self.objects_from_pixels:
                 score = self.ram[65]
-                if self.only_keys:
+                if self.only_keys:  # pragma: no cover
                     # These are the key bytes
                     score &= KEY_BITS
             else:
-                score = self.get_objects_from_pixels(unprocessed_state, room, old_objects)
+                score = self.get_objects_from_pixels(obs, room, old_objects)
         return MontezumaPosLevel(level, score, room, x, y)
 
-    def get_objects_from_pixels(self, unprocessed_state, room, old_objects):
+    def get_objects_from_pixels(self, obs, room, old_objects):
         """Extract the position of the objects in the provided observation."""
-        object_part = (unprocessed_state[25:45, 55:110, 0] != 0).astype(np.uint8) * 255
+        object_part = (obs[25:45, 55:110, 0] != 0).astype(np.uint8) * 255
         connected_components = cv2.connectedComponentsWithStats(object_part)
         pixel_areas = list(e[-1] for e in connected_components[2])[1:]
 
@@ -224,7 +264,7 @@ class CustomMontezuma:
         else:
             cur_object = 0
             for i, n_pixels in enumerate(OBJECT_PIXELS):
-                if n_pixels in pixel_areas:
+                if n_pixels in pixel_areas:  # pragma: no cover
                     pixel_areas.remove(n_pixels)
                     cur_object |= 1 << i
 
@@ -233,23 +273,23 @@ class CustomMontezuma:
                 cur_object &= KEY_BITS
             return cur_object
 
-    def get_observation(self, unprocessed_state) -> np.ndarray:
+    def get_coords(self) -> np.ndarray:
         """Return an observation containing the position and the flattened screen of the game."""
-        pos = np.array([self.pos.x, self.pos.y, self.pos.room])
-        return np.concatenate([unprocessed_state.flatten(), pos])
+        coords = np.array([self.pos.x, self.pos.y, self.pos.room, self.score_objects])
+        return coords
 
-    def state_to_numpy(self):
+    def state_to_numpy(self) -> np.ndarray:
         """Return a numpy array containing the current state of the game."""
         state = self.unwrapped.clone_state(include_rng=False)
         state = np.frombuffer(pickle.dumps(state), dtype=np.uint8)
         return state
 
-    def _restore_state(self, state):
+    def _restore_state(self, state) -> None:
         """Restore the state of the game from the provided numpy array."""
         state = pickle.loads(state.tobytes())
         self.unwrapped.restore_state(state)
 
-    def get_restore(self):
+    def get_restore(self) -> tuple:
         """Return a tuple containing all the information needed to clone the state of the env."""
         return (
             self.state_to_numpy(),
@@ -262,7 +302,7 @@ class CustomMontezuma:
             self.cur_lives,
         )
 
-    def restore(self, data):
+    def restore(self, data) -> None:
         """Restore the state of the env from the provided tuple."""
         (
             full_state,
@@ -283,36 +323,35 @@ class CustomMontezuma:
         self.room_time = room_time
         assert len(self.room_time) == 2
         self.ram_death_state = ram_death_state
-        return
 
-    def is_transition_screen(self, unprocessed_state):
+    def is_transition_screen(self, obs) -> bool:
         """Return True if the current observation corresponds to a transition between rooms."""
-        unprocessed_state = unprocessed_state[50:, :, :]
+        obs = obs[50:, :, :]
         # The screen is a transition screen if it is all black or if its color is made
         # up only of black and (0, 28, 136), which is a color seen in the transition
         # screens between two levels.
-        unprocessed_one = unprocessed_state[:, :, 1]
-        unprocessed_two = unprocessed_state[:, :, 2]
+        unprocessed_one = obs[:, :, 1]
+        unprocessed_two = obs[:, :, 2]
         return (
-            np.sum(unprocessed_state[:, :, 0] == 0)
+            np.sum(obs[:, :, 0] == 0)
             + np.sum((unprocessed_one == 0) | (unprocessed_one == 28))
             + np.sum((unprocessed_two == 0) | (unprocessed_two == 136))
-        ) == unprocessed_state.size
+        ) == obs.size
 
-    def get_face_pixels(self, unprocessed_state):
+    def get_face_pixels(self, obs) -> set:
         """Return the pixels containing the face of Paname Joe."""
         # TODO: double check that this color does not re-occur somewhere else
         # in the environment.
-        return set(zip(*np.where(unprocessed_state[50:, :, 0] == 228)))
+        return set(zip(*np.where(obs[50:, :, 0] == 228)))
 
-    def is_pixel_death(self, unprocessed_state, face_pixels):
+    def is_pixel_death(self, obs, face_pixels):
         """Return a death signal extracted from the observation of the environment."""
         # There are no face pixels and yet we are not in a transition screen. We
         # must be dead!
         if len(face_pixels) == 0:
             # All of the screen except the bottom is black: this is not a death but a
             # room transition. Ignore.
-            if self.is_transition_screen(unprocessed_state):
+            if self.is_transition_screen(obs):  # pragma: no cover
                 return False
             return True
 
@@ -321,57 +360,27 @@ class CustomMontezuma:
         # the face pixels will be DISCONNECTED.
         for pixel in face_pixels:
             for neighbor in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                if (pixel[0] + neighbor[0], pixel[1] + neighbor[1]) in face_pixels:
+                if (
+                    pixel[0] + neighbor[0],
+                    pixel[1] + neighbor[1],
+                ) in face_pixels:  # pragma: no cover
                     return False
 
-        return True
+        return True  # pragma: no cover
 
-    def is_ram_death(self):
+    def is_ram_death(self) -> bool:
         """Return a death signal extracted from the ram of the environment."""
-        if self.ram[58] > self.cur_lives:
+        if self.ram[58] > self.cur_lives:  # pragma: no cover
             self.cur_lives = self.ram[58]
         return self.ram[55] != 0 or self.ram[58] < self.cur_lives
 
-    def step(self, action) -> typing.Tuple[np.ndarray, float, bool, dict]:
-        """Step the environment."""
-        unprocessed_state, reward, done, lol = self.env.step(action)
-        self.ram = self.env.unwrapped.ale.getRAM()
-        self.cur_steps += 1
-
-        face_pixels = self.get_face_pixels(unprocessed_state)
-        pixel_death = self.is_pixel_death(unprocessed_state, face_pixels)
-        ram_death = self.is_ram_death()
-        # TODO: remove all this stuff
-        if self.check_death and pixel_death:
-            done = True
-        elif self.check_death and not pixel_death and ram_death:
-            done = True
-
-        self.cur_score += reward
-        self.pos = self.pos_from_unprocessed_state(face_pixels, unprocessed_state)
-        if self.pos.room != self.room_time[0]:
-            self.room_time = (self.pos.room, 0)
-        self.room_time = (self.pos.room, self.room_time[1] + 1)
-        if self.pos.room not in self.rooms or (
-            self.room_time[1] == self.room_threshold and not self.rooms[self.pos.room][0]
-        ):
-            self.rooms[self.pos.room] = (
-                self.room_time[1] == self.room_threshold,
-                unprocessed_state[50:].repeat(self.x_repeat, axis=1),
-            )
-        if self.unprocessed_state:
-            return unprocessed_state, reward, done, lol
-        observs = self.get_observation(unprocessed_state)
-        done = done or observs[-1] == 8
-        return observs, reward, done, lol
-
-    def get_pos(self):
+    def get_pos(self) -> MontezumaPosLevel:
         """Return the current pos."""
         assert self.pos is not None
         return self.pos
 
     @staticmethod
-    def get_room_xy(room):
+    def get_room_xy(room) -> Tuple[Union[None, Tuple[int, int]]]:
         """Get the tuple that encodes the provided room."""
         if KNOWN_XY[room] is None:
             for y, l in enumerate(PYRAMID):
@@ -381,32 +390,32 @@ class CustomMontezuma:
         return KNOWN_XY[room]
 
     @staticmethod
-    def get_room_out_of_bounds(room_x, room_y):
+    def get_room_out_of_bounds(room_x, room_y) -> bool:
         """Return a boolean indicating if the provided tuple represents and invalid room."""
         return room_y < 0 or room_x < 0 or room_y >= len(PYRAMID) or room_x >= len(PYRAMID[0])
 
     @staticmethod
-    def get_room_from_xy(room_x, room_y):
+    def get_room_from_xy(room_x, room_y) -> int:
         """Return the number of the room from a tuple."""
         return PYRAMID[room_y][room_x]
 
     @staticmethod
-    def make_pos(score, pos):
+    def make_pos(score, pos) -> MontezumaPosLevel:
         """Create a MontezumaPosLevel object using the provided data."""
         return MontezumaPosLevel(pos.level, score, pos.room, pos.x, pos.y)
 
-    def render(self, *args, **kwargs):
+    def render(self, mode="human", **kwargs) -> Union[None, np.ndarray]:
         """Render the environment."""
-        return self.env.render()
+        return self.env.render(mode=mode)
 
 
 # ------------------------------------------------------------------------------
 
 
-class Montezuma(AtariEnv):
-    """Plangym implementation of the Montezuma environment optimized for planning."""
+class MontezumaEnv(AtariEnv):
+    """Plangym implementation of the MontezumaEnv environment optimized for planning."""
 
-    AVAILABLE_OBS_TYPE = {"coords", "rgb", "grayscale", "ram"}
+    AVAILABLE_OBS_TYPES = {"coords", "rgb", "grayscale", "ram", None}
 
     def __init__(
         self,
@@ -416,26 +425,25 @@ class Montezuma(AtariEnv):
         autoreset: bool = True,
         delay_setup: bool = False,
         remove_time_limit: bool = True,
-        obs_type: str = "rgb",  # ram | rgb | grayscale
+        obs_type: str = "rgb",  # coords | ram | rgb | grayscale
         mode: int = 0,  # game mode, see Machado et al. 2018
         difficulty: int = 0,  # game difficulty, see Machado et al. 2018
         repeat_action_probability: float = 0.0,  # Sticky action probability
         full_action_space: bool = False,  # Use all actions
-        render_mode: typing.Optional[str] = None,  # None | human | rgb_array
+        render_mode: Optional[str] = None,  # None | human | rgb_array
         possible_to_win: bool = True,
-        wrappers: typing.Iterable[wrap_callable] = None,
+        wrappers: Iterable[wrap_callable] = None,
         array_state: bool = True,
-        clone_seeds: bool = False,
+        clone_seeds: bool = True,
         **kwargs,
     ):
-        """Initialize a :class:`Montezuma`."""
-        self._env_kwargs = kwargs
-        super(Montezuma, self).__init__(
+        """Initialize a :class:`MontezumaEnv`."""
+        super(MontezumaEnv, self).__init__(
             name="MontezumaRevengeDeterministic-v4",
             frameskip=frameskip,
             autoreset=autoreset,
             episodic_life=episodic_life,
-            clone_seeds=False,
+            clone_seeds=clone_seeds,
             delay_setup=delay_setup,
             remove_time_limit=remove_time_limit,
             obs_type=obs_type,
@@ -447,20 +455,20 @@ class Montezuma(AtariEnv):
             possible_to_win=possible_to_win,
             wrappers=wrappers,
             array_state=array_state,
+            **kwargs,
         )
 
-    def __getattr__(self, item):
-        """Forward to the wrapped environment."""
-        return getattr(self.gym_env, item)
-
-    @property
-    def obs_shape(self) -> typing.Tuple[int, ...]:
-        """Return shape of observations (obj_memory, x_pos, y_pos, room)."""
-        return (210, 160, 3) if self._env_kwargs.get("unprocessed_state") else (100803,)
+    def _get_default_obs_type(self, name, obs_type) -> str:
+        value = super(MontezumaEnv, self)._get_default_obs_type(name, obs_type)
+        if obs_type == "coords":
+            value = obs_type
+        return value
 
     def init_gym_env(self) -> CustomMontezuma:
         """Initialize the :class:`gum.Env`` instance that the current clas is wrapping."""
-        return CustomMontezuma(**self._env_kwargs)
+        kwargs = self._gym_env_kwargs
+        kwargs["obs_type"] = self.obs_type
+        return CustomMontezuma(**kwargs)
 
     def get_state(self) -> np.ndarray:
         """
@@ -497,7 +505,7 @@ class Montezuma(AtariEnv):
         assert len(metadata) == 7
         posarray = np.array(pos.tuple, dtype=float)
         assert len(posarray) == 5
-        array = np.concatenate([full_state, metadata, posarray]).astype(float)
+        array = np.concatenate([full_state, metadata, posarray]).astype(np.float32)
         return array
 
     def set_state(self, state: np.ndarray):

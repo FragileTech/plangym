@@ -3,43 +3,33 @@ import numpy
 import numpy as np
 import pytest
 
+from plangym.environment_names import ATARI
 from plangym.videogames.atari import ale_to_ram, AtariEnv
 from tests import SKIP_ATARI_TESTS
 
 
 if SKIP_ATARI_TESTS:
     pytest.skip("Atari not installed, skipping", allow_module_level=True)
-from plangym.api_tests import batch_size, display, TestPlanEnvironment, TestPlangymEnv
-
-
-def pacman_obs():
-    return AtariEnv(name="MsPacman-v0", clone_seeds=True, autoreset=True)
+from plangym.api_tests import (  # noqa: F401
+    batch_size,
+    display,
+    generate_test_cases,
+    TestPlanEnv,
+    TestPlangymEnv,
+)
 
 
 def qbert_ram():
-    return AtariEnv(name="Qbert-ram-v0", clone_seeds=False, autoreset=False)
+    return AtariEnv(name="Qbert-ram-v4", clone_seeds=False, autoreset=False)
 
 
-def pong_obs_ram():
-    timelimit = [(TimeLimit, {"max_episode_steps": 1000})]
-    return AtariEnv(
-        name="PongDeterministic-v4",
-        remove_time_limit=True,
-        possible_to_win=True,
-        wrappers=timelimit,
-    )
-
-
-def qbert_new_ale():
-    return AtariEnv(name="ALE/Qbert-v5")
-
-
-environments = [pacman_obs, qbert_ram, pong_obs_ram, qbert_new_ale]
-
-
-@pytest.fixture(params=environments, scope="class")
+@pytest.fixture(
+    params=generate_test_cases(ATARI, AtariEnv, custom_tests=[qbert_ram]), scope="module"
+)
 def env(request) -> AtariEnv:
-    return request.param()
+    env = request.param()
+    yield env
+    env.close()
 
 
 class TestAtariEnv:
@@ -49,7 +39,7 @@ class TestAtariEnv:
         assert (ram == env.get_ram()).all()
 
     def test_get_image(self):
-        env = pacman_obs()
+        env = qbert_ram()
         obs = env.get_image()
         assert isinstance(obs, np.ndarray)
 
