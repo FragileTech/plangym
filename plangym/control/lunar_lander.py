@@ -303,7 +303,7 @@ class FastGymLunarLander(GymLunarLander):
         if self.game_over or abs(state[0]) >= 1.0:
             done = True
             reward = -100
-        if not self.lander.awake:
+        if not self.lander.awake:  # pragma: no cover
             done = True
             reward = +100
         self.prev_reward = reward

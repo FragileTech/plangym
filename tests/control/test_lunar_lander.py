@@ -9,7 +9,7 @@ from plangym.api_tests import (  # noqa: F401
     TestPlanEnv,
     TestPlangymEnv,
 )
-from plangym.control.lunar_lander import LunarLander
+from plangym.control.lunar_lander import FastGymLunarLander, LunarLander
 
 
 def lunar_lander_det_discrete():
@@ -43,3 +43,13 @@ def env(request) -> LunarLander:
     env = request.param()
     yield env
     env.close()
+
+
+class TestFastGymLunarLander:
+    def test_death(self):
+        gym_env = FastGymLunarLander()
+        gym_env.reset()
+        for _ in range(1000):
+            *_, end, info = gym_env.step(gym_env.action_space.sample())
+            if end:
+                break

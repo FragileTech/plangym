@@ -8,7 +8,7 @@ from plangym.videogames.retro import ActionDiscretizer, RetroEnv
 
 
 pytest.importorskip("retro")
-from plangym.api_tests import batch_size, display, TestPlanEnv, TestPlangymEnv
+from plangym.api_tests import batch_size, display, TestPlanEnv, TestPlangymEnv  # noqa: F401
 
 
 def retro_airstrike():

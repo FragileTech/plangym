@@ -39,11 +39,16 @@ environments = [walker_run, parallel_dm]
 
 
 @pytest.fixture(
-    params=generate_test_cases(DM_CONTROL, DMControlEnv, n_workers_values=[None, 2]),
+    params=generate_test_cases(DM_CONTROL, DMControlEnv, n_workers_values=[None]),
     scope="module",
 )
 def env(request) -> DMControlEnv:
-    return request.param()
+    env = request.param()
+    yield env
+    try:
+        env.close()
+    except Exception:
+        pass
 
 
 class TestDMControl:
@@ -53,7 +58,7 @@ class TestDMControl:
         assert hasattr(env, "action_spec")
         assert hasattr(env, "action_space")
         assert hasattr(env, "render_mode")
-        assert env.render_mode in {"human", "rgb_array", None}
+        assert env.render_mode in {"human", "rgb_array", "coords", None}
 
     @pytest.mark.skipif(os.getenv("SKIP_RENDER", False), reason="No display in CI.")
     def test_render(self, env):

@@ -24,7 +24,8 @@ def qbert_ram():
 
 
 @pytest.fixture(
-    params=generate_test_cases(ATARI, AtariEnv, custom_tests=[qbert_ram]), scope="module"
+    params=generate_test_cases(ATARI, AtariEnv, custom_tests=[qbert_ram]),
+    scope="module",
 )
 def env(request) -> AtariEnv:
     env = request.param()

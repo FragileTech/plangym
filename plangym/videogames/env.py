@@ -114,7 +114,7 @@ class VideogameEnv(PlangymEnv, ABC):
         super(VideogameEnv, self).init_spaces()
         if self.obs_type == "ram":
             if self.DEFAULT_OBS_TYPE == "ram":
-                space = self.gym_env.obs_space
+                space = self.gym_env.observation_space
             else:
                 ram_size = self.get_ram().shape
                 space = gym.spaces.Box(low=0, high=255, dtype=numpy.uint8, shape=ram_size)

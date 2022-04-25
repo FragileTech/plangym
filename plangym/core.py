@@ -508,6 +508,20 @@ class PlangymEnv(PlanEnv):
             return_image=return_image,
         )
 
+    def __str__(self):
+        """Pretty print the environment."""
+        text = (
+            f"{self.__class__} {self.name} with parameters:\n"
+            f"obs_type={self.obs_type}, render_mode={self.render_mode}\n"
+            f"frameskip={self.frameskip}, obs_shape={self.obs_shape},\n"
+            f"action_shape={self.action_shape}"
+        )
+        return text
+
+    def __repr__(self):
+        """Pretty print the environment."""
+        return str(self)
+
     @property
     def gym_env(self):
         """Return the instance of the environment that is being wrapped by plangym."""
@@ -608,7 +622,10 @@ class PlangymEnv(PlanEnv):
 
     def _init_obs_space_coords(self):
         if self.DEFAULT_OBS_TYPE == "coords":
-            self._obs_space = self.gym_env.observation_space
+            if hasattr(self.gym_env, "observation_space"):
+                self._obs_space = self.gym_env.observation_space
+            else:
+                raise NotImplementedError("No observation_space implemented.")
         else:
             img = self.reset(return_state=False)
             cords = self.get_coords_obs(img)
@@ -623,6 +640,7 @@ class PlangymEnv(PlanEnv):
         """
         if hasattr(self.gym_env, "render"):
             return self.gym_env.render(mode="rgb_array")
+        raise NotImplementedError()
 
     def apply_reset(
         self,
@@ -651,7 +669,7 @@ class PlangymEnv(PlanEnv):
         """Return a valid action that can be used to step the Environment chosen at random."""
         if hasattr(self.action_space, "sample"):
             return self.action_space.sample()
-        return self.gym_env.action_space.sample()
+        return self.gym_env.action_space.sample()  # pragma: no cover
 
     def clone(self, **kwargs) -> "PlangymEnv":
         """Return a copy of the environment."""

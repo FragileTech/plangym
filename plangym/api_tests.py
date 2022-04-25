@@ -116,6 +116,9 @@ class TestPlanEnv:
     def test_init(self, env):
         pass
 
+    def test_repr(self, env):
+        assert str(env) == repr(env)
+
     # Test attributes and properties
     # ---------------------------------------------------------------------------------------------
     def test_class_attributes(self, env):
@@ -302,8 +305,11 @@ class TestPlanEnv:
             dt=dt,
         )
 
-    def test_clone_and_close(self, env):
+    @pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning")
+    @pytest.mark.parametrize("delay_setup", [False, True])
+    def test_clone_and_close(self, env, delay_setup):
         if not env.SINGLETON:
+            env.delay_setup = delay_setup
             clone = env.clone()
             if clone.delay_setup:
                 clone.reset()
@@ -361,8 +367,6 @@ class TestPlangymEnv:
 
     def test_obvervation_space(self, env):
         assert hasattr(env, "observation_space")
-        if env.observation_space is None:
-            env.setup()
         assert isinstance(env.observation_space, gym.Space), (
             env.observation_space,
             env.DEFAULT_OBS_TYPE,
@@ -373,18 +377,18 @@ class TestPlangymEnv:
 
     def test_action_space(self, env):
         assert hasattr(env, "action_space")
-        if env.action_space is None:
-            env.setup()
         assert isinstance(env.action_space, gym.Space)
         assert env.action_space.shape == env.action_shape
         if env.action_space.shape:
             assert env.action_space.shape == env.sample_action().shape
 
+    @pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning")
     def test_gym_env(self, env):
         assert hasattr(env.gym_env, "reset")
         assert hasattr(env.gym_env, "step")
         if not isinstance(env, VectorizedEnvironment) and not env.SINGLETON:
             env.close()
+            env.gym_env
 
     def test_reward_range(self, env):
         env.reward_range
@@ -418,6 +422,8 @@ class TestPlangymEnv:
     def test_terminal(self, env):
         if env.autoreset:
             env.reset()
+            if hasattr(env, "render_mode") and env.render_mode in {"human", "rgb_array"}:
+                return
             env.step_with_dt(env.sample_action(), dt=1000)
 
     @pytest.mark.skipif(os.getenv("SKIP_RENDER", False), reason="No display in CI.")
@@ -445,3 +451,9 @@ class TestPlangymEnv:
         env.apply_wrappers(wrappers)
         assert isinstance(env.gym_env, TransformReward)
         env._gym_env = env.gym_env.env
+
+
+class TestVideogameEnv:
+    def test_ram(self, env):
+        assert hasattr(env, "get_ram")
+        assert isinstance(env.get_ram(), np.ndarray)
