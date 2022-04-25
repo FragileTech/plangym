@@ -226,6 +226,8 @@ class VectorizedEnvironment(PlangymEnv, ABC):
             return (state, obs) after reset.
 
         """
+        if self.plan_env is None and self.delay_setup:
+            self.setup()
         state, obs = self.plan_env.reset(return_state=True)
         self.sync_states(state)
         return (state, obs) if return_state else obs

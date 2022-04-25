@@ -5,7 +5,7 @@ import gym
 from gym.spaces import Space
 import numpy
 
-from plangym.core import PlangymEnv, wrap_callable
+from plangym.core import wrap_callable
 from plangym.videogames.env import VideogameEnv
 
 
@@ -181,7 +181,7 @@ class AtariEnv(VideogameEnv):
 
     @staticmethod
     def _get_default_obs_type(name, obs_type) -> str:
-        """Return the observation type of the initialize Atari gym environment."""
+        """Return the observation type of the internal Atari gym environment."""
         if "ram" in name or obs_type == "ram":
             return "ram"
         elif obs_type == "grayscale":
@@ -323,14 +323,6 @@ class AtariEnv(VideogameEnv):
         )
         params.update(**kwargs)
         return super(VideogameEnv, self).clone(**params)
-
-    def init_spaces(self) -> None:
-        """Initialize the observation_space and action_space."""
-        return PlangymEnv.init_spaces(self)
-
-    def process_obs(self, obs, **kwargs):
-        """Return the observation."""
-        return PlangymEnv.process_obs(self, obs=obs, **kwargs)
 
 
 class AtariPyEnvironment(AtariEnv):

@@ -651,7 +651,7 @@ class PlangymEnv(PlanEnv):
         """Return a valid action that can be used to step the Environment chosen at random."""
         if hasattr(self.action_space, "sample"):
             return self.action_space.sample()
-        return self.gym_env.action_space.sample()
+        return self.gym_env.action_space.sample()  # pragma: no cover
 
     def clone(self, **kwargs) -> "PlangymEnv":
         """Return a copy of the environment."""

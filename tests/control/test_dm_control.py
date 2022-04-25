@@ -43,7 +43,9 @@ environments = [walker_run, parallel_dm]
     scope="module",
 )
 def env(request) -> DMControlEnv:
-    return request.param()
+    env = request.param()
+    yield env
+    env.close()
 
 
 class TestDMControl:

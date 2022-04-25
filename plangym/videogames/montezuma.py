@@ -182,7 +182,7 @@ class CustomMontezuma:
 
         self.cur_score += reward
         self.pos = self.pos_from_obs(face_pixels, obs)
-        if self.pos.room != self.room_time[0]:
+        if self.pos.room != self.room_time[0]:  # pragma: no cover
             self.room_time = (self.pos.room, 0)
         self.room_time = (self.pos.room, self.room_time[1] + 1)
         if self.pos.room not in self.rooms or (

@@ -16,10 +16,6 @@ if os.getenv("DISABLE_RAY", False) and str(os.getenv("DISABLE_RAY", False)).lowe
 from plangym.api_tests import batch_size, display, TestPlanEnv, TestPlangymEnv  # noqa: F401
 
 
-def ray_cartpole():
-    return RayEnv(env_class=ClassicControl, name="CartPole-v0", n_workers=2)
-
-
 def ray_retro():
     from plangym.videogames.retro import RetroEnv
 
@@ -32,7 +28,7 @@ def ray_dm_control():
     return RayEnv(env_class=DMControlEnv, name="walker-walk", n_workers=2)
 
 
-environments = [(ray_cartpole, True), (ray_retro, False), (ray_dm_control, True)]
+environments = [(ray_retro, False), (ray_dm_control, True)]
 
 
 @pytest.fixture(params=environments, scope="module")

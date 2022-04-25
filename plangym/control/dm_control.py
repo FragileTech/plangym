@@ -12,7 +12,7 @@ try:
     from gym.envs.classic_control import rendering
 
     novideo_mode = False
-except Exception:
+except Exception:  # pragma: no cover
     novideo_mode = True
 
 
@@ -122,7 +122,7 @@ class DMControlEnv(PlangymEnv):
             warnings.simplefilter("ignore")
             super(DMControlEnv, self).setup()
 
-    def init_spaces(self):
+    def init_spaces(self):  # TODO fix obs_types
         """Initialize the action_space and the observation_space of the environment."""
         self._action_space = Box(
             low=self.action_spec().minimum,
@@ -221,3 +221,9 @@ class DMControlEnv(PlangymEnv):
             [np.array([time_step.observation[x]]).flatten() for x in time_step.observation],
         )
         return obs_array
+
+    def close(self):
+        """Tear down the environment and close rendering."""
+        super(DMControlEnv, self).close()
+        if self._viewer is not None:
+            self._viewer.close()

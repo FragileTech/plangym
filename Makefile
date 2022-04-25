@@ -57,10 +57,15 @@ doctest:
 test:
 	xvfb-run -s "-screen 0 1400x900x24" make test-parallel test-ray
 
+.PHONY: run-codecov-test
+run-codecov-test:
+	find -name "*.pyc" -delete
+	DISABLE_RAY=True pytest --doctest-modules -n $n -s -o log_cli=true -o log_cli_level=info --cov=./ --cov-report=xml --cov-config=pyproject.toml
+	pytest tests/vectorization/test_ray.py -n 1 -s -o log_cli=true -o log_cli_level=info --cov-append --cov=./ --cov-report=xml --cov-config=pyproject.toml
+
 .PHONY: test-codecov
 test-codecov:
-	find -name "*.pyc" -delete
-	xvfb-run -s "-screen 0 1400x900x24" pytest -n 1 -s -o log_cli=true -o log_cli_level=info --cov=./ --cov-report=xml --cov-config=pyproject.toml
+	xvfb-run -s "-screen 0 1400x900x24" make run-codecov-test
 
 .PHONY: pipenv-install
 pipenv-install:
