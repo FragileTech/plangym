@@ -23,6 +23,8 @@ class DMControlEnv(PlangymEnv):
     It allows parallel and vectorized execution of the environments.
     """
 
+    DEFAULT_OBS_TYPE = "coords"
+
     def __init__(
         self,
         name: str = "cartpole-balance",
@@ -122,19 +124,29 @@ class DMControlEnv(PlangymEnv):
             warnings.simplefilter("ignore")
             super(DMControlEnv, self).setup()
 
-    def init_spaces(self):  # TODO fix obs_types
-        """Initialize the action_space and the observation_space of the environment."""
+    def _init_action_space(self):
         self._action_space = Box(
             low=self.action_spec().minimum,
             high=self.action_spec().maximum,
             dtype=np.float32,
         )
+
+    def _init_obs_space_coords(self):
         shape = self.reset(return_state=False).shape
         self._obs_space = Box(low=-np.inf, high=np.inf, shape=shape, dtype=np.float32)
 
     def action_spec(self):
         """Alias for the environment's ``action_spec``."""
         return self.gym_env.action_spec()
+
+    def get_image(self) -> np.ndarray:
+        """
+        Return a numpy array containing the rendered view of the environment.
+
+        Square matrices are interpreted as a greyscale image. Three-dimensional arrays
+        are interpreted as RGB images with channels (Height, Width, RGB)
+        """
+        return self.gym_env.physics.render(camera_id=0)
 
     def render(self, mode="human"):
         """
@@ -149,7 +161,7 @@ class DMControlEnv(PlangymEnv):
         Returns:
             numpy.ndarray when mode == `rgb_array`. True when mode == `human`
         """
-        img = self.gym_env.physics.render(camera_id=0)
+        img = self.get_image()
         if mode == "rgb_array":
             return img
         elif mode == "human":
@@ -164,7 +176,7 @@ class DMControlEnv(PlangymEnv):
             self._viewer.imshow(img)
             time.sleep(sleep)
 
-    def process_obs(self, obs, **kwargs) -> np.ndarray:
+    def get_coords_obs(self, obs, **kwargs) -> np.ndarray:
         """
         Get the environment observation from a time_step object.
 
@@ -224,6 +236,9 @@ class DMControlEnv(PlangymEnv):
 
     def close(self):
         """Tear down the environment and close rendering."""
-        super(DMControlEnv, self).close()
-        if self._viewer is not None:
-            self._viewer.close()
+        try:
+            super(DMControlEnv, self).close()
+            if self._viewer is not None:
+                self._viewer.close()
+        except Exception:
+            pass

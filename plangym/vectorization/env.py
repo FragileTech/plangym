@@ -172,12 +172,14 @@ class VectorizedEnvironment(PlangymEnv, ABC):
 
             return _inner
 
+        sub_env_kwargs = dict(self._env_kwargs)
+        sub_env_kwargs["render_mode"] = self.render_mode if self.render_mode != "human" else None
         callable_kwargs = dict(
             env_class=self._env_class,
             name=self.name,
             frameskip=self.frameskip,
             delay_setup=self._env_class.SINGLETON,
-            **self._env_kwargs,
+            **sub_env_kwargs,
         )
         callable_kwargs.update(kwargs)
         return create_env_callable(**callable_kwargs)

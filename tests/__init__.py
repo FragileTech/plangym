@@ -1,3 +1,11 @@
+import warnings
+
+import pytest
+
+
+warnings.filterwarnings(
+    action="ignore", category=pytest.PytestUnraisableExceptionWarning, module="pytest"
+)
 try:
     import retro
 

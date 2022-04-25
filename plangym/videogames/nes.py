@@ -93,7 +93,17 @@ class NesEnv(VideogameEnv):
         """Close the underlying :class:`gym.Env`."""
         if self.nes_env._env is None:
             return
-        super(NesEnv, self).close()
+        try:
+            super(NesEnv, self).close()
+        except ValueError:  # pragma: no cover
+            pass
+
+    def __del__(self):
+        """Tear down the environment."""
+        try:
+            self.close()
+        except ValueError:  # pragma: no cover
+            pass
 
 
 class MarioEnv(NesEnv):

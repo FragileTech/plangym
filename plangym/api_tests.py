@@ -116,6 +116,9 @@ class TestPlanEnv:
     def test_init(self, env):
         pass
 
+    def test_repr(self, env):
+        assert str(env) == repr(env)
+
     # Test attributes and properties
     # ---------------------------------------------------------------------------------------------
     def test_class_attributes(self, env):
@@ -302,6 +305,7 @@ class TestPlanEnv:
             dt=dt,
         )
 
+    @pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning")
     @pytest.mark.parametrize("delay_setup", [False, True])
     def test_clone_and_close(self, env, delay_setup):
         if not env.SINGLETON:
@@ -378,6 +382,7 @@ class TestPlangymEnv:
         if env.action_space.shape:
             assert env.action_space.shape == env.sample_action().shape
 
+    @pytest.mark.filterwarnings("ignore::pytest.PytestUnraisableExceptionWarning")
     def test_gym_env(self, env):
         assert hasattr(env.gym_env, "reset")
         assert hasattr(env.gym_env, "step")
