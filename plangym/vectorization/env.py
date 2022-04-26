@@ -18,7 +18,8 @@ class VectorizedEnv(PlangymEnv, ABC):
     It creates a local copy of the environment that is the target of all the other
     methods of :class:`PlanEnv`. In practise, a :class:`VectorizedEnv`
     acts as a wrapper of an environment initialized with the provided parameters when calling
-    __init__.
+    __init__.  # TODO This is not clear, at least for me 
+    # TODO Explain what is the method that achieves vectorization
 
     """
 
@@ -44,7 +45,7 @@ class VectorizedEnv(PlangymEnv, ABC):
             delay_setup: If ``True`` do not initialize the :class:`gym.Environment`
                 and wait for ``setup`` to be called later.
             env_callable: Callable that returns an instance of the environment
-                that will be parallelized.
+                that will be parallelized.   # TODO diff with env_class 
             n_workers:  Number of workers that will be used to step the env.
             **kwargs: Additional keyword arguments passed to env_class.__init__.
 
@@ -139,7 +140,7 @@ class VectorizedEnv(PlangymEnv, ABC):
 
     @staticmethod
     def unpack_transitions(results: list, return_states: bool):
-        """Aggregate the results of stepping across diferent workers."""
+        """Aggregate the results of stepping across diferent workers. # TODO Ampliar"""
         _states, observs, rewards, terminals, infos = [], [], [], [], []
         for result in results:
             if not return_states:
@@ -199,7 +200,7 @@ class VectorizedEnv(PlangymEnv, ABC):
 
         Args:
             action: Array containing the action to be applied.
-            state: State to be set before stepping the environment.
+            state: State to be set before stepping the environment. # TODO Explain applications of this
             dt: Consecutive number of times to apply the given action.
             return_state: Whether to return the state in the returned tuple. \
                 If None, `step` will return the state if `state` was passed as a parameter.
