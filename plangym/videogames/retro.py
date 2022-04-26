@@ -33,7 +33,7 @@ class ActionDiscretizer(gym.ActionWrapper):
             self._actions.append(arr)
         self.action_space = spaces.Discrete(len(self._actions))
 
-    def action(self, a):  # pylint: disable=W0221
+    def action(self, a) -> int:  # pylint: disable=W0221
         """Return the corresponding action in the emulator's format."""
         return self._actions[a].copy()
 
@@ -55,9 +55,6 @@ class RetroEnv(VideogameEnv):
         obs_type: str = "rgb",  # ram | rgb | grayscale
         render_mode: Optional[str] = None,  # None | human | rgb_array
         wrappers: Iterable[wrap_callable] = None,
-        array_state: bool = True,
-        height: int = None,  # 100,
-        width: int = None,  # 100,
         **kwargs,
     ):
         """
@@ -77,10 +74,7 @@ class RetroEnv(VideogameEnv):
             wrappers: Wrappers that will be applied to the underlying OpenAI env. \
                      Every element of the iterable can be either a :class:`gym.Wrapper` \
                      or a tuple containing ``(gym.Wrapper, kwargs)``.
-            array_state: Whether to return the state of the environment as a numpy array.
         """
-        self.height = height
-        self.width = width
         super(RetroEnv, self).__init__(
             name=name,
             frameskip=frameskip,
@@ -93,6 +87,17 @@ class RetroEnv(VideogameEnv):
             wrappers=wrappers,
             **kwargs,
         )
+
+    def __getattr__(self, item):
+        """Forward getattr to self.gym_env."""
+        return getattr(self.gym_env, item)
+
+    @staticmethod
+    def get_win_condition(info: Dict[str, Any]) -> bool:  # pragma: no cover
+        """Get win condition for games that have the end of the screen available."""
+        end_screen = info.get("screen_x", 0) >= info.get("screen_x_end", 1e6)
+        terminal = info.get("x", 0) >= info.get("screen_x_end", 1e6) or end_screen
+        return terminal
 
     def get_ram(self) -> numpy.ndarray:
         """Return the ram of the emulator as a numpy array."""
@@ -108,8 +113,6 @@ class RetroEnv(VideogameEnv):
             autoreset=self.autoreset,
             delay_setup=self.delay_setup,
             obs_type=self.obs_type,
-            height=self.height,
-            width=self.width,
         )
         default_kwargs.update(kwargs)
         return super(RetroEnv, self).clone(**default_kwargs)
@@ -123,10 +126,6 @@ class RetroEnv(VideogameEnv):
         gym_env = retro.make(self.name, **self._gym_env_kwargs)
         return gym_env
 
-    def __getattr__(self, item):
-        """Forward getattr to self.gym_env."""
-        return getattr(self.gym_env, item)
-
     def get_state(self) -> numpy.ndarray:
         """Get the state of the retro environment."""
         state = self.gym_env.em.get_state()
@@ -137,13 +136,6 @@ class RetroEnv(VideogameEnv):
         raw_state = state.tobytes()
         self.gym_env.em.set_state(raw_state)
         return state
-
-    @staticmethod
-    def get_win_condition(info: Dict[str, Any]) -> bool:  # pragma: no cover
-        """Get win condition for games that have the end of the screen available."""
-        end_screen = info.get("screen_x", 0) >= info.get("screen_x_end", 1e6)
-        terminal = info.get("x", 0) >= info.get("screen_x_end", 1e6) or end_screen
-        return terminal
 
     def close(self):
         """Close the underlying :class:`gym.Env`."""

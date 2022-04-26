@@ -19,16 +19,7 @@ notebooks/plangym_introduction.ipynb
 
 ```{toctree}
 ---
-maxdepth: 3
-caption: Environment Classes
----
-notes/interface.rst
-```
-
-
-```{toctree}
----
-maxdepth: 3
+maxdepth: 2
 caption: API Reference
 ---
 autoapi/index.rst

@@ -1,42 +1,81 @@
-Atari 2600
-==================
-.. autoclass:: plangym.atari.AtariEnv
+Plangym API
+=======================================
+
+.. autoclass:: plangym.core::PlanEnv
    :members:
 
-Classic control
-================
+.. autoclass:: plangym.core::PlangymEnv
+   :members:
 
-.. autoclass:: plangym.classic_control.ClassicControl
+Videogames
+===========
+
+Atari 2600
+-----------------
+.. autoclass:: plangym.videogames.atari.AtariEnv
+   :members:
+
+.. autoclass:: plangym.videogames.montezuma.MontezumaEnv
    :members:
 
 Gym retro
-=======================
+-----------------
 
-.. autoclass:: plangym.retro.RetroEnv
+.. autoclass:: plangym.videogames.retro.RetroEnv
+   :members:
+
+Super Mario (NES)
+-----------------
+
+.. autoclass:: plangym.videogames.nes.MarioEnv
+   :members:
+
+.. autoclass:: plangym.videogames.nes.NesEnv
+   :members:
+
+Video games API
+--------------
+.. autoclass:: plangym.videogames.env.VideogameEnv
+   :members:
+
+Control Tasks
+=============
+
+DM Control
+-----------------
+.. autoclass:: plangym.control.dm_control.DMControlEnv
+   :members:
+
+Classic control
+-----------------
+
+.. autoclass:: plangym.control.classic_control.ClassicControl
    :members:
 
 Box2D
-=======================
+-----------------
 
-.. autoclass:: plangym.retro.Box2DEnv
+.. autoclass:: plangym.control.box_2d.Box2DEnv
    :members:
 
-DM Control
-=======================
-.. autoclass:: plangym.dm_control.DMControlEnv
+.. autoclass:: plangym.control.lunar_lander.LunarLander
    :members:
 
-Abstract classes defining plangym's API
-=======================================
+Vectorization
+==============
 
-.. autoclass:: plangym.core.PlanEnv
+Multiprocessing
+----------------
+.. autoclass:: plangym.vectorization.parallel.ParallelEnv
    :members:
 
-.. autoclass:: plangym.core.PlangymEnv
+Ray
+----------------
+.. autoclass:: plangym.vectorization.ray.RayEnv
    :members:
 
-.. autoclass:: plangym.parallel.VideogameEnv
+Vectorization API
+-----------------
+.. autoclass:: plangym.vectorization.env.VectorizedEnv
    :members:
 
-.. autoclass:: plangym.parallel.VectorizedEnv
-   :members:
