@@ -38,5 +38,5 @@ Abstract classes defining plangym's API
 .. autoclass:: plangym.parallel.VideogameEnv
    :members:
 
-.. autoclass:: plangym.parallel.VectorizedEnvironment
+.. autoclass:: plangym.parallel.VectorizedEnv
    :members:

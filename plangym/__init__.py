@@ -44,10 +44,10 @@ warnings.filterwarnings("ignore", message="Gdk.Cursor.new is deprecated")
 warnings.filterwarnings(
     "ignore",
     message=(
-        " `np.bool` is a deprecated alias for the builtin `bool`. "
+        " `numpy.bool` is a deprecated alias for the builtin `bool`. "
         "To silence this warning, use `bool` by itself. Doing this will not modify any "
         "behavior and is safe. If you specifically wanted the numpy scalar type, "
-        "use `np.bool_` here."
+        "use `numpy.bool_` here."
     ),
 )
 warnings.filterwarnings(
@@ -66,6 +66,6 @@ warnings.filterwarnings(
 from plangym.control import Box2DEnv, ClassicControl, DMControlEnv, LunarLander  # noqa: E402
 from plangym.core import PlanEnv  # noqa: E402
 from plangym.registry import make  # noqa: E402
-from plangym.vectorization import ParallelEnvironment, RayEnv  # noqa: E402
+from plangym.vectorization import ParallelEnv, RayEnv  # noqa: E402
 from plangym.version import __version__  # noqa: E402
 from plangym.videogames import AtariEnv, MarioEnv, MontezumaEnv, RetroEnv  # noqa: E402

@@ -1,7 +1,7 @@
 """Functionality for instantiating the environment by passing the environment id."""
 from plangym.control import Box2DEnv, ClassicControl, DMControlEnv, LunarLander
 from plangym.environment_names import ATARI, BOX_2D, CLASSIC_CONTROL, DM_CONTROL, RETRO
-from plangym.vectorization import ParallelEnvironment, RayEnv
+from plangym.vectorization import ParallelEnv, RayEnv
 from plangym.videogames import AtariEnv, MarioEnv, MontezumaEnv, RetroEnv
 
 
@@ -42,7 +42,7 @@ def get_environment_class(
     if ray:
         return RayEnv, env_class
     elif n_workers is not None:
-        return ParallelEnvironment, env_class
+        return ParallelEnv, env_class
     return None, env_class
 
 

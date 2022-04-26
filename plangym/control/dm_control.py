@@ -3,7 +3,7 @@ from typing import Iterable, Optional
 import warnings
 
 from gym.spaces import Box
-import numpy as np
+import numpy
 
 from plangym.core import PlangymEnv, wrap_callable
 
@@ -128,18 +128,18 @@ class DMControlEnv(PlangymEnv):
         self._action_space = Box(
             low=self.action_spec().minimum,
             high=self.action_spec().maximum,
-            dtype=np.float32,
+            dtype=numpy.float32,
         )
 
     def _init_obs_space_coords(self):
         shape = self.reset(return_state=False).shape
-        self._obs_space = Box(low=-np.inf, high=np.inf, shape=shape, dtype=np.float32)
+        self._obs_space = Box(low=-numpy.inf, high=numpy.inf, shape=shape, dtype=numpy.float32)
 
     def action_spec(self):
         """Alias for the environment's ``action_spec``."""
         return self.gym_env.action_spec()
 
-    def get_image(self) -> np.ndarray:
+    def get_image(self) -> numpy.ndarray:
         """
         Return a numpy array containing the rendered view of the environment.
 
@@ -176,7 +176,7 @@ class DMControlEnv(PlangymEnv):
             self._viewer.imshow(img)
             time.sleep(sleep)
 
-    def get_coords_obs(self, obs, **kwargs) -> np.ndarray:
+    def get_coords_obs(self, obs, **kwargs) -> numpy.ndarray:
         """
         Get the environment observation from a time_step object.
 
@@ -189,7 +189,7 @@ class DMControlEnv(PlangymEnv):
         """
         return self._time_step_to_obs(time_step=obs)
 
-    def set_state(self, state: np.ndarray) -> None:
+    def set_state(self, state: numpy.ndarray) -> None:
         """
         Set the state of the simulator to the target State.
 
@@ -202,7 +202,7 @@ class DMControlEnv(PlangymEnv):
         with self.gym_env.physics.reset_context():
             self.gym_env.physics.set_state(state)
 
-    def get_state(self) -> np.ndarray:
+    def get_state(self) -> numpy.ndarray:
         """
         Return a tuple containing the three arrays that characterize the state\
          of the system.
@@ -227,10 +227,10 @@ class DMControlEnv(PlangymEnv):
         return obs, reward, terminal, info
 
     @staticmethod
-    def _time_step_to_obs(time_step) -> np.ndarray:
+    def _time_step_to_obs(time_step) -> numpy.ndarray:
         # Concat observations in a single array, so it is easier to calculate distances
-        obs_array = np.hstack(
-            [np.array([time_step.observation[x]]).flatten() for x in time_step.observation],
+        obs_array = numpy.hstack(
+            [numpy.array([time_step.observation[x]]).flatten() for x in time_step.observation],
         )
         return obs_array
 

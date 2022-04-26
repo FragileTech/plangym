@@ -5,7 +5,7 @@ from typing import Iterable, Optional, Tuple, Union
 import cv2
 import gym
 from gym.envs.registration import registry as gym_registry
-import numpy as np
+import numpy
 
 from plangym.core import wrap_callable
 from plangym.videogames.atari import AtariEnv
@@ -130,9 +130,9 @@ class CustomMontezuma:
         if self.coords_obs:
             shape = self.get_coords().shape
             self.observation_space = gym.spaces.Box(
-                low=-np.inf,
-                high=np.inf,
-                dtype=np.float32,
+                low=-numpy.inf,
+                high=numpy.inf,
+                dtype=numpy.float32,
                 shape=shape,
             )
 
@@ -140,7 +140,7 @@ class CustomMontezuma:
         """Forward to gym environment."""
         return getattr(self.env, e)
 
-    def reset(self, seed=None, return_info: bool = False) -> np.ndarray:
+    def reset(self, seed=None, return_info: bool = False) -> numpy.ndarray:
         """Reset the environment."""
         obs = self.env.reset()
         self.cur_lives = 5
@@ -165,7 +165,7 @@ class CustomMontezuma:
             return self.get_coords()
         return obs
 
-    def step(self, action) -> Tuple[np.ndarray, float, bool, dict]:
+    def step(self, action) -> Tuple[numpy.ndarray, float, bool, dict]:
         """Step the environment."""
         obs, reward, done, info = self.env.step(action)
         self.ram = self.env.unwrapped.ale.getRAM()
@@ -204,7 +204,7 @@ class CustomMontezuma:
         if len(face_pixels) == 0:
             assert self.pos is not None, "No face pixel and no previous pos"
             return self.pos  # Simply re-use the same position
-        y, x = np.mean(face_pixels, axis=0)
+        y, x = numpy.mean(face_pixels, axis=0)
         room = 1
         level = 0
         old_objects = tuple()
@@ -212,8 +212,8 @@ class CustomMontezuma:
             room = self.pos.room
             level = self.pos.level
             old_objects = self.pos.score
-            direction_x = np.clip(int((self.pos.x - x) / 50), -1, 1)
-            direction_y = np.clip(int((self.pos.y - y) / 50), -1, 1)
+            direction_x = numpy.clip(int((self.pos.x - x) / 50), -1, 1)
+            direction_y = numpy.clip(int((self.pos.y - y) / 50), -1, 1)
             if direction_x != 0 or direction_y != 0:  # pragma: no cover
                 room_x, room_y = self.get_room_xy(self.pos.room)
                 if room == 15 and room_y + direction_y >= len(PYRAMID):
@@ -239,7 +239,7 @@ class CustomMontezuma:
 
     def get_objects_from_pixels(self, obs, room, old_objects):
         """Extract the position of the objects in the provided observation."""
-        object_part = (obs[25:45, 55:110, 0] != 0).astype(np.uint8) * 255
+        object_part = (obs[25:45, 55:110, 0] != 0).astype(numpy.uint8) * 255
         connected_components = cv2.connectedComponentsWithStats(object_part)
         pixel_areas = list(e[-1] for e in connected_components[2])[1:]
 
@@ -273,15 +273,15 @@ class CustomMontezuma:
                 cur_object &= KEY_BITS
             return cur_object
 
-    def get_coords(self) -> np.ndarray:
+    def get_coords(self) -> numpy.ndarray:
         """Return an observation containing the position and the flattened screen of the game."""
-        coords = np.array([self.pos.x, self.pos.y, self.pos.room, self.score_objects])
+        coords = numpy.array([self.pos.x, self.pos.y, self.pos.room, self.score_objects])
         return coords
 
-    def state_to_numpy(self) -> np.ndarray:
+    def state_to_numpy(self) -> numpy.ndarray:
         """Return a numpy array containing the current state of the game."""
         state = self.unwrapped.clone_state(include_rng=False)
-        state = np.frombuffer(pickle.dumps(state), dtype=np.uint8)
+        state = numpy.frombuffer(pickle.dumps(state), dtype=numpy.uint8)
         return state
 
     def _restore_state(self, state) -> None:
@@ -333,16 +333,16 @@ class CustomMontezuma:
         unprocessed_one = obs[:, :, 1]
         unprocessed_two = obs[:, :, 2]
         return (
-            np.sum(obs[:, :, 0] == 0)
-            + np.sum((unprocessed_one == 0) | (unprocessed_one == 28))
-            + np.sum((unprocessed_two == 0) | (unprocessed_two == 136))
+            numpy.sum(obs[:, :, 0] == 0)
+            + numpy.sum((unprocessed_one == 0) | (unprocessed_one == 28))
+            + numpy.sum((unprocessed_two == 0) | (unprocessed_two == 136))
         ) == obs.size
 
     def get_face_pixels(self, obs) -> set:
         """Return the pixels containing the face of Paname Joe."""
         # TODO: double check that this color does not re-occur somewhere else
         # in the environment.
-        return set(zip(*np.where(obs[50:, :, 0] == 228)))
+        return set(zip(*numpy.where(obs[50:, :, 0] == 228)))
 
     def is_pixel_death(self, obs, face_pixels):
         """Return a death signal extracted from the observation of the environment."""
@@ -404,7 +404,7 @@ class CustomMontezuma:
         """Create a MontezumaPosLevel object using the provided data."""
         return MontezumaPosLevel(pos.level, score, pos.room, pos.x, pos.y)
 
-    def render(self, mode="human", **kwargs) -> Union[None, np.ndarray]:
+    def render(self, mode="human", **kwargs) -> Union[None, numpy.ndarray]:
         """Render the environment."""
         return self.env.render(mode=mode)
 
@@ -470,7 +470,7 @@ class MontezumaEnv(AtariEnv):
         kwargs["obs_type"] = self.obs_type
         return CustomMontezuma(**kwargs)
 
-    def get_state(self) -> np.ndarray:
+    def get_state(self) -> numpy.ndarray:
         """
         Recover the internal state of the simulation.
 
@@ -490,7 +490,7 @@ class MontezumaEnv(AtariEnv):
         ) = data
         room_time = room_time if room_time[0] is not None else (-1, -1)
         assert len(room_time) == 2
-        metadata = np.array(
+        metadata = numpy.array(
             [
                 float(score),
                 float(steps),
@@ -503,12 +503,12 @@ class MontezumaEnv(AtariEnv):
             dtype=float,
         )
         assert len(metadata) == 7
-        posarray = np.array(pos.tuple, dtype=float)
+        posarray = numpy.array(pos.tuple, dtype=float)
         assert len(posarray) == 5
-        array = np.concatenate([full_state, metadata, posarray]).astype(np.float32)
+        array = numpy.concatenate([full_state, metadata, posarray]).astype(numpy.float32)
         return array
 
-    def set_state(self, state: np.ndarray):
+    def set_state(self, state: numpy.ndarray):
         """
         Set the internal state of the simulation.
 
@@ -528,7 +528,7 @@ class MontezumaEnv(AtariEnv):
         )
         score, steps, rt0, rt1, ram_death_state, score_objects, cur_lives = state[-12:-5].tolist()
         room_time = (rt0, rt1) if rt0 != -1 and rt1 != -1 else (None, None)
-        full_state = state[:-12].copy().astype(np.uint8)
+        full_state = state[:-12].copy().astype(numpy.uint8)
         data = (
             full_state,
             score,

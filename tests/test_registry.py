@@ -6,7 +6,7 @@ import pytest
 from plangym.control.classic_control import ClassicControl
 from plangym.environment_names import ATARI, BOX_2D, CLASSIC_CONTROL, DM_CONTROL, RETRO
 from plangym.registry import make
-from plangym.vectorization.parallel import ParallelEnvironment
+from plangym.vectorization.parallel import ParallelEnv
 from tests import (
     SKIP_ATARI_TESTS,
     SKIP_BOX2D_TESTS,
@@ -20,7 +20,7 @@ def _test_env_class(name, cls, **kwargs):
     n_workers = 2
     assert isinstance(make(name, delay_setup=False, **kwargs), cls)
     env = make(name=name, n_workers=n_workers, delay_setup=True, **kwargs)
-    assert isinstance(env, ParallelEnvironment)
+    assert isinstance(env, ParallelEnv)
     assert env._env_class == cls
     assert env.n_workers == n_workers
     if not SKIP_RAY_TESTS:

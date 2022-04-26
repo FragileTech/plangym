@@ -1,7 +1,7 @@
-"""Implement a :class:`plangym.VectorizedEnvironment` that uses ray when calling `step_batch`."""
+"""Implement a :class:`plangym.VectorizedEnv` that uses ray when calling `step_batch`."""
 from typing import List
 
-import numpy as np
+import numpy
 
 
 try:
@@ -10,7 +10,7 @@ except ImportError:
     pass
 
 from plangym.core import PlanEnv
-from plangym.vectorization.env import VectorizedEnvironment
+from plangym.vectorization.env import VectorizedEnv
 
 
 @ray.remote
@@ -61,7 +61,7 @@ class RemoteEnv(PlanEnv):
 
     def step_batch(
         self,
-        actions: [np.ndarray, list],
+        actions: [numpy.ndarray, list],
         states=None,
         dt: int = 1,
         return_state: bool = None,
@@ -90,7 +90,7 @@ class RemoteEnv(PlanEnv):
             return_state=return_state,
         )
 
-    def reset(self, return_state: bool = True) -> [np.ndarray, tuple]:
+    def reset(self, return_state: bool = True) -> [numpy.ndarray, tuple]:
         """Restart the environment."""
         return self.env.reset(return_state=return_state)
 
@@ -115,7 +115,7 @@ class RemoteEnv(PlanEnv):
         return self.env.set_state(state=state)
 
 
-class RayEnv(VectorizedEnvironment):
+class RayEnv(VectorizedEnv):
     """Use ray for taking steps in parallel when calling `step_batch`."""
 
     def __init__(
@@ -129,7 +129,7 @@ class RayEnv(VectorizedEnvironment):
         **kwargs,
     ):
         """
-        Initialize a :class:`ParallelEnvironment`.
+        Initialize a :class:`ParallelEnv`.
 
         Args:
             env_class: Class of the environment to be wrapped.
@@ -175,7 +175,7 @@ class RayEnv(VectorizedEnvironment):
         self,
         actions,
         states=None,
-        dt: [np.ndarray, int] = 1,
+        dt: [numpy.ndarray, int] = 1,
         return_state: bool = None,
     ):
         """Implement the logic for stepping the environment in parallel."""
@@ -199,7 +199,7 @@ class RayEnv(VectorizedEnvironment):
         results = ray.get(results_ids)
         return self.unpack_transitions(results=results, return_states=_return_state)
 
-    def reset(self, return_state: bool = True) -> [np.ndarray, tuple]:
+    def reset(self, return_state: bool = True) -> [numpy.ndarray, tuple]:
         """Restart the environment."""
         if self.plan_env is None and self.delay_setup:
             self.setup()

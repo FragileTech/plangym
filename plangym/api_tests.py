@@ -5,13 +5,13 @@ from typing import Iterable
 import warnings
 
 import gym
-import numpy as np
+import numpy
 import pytest
 from pyvirtualdisplay import Display
 
 import plangym
 from plangym.core import PlanEnv, PlangymEnv
-from plangym.vectorization.env import VectorizedEnvironment
+from plangym.vectorization.env import VectorizedEnv
 from plangym.videogames.env import LIFE_KEY
 
 
@@ -72,7 +72,7 @@ def display():
 
 
 def step_tuple_test(env, obs, reward, terminal, info, dt=None):
-    obs_is_array = isinstance(obs, np.ndarray)
+    obs_is_array = isinstance(obs, numpy.ndarray)
     assert obs_is_array if env.OBS_IS_ARRAY else not obs_is_array
     assert obs.shape == env.obs_shape, (obs.shape, env.obs_shape)
     assert float(reward) + 1 == float(reward) + 1
@@ -85,7 +85,7 @@ def step_tuple_test(env, obs, reward, terminal, info, dt=None):
         assert info["dt"] == dt
     if env.return_image:
         assert "rgb" in info
-        assert isinstance(info["rgb"], np.ndarray)
+        assert isinstance(info["rgb"], numpy.ndarray)
 
 
 def step_batch_tuple_test(env, batch_size, observs, rewards, terminals, infos, dt):
@@ -94,7 +94,7 @@ def step_batch_tuple_test(env, batch_size, observs, rewards, terminals, infos, d
     assert len(observs) == batch_size
     assert len(infos) == batch_size
 
-    dts = dt if isinstance(dt, (list, np.ndarray)) else [dt] * batch_size
+    dts = dt if isinstance(dt, (list, numpy.ndarray)) else [dt] * batch_size
     for obs, reward, terminal, info, dt in zip(list(observs), rewards, terminals, infos, dts):
         step_tuple_test(env=env, obs=obs, reward=reward, terminal=terminal, info=info, dt=dt)
 
@@ -158,7 +158,7 @@ class TestPlanEnv:
     @pytest.mark.parametrize("return_image", [True, False])
     def test_return_image(self, env, return_image):
         assert isinstance(env.return_image, bool)
-        if isinstance(env, VectorizedEnvironment):
+        if isinstance(env, VectorizedEnv):
             env.plan_env._return_image = return_image
         else:
             env._return_image = return_image
@@ -177,7 +177,7 @@ class TestPlanEnv:
     def test_get_state(self, env):
         state_reset, obs = env.reset()
         state = env.get_state()
-        state_is_array = isinstance(state, np.ndarray)
+        state_is_array = isinstance(state, numpy.ndarray)
         assert state_is_array if env.STATE_IS_ARRAY else not state_is_array
         if state_is_array and not env.SINGLETON:
             assert (state == state_reset).all(), f"original: {state} env: {env.get_state()}"
@@ -196,8 +196,8 @@ class TestPlanEnv:
     def test_reset(self, env):
         _ = env.reset(return_state=False)
         state, obs = env.reset(return_state=True)
-        state_is_array = isinstance(state, np.ndarray)
-        obs_is_array = isinstance(obs, np.ndarray)
+        state_is_array = isinstance(state, numpy.ndarray)
+        obs_is_array = isinstance(obs, numpy.ndarray)
         assert state_is_array if env.STATE_IS_ARRAY else not state_is_array
         assert obs_is_array if env.OBS_IS_ARRAY else not obs_is_array
 
@@ -217,7 +217,7 @@ class TestPlanEnv:
         if should_return_state:
             assert len(new_state) == 1
             new_state = new_state[0]
-            state_is_array = isinstance(new_state, np.ndarray)
+            state_is_array = isinstance(new_state, numpy.ndarray)
             assert state_is_array if env.STATE_IS_ARRAY else not state_is_array
             if state_is_array:
                 assert _state.shape == new_state.shape
@@ -256,7 +256,7 @@ class TestPlanEnv:
             new_states = new_states[0]
             # Todo: update check when returning batch arrays is available
             assert isinstance(new_states, list)
-            state_is_array = isinstance(new_states[0], np.ndarray)
+            state_is_array = isinstance(new_states[0], numpy.ndarray)
             assert state_is_array if env.STATE_IS_ARRAY else not state_is_array
             if env.STATE_IS_ARRAY:
                 assert state.shape == new_states[0].shape
@@ -286,7 +286,7 @@ class TestPlanEnv:
 
     @pytest.mark.parametrize("dt", [3, "array"])
     def test_step_batch_dt_values(self, env, dt, batch_size, states=None, return_state=None):
-        dt = dt if dt != "array" else np.random.randint(1, 4, batch_size).astype(int)
+        dt = dt if dt != "array" else numpy.random.randint(1, 4, batch_size).astype(int)
         state, _ = env.reset()
         actions = [env.sample_action() for _ in range(batch_size)]
 
@@ -324,7 +324,7 @@ class TestPlanEnv:
     def test_get_image(self, env):
         img = env.get_image()
         if img is not None:
-            assert isinstance(img, np.ndarray)
+            assert isinstance(img, numpy.ndarray)
             assert len(img.shape) == 2 or len(img.shape) == 3
 
 
@@ -386,7 +386,7 @@ class TestPlangymEnv:
     def test_gym_env(self, env):
         assert hasattr(env.gym_env, "reset")
         assert hasattr(env.gym_env, "step")
-        if not isinstance(env, VectorizedEnvironment) and not env.SINGLETON:
+        if not isinstance(env, VectorizedEnv) and not env.SINGLETON:
             env.close()
             env.gym_env
 
@@ -395,7 +395,7 @@ class TestPlangymEnv:
 
     @pytest.mark.parametrize("delay_setup", [True, False])
     def test_delay_setup(self, env, delay_setup):
-        if env.SINGLETON or isinstance(env, VectorizedEnvironment):
+        if env.SINGLETON or isinstance(env, VectorizedEnv):
             return
         new_env = env.clone(delay_setup=delay_setup)
         assert new_env._gym_env is None if delay_setup else new_env._gym_env is not None
@@ -433,7 +433,7 @@ class TestPlangymEnv:
             env.render()
 
     def test_wrap_environment(self, env):
-        if isinstance(env, VectorizedEnvironment):
+        if isinstance(env, VectorizedEnv):
             return
         from gym.wrappers.transform_reward import TransformReward
 
@@ -456,4 +456,4 @@ class TestPlangymEnv:
 class TestVideogameEnv:
     def test_ram(self, env):
         assert hasattr(env, "get_ram")
-        assert isinstance(env.get_ram(), np.ndarray)
+        assert isinstance(env.get_ram(), numpy.ndarray)

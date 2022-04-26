@@ -1,7 +1,7 @@
 """Implement the ``plangym`` API for ``gym`` classic control environments."""
 import copy
 
-import numpy as np
+import numpy
 
 from plangym.core import PlangymEnv
 
@@ -9,11 +9,11 @@ from plangym.core import PlangymEnv
 class ClassicControl(PlangymEnv):
     """Environment for OpenAI gym classic control environments."""
 
-    def get_state(self) -> np.ndarray:
+    def get_state(self) -> numpy.ndarray:
         """Recover the internal state of the environment."""
-        return np.array(copy.copy(self.gym_env.unwrapped.state))
+        return numpy.array(copy.copy(self.gym_env.unwrapped.state))
 
-    def set_state(self, state: np.ndarray):
+    def set_state(self, state: numpy.ndarray):
         """
         Set the internal state of the environemnt.
 
