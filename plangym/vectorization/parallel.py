@@ -315,7 +315,7 @@ class BatchEnv:
         results = []
         no_states = states is None or states[0] is None
         _return_state = ((not no_states) and return_state is None) or return_state
-        chunks = ParallelEnv.batch_step_data(
+        chunks = ParallelEnv.batch_step_data(    # What is this method?
             actions=actions,
             states=states,
             dt=dt,

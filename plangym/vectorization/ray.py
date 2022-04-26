@@ -1,6 +1,6 @@
 """Implement a :class:`plangym.VectorizedEnv` that uses ray when calling `step_batch`."""
 from typing import List
-
+# TODO Explain diff between remoteenv and RayEnv
 import numpy
 
 
