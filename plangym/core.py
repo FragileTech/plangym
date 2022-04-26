@@ -6,6 +6,7 @@ import gym
 from gym.spaces import Box, Space
 from gym.wrappers.gray_scale_observation import GrayScaleObservation
 import numpy
+import numpy as np
 
 from plangym.utils import process_frame, remove_time_limit
 
@@ -15,7 +16,7 @@ wrap_callable = Union[Callable[[], gym.Wrapper], Tuple[Callable[..., gym.Wrapper
 
 class PlanEnv(ABC):
     """Inherit from this class to adapt environments to different problems."""
-
+    # TODO increase doc
     STATE_IS_ARRAY = True
     OBS_IS_ARRAY = True
     SINGLETON = False
@@ -37,7 +38,7 @@ class PlanEnv(ABC):
             autoreset: Automatically reset the environment when the OpenAI environment
                 returns ``end = True``.
             delay_setup: If ``True`` do not initialize the ``gym.Environment``
-                and wait for ``setup`` to be called later.
+                and wait for ``setup`` to be called later. # TODO What is the reason of this?
             return_image: If ``True`` add an "rgb" key in the `info` dictionary returned by `step`
              that contains an RGB representation of the environment state.
 
@@ -102,7 +103,7 @@ class PlanEnv(ABC):
         """
         return self._return_image
 
-    def get_image(self) -> Union[None, numpy.ndarray]:
+    def get_image(self) -> Union[None, np.ndarray]:
         """
         Return a numpy array containing the rendered view of the environment.
 
@@ -121,15 +122,15 @@ class PlanEnv(ABC):
         """
         Step the environment applying the supplied action.
 
-        Optionally set the state to the supplied state before stepping it.
+        Optionally set the state to the supplied state before stepping it.   # TODO Do not understand
 
         Take ``dt`` simulation steps and make the environment evolve in multiples \
         of ``self.frameskip`` for a total of ``dt`` * ``self.frameskip`` steps.
 
         Args:
-            action: Chosen action applied to the environment.
+            action: Chosen action applied to the environment.  # TODO reason of having an array?
             state: Set the environment to the given state before stepping it.
-            dt: Consecutive number of times that the action will be applied.
+            dt: Consecutive number of times that the action will be applied.   # TODO Difference with frameskip?
             return_state: Whether to return the state in the returned tuple. \
                 If None, `step` will return the state if `state` was passed as a parameter.
 
@@ -168,7 +169,7 @@ class PlanEnv(ABC):
             return_state: If ``True`` it will return the state of the environment.
 
         Returns:
-            ``obs`` if ```return_state`` is ``True`` else return ``(state, obs)``.
+            ``obs`` if ```return_state`` is ``True`` else return ``(state, obs)``.   # TODO Al revés no?
 
         """
         obs = self.apply_reset()  # Returning info upon reset is not yet supported
@@ -197,7 +198,7 @@ class PlanEnv(ABC):
                 If None, `step` will return the state if `state` was passed as a parameter.
 
         Returns:
-            if states is `None` returns `(observs, rewards, ends, infos)`
+            if states is `None` returns `(observs, rewards, ends, infos)`   # TODO What is the returned object if return_state = True and states = None?
             else returns `(new_states, observs, rewards, ends, infos)`.
 
         """
@@ -209,10 +210,10 @@ class PlanEnv(ABC):
             self.step(action, state, dt=dt, return_state=return_state)
             for action, state, dt in zip(actions, states, dt)
         ]
-        return tuple(list(x) for x in zip(*data))
+        return tuple(list(x) for x in zip(*data))    # TODO No entiendo el por qué zip(*lista)
 
     def clone(self, **kwargs) -> "PlanEnv":
-        """Return a copy of the environment."""
+        """Return a copy of the environment. # TODO Expand information"""
         clone_kwargs = dict(
             name=self.name,
             frameskip=self.frameskip,
@@ -239,7 +240,7 @@ class PlanEnv(ABC):
 
         Args:
             action: Chosen action applied to the environment.
-            dt: Consecutive number of times that the action will be applied.
+            dt: Consecutive number of times that the action will be applied.   # TODO Stress no states
 
         Returns:
             Tuple containing ``(observs, reward, terminal, info)``.
@@ -254,12 +255,12 @@ class PlanEnv(ABC):
                 self._n_step += 1
                 if self._terminal_step:
                     break
-            if self._terminal_step:
+            if self._terminal_step:     # TODO ???
                 break
         return step_data
 
     def run_autoreset(self, step_data):
-        """Reset the environment automatically if needed."""
+        """Reset the environment automatically if needed."""   # TODO What is the use case of this method?
         *_, terminal, _ = step_data  # Assumes terminal, info are the last two elements
         if terminal and self.autoreset:
             self.reset(return_state=False)
@@ -291,7 +292,7 @@ class PlanEnv(ABC):
         Returns:
             Tuple containing the environment data after calling `step`.
         """
-        default_mode = self._state_step is not None and self._return_state_step is None
+        default_mode = self._state_step is not None and self._return_state_step is None   # TODO ??? 
         return_state = self._return_state_step or default_mode
         obs = self.process_obs(
             obs=obs,
@@ -336,7 +337,7 @@ class PlanEnv(ABC):
 
     def begin_step(self, action=None, dt=None, state=None, return_state: bool = None):
         """Perform setup of step variables before starting `step_with_dt`."""
-        self._n_step = 0
+        self._n_step = 0     # Was not it already 0?
         self._obs_step = None
         self._reward_step = 0
         self._terminal_step = False
@@ -507,25 +508,11 @@ class PlangymEnv(PlanEnv):
             return_image=return_image,
         )
 
-    def __str__(self):
-        """Pretty print the environment."""
-        text = (
-            f"{self.__class__} {self.name} with parameters:\n"
-            f"obs_type={self.obs_type}, render_mode={self.render_mode}\n"
-            f"frameskip={self.frameskip}, obs_shape={self.obs_shape},\n"
-            f"action_shape={self.action_shape}"
-        )
-        return text
-
-    def __repr__(self):
-        """Pretty print the environment."""
-        return str(self)
-
     @property
     def gym_env(self):
         """Return the instance of the environment that is being wrapped by plangym."""
         if self._gym_env is None and not self.SINGLETON:
-            self.setup()
+            self.setup()    
         return self._gym_env
 
     @property
@@ -621,21 +608,13 @@ class PlangymEnv(PlanEnv):
 
     def _init_obs_space_coords(self):
         if self.DEFAULT_OBS_TYPE == "coords":
-            if hasattr(self.gym_env, "observation_space"):
-                self._obs_space = self.gym_env.observation_space
-            else:
-                raise NotImplementedError("No observation_space implemented.")
+            self._obs_space = self.gym_env.observation_space
         else:
             img = self.reset(return_state=False)
             cords = self.get_coords_obs(img)
-            self._obs_space = Box(
-                low=-numpy.inf,
-                high=numpy.inf,
-                dtype=numpy.float32,
-                shape=cords.shape,
-            )
+            self._obs_space = Box(low=-np.inf, high=np.inf, dtype=numpy.float32, shape=cords.shape)
 
-    def get_image(self) -> numpy.ndarray:
+    def get_image(self) -> np.ndarray:
         """
         Return a numpy array containing the rendered view of the environment.
 
@@ -644,7 +623,6 @@ class PlangymEnv(PlanEnv):
         """
         if hasattr(self.gym_env, "render"):
             return self.gym_env.render(mode="rgb_array")
-        raise NotImplementedError()
 
     def apply_reset(
         self,
@@ -669,11 +647,11 @@ class PlangymEnv(PlanEnv):
         obs, reward, terminal, info = self.gym_env.step(action)
         return obs, reward, terminal, info
 
-    def sample_action(self) -> Union[int, numpy.ndarray]:
+    def sample_action(self) -> Union[int, np.ndarray]:
         """Return a valid action that can be used to step the Environment chosen at random."""
         if hasattr(self.action_space, "sample"):
             return self.action_space.sample()
-        return self.gym_env.action_space.sample()  # pragma: no cover
+        return self.gym_env.action_space.sample()
 
     def clone(self, **kwargs) -> "PlangymEnv":
         """Return a copy of the environment."""
