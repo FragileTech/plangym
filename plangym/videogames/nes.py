@@ -3,7 +3,6 @@ from typing import Any, Dict, Optional
 
 import gym
 import numpy
-import numpy as np
 
 from plangym.videogames.env import VideogameEnv
 
@@ -55,7 +54,7 @@ class NesEnv(VideogameEnv):
         """Access the underlying NESEnv."""
         return self.gym_env.unwrapped
 
-    def get_image(self) -> np.ndarray:
+    def get_image(self) -> numpy.ndarray:
         """
         Return a numpy array containing the rendered view of the environment.
 
@@ -64,11 +63,11 @@ class NesEnv(VideogameEnv):
         """
         return self.gym_env.screen.copy()
 
-    def get_ram(self) -> np.ndarray:
+    def get_ram(self) -> numpy.ndarray:
         """Return a copy of the emulator environment."""
         return self.nes_env.ram.copy()
 
-    def get_state(self, state: Optional[np.ndarray] = None) -> np.ndarray:
+    def get_state(self, state: Optional[numpy.ndarray] = None) -> numpy.ndarray:
         """
         Recover the internal state of the simulation.
 
@@ -76,7 +75,7 @@ class NesEnv(VideogameEnv):
         """
         return self.gym_env.get_state(state)
 
-    def set_state(self, state: np.ndarray) -> None:
+    def set_state(self, state: numpy.ndarray) -> None:
         """
         Set the internal state of the simulation.
 
@@ -136,13 +135,13 @@ class MarioEnv(NesEnv):
         self._original_reward = original_reward
         super(MarioEnv, self).__init__(name=name, **kwargs)
 
-    def get_state(self, state: Optional[np.ndarray] = None) -> np.ndarray:
+    def get_state(self, state: Optional[numpy.ndarray] = None) -> numpy.ndarray:
         """
         Recover the internal state of the simulation.
 
         A state must completely describe the Environment at a given moment.
         """
-        state = np.empty(250288, dtype=np.byte) if state is None else state
+        state = numpy.empty(250288, dtype=numpy.byte) if state is None else state
         state[-2:] = 0  # Some states use the last two bytes. Set to zero by default.
         return super(MarioEnv, self).get_state(state)
 
@@ -194,7 +193,7 @@ class MarioEnv(NesEnv):
         """Return the information contained in info as an observation if obs_type == "info"."""
         if self.obs_type == "coords":
             info = info or self._get_info()
-            obs = np.array(
+            obs = numpy.array(
                 [
                     info.get("x_pos", 0),
                     info.get("y_pos", 0),

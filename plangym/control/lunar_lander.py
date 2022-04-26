@@ -3,8 +3,7 @@ import copy
 import math
 from typing import Iterable, Optional
 
-import numpy as np
-import numpy as numpy
+import numpy
 
 from plangym.control.box_2d import Box2DState
 from plangym.core import PlangymEnv, wrap_callable
@@ -112,7 +111,7 @@ class FastGymLunarLander(GymLunarLander):
         # terrain shape
         CHUNKS = 11
         height = (
-            np.ones(CHUNKS + 1) * H / 4
+            numpy.ones(CHUNKS + 1) * H / 4
             if self.deterministic
             else self.np_random.uniform(0, H / 2, size=(CHUNKS + 1,))
         )
@@ -198,7 +197,7 @@ class FastGymLunarLander(GymLunarLander):
             self.legs.append(leg)
         self.drawlist = [self.lander] + self.legs
 
-        return self.step(np.array([0, 0]) if self.continuous else 0)[0]
+        return self.step(numpy.array([0, 0]) if self.continuous else 0)[0]
 
     def step(self, action: int) -> tuple:
         """Step the environment applying the provided action."""

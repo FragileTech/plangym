@@ -3,7 +3,7 @@ from typing import Union
 import gym
 import pytest
 
-from plangym.vectorization.parallel import ParallelEnvironment
+from plangym.vectorization.parallel import ParallelEnv
 from plangym.videogames.retro import ActionDiscretizer, RetroEnv
 
 
@@ -27,7 +27,7 @@ def retro_sonic():
 
 
 def parallel_retro():
-    return ParallelEnvironment(
+    return ParallelEnv(
         name="Airstriker-Genesis",
         env_class=RetroEnv,
         n_workers=2,
@@ -40,7 +40,7 @@ environments = [retro_airstrike, retro_sonic, parallel_retro]
 
 
 @pytest.fixture(params=environments, scope="class")
-def env(request) -> Union[RetroEnv, ParallelEnvironment]:
+def env(request) -> Union[RetroEnv, ParallelEnv]:
     env_ = request.param()
     if env_.delay_setup and env_.gym_env is None:
         env_.setup()

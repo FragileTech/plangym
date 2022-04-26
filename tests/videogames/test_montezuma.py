@@ -1,6 +1,6 @@
 import pytest
 
-from plangym.vectorization.parallel import ParallelEnvironment
+from plangym.vectorization.parallel import ParallelEnv
 from plangym.videogames.montezuma import CustomMontezuma, MontezumaEnv, MontezumaPosLevel
 from tests import SKIP_ATARI_TESTS
 
@@ -19,7 +19,7 @@ def montezuma_unproc():
 
 
 def parallel_montezuma():
-    return ParallelEnvironment(
+    return ParallelEnv(
         env_class=MontezumaEnv,
         frameskip=5,
         name="",

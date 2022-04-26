@@ -1,6 +1,5 @@
 from gym.wrappers import TimeLimit
 import numpy
-import numpy as np
 import pytest
 
 from plangym.environment_names import ATARI
@@ -42,7 +41,7 @@ class TestAtariEnv:
     def test_get_image(self):
         env = qbert_ram()
         obs = env.get_image()
-        assert isinstance(obs, np.ndarray)
+        assert isinstance(obs, numpy.ndarray)
 
     def test_n_actions(self, env):
         n_actions = env.n_actions

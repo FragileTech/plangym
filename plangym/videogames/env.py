@@ -4,7 +4,6 @@ from typing import Any, Dict, Iterable, Optional
 
 import gym
 import numpy
-import numpy as np
 
 from plangym.core import PlangymEnv, wrap_callable
 
@@ -127,6 +126,6 @@ class VideogameEnv(PlangymEnv, ABC):
             obs = self.get_ram()
         return obs
 
-    def get_ram(self) -> np.ndarray:
+    def get_ram(self) -> numpy.ndarray:
         """Return the ram of the emulator as a numpy array."""
         raise NotImplementedError()

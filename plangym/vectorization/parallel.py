@@ -7,7 +7,7 @@ import traceback
 import numpy
 
 from plangym.core import PlanEnv
-from plangym.vectorization.env import VectorizedEnvironment
+from plangym.vectorization.env import VectorizedEnv
 
 
 class ExternalProcess:
@@ -315,7 +315,7 @@ class BatchEnv:
         results = []
         no_states = states is None or states[0] is None
         _return_state = ((not no_states) and return_state is None) or return_state
-        chunks = ParallelEnvironment.batch_step_data(
+        chunks = ParallelEnv.batch_step_data(
             actions=actions,
             states=states,
             dt=dt,
@@ -331,7 +331,7 @@ class BatchEnv:
             )
             results.append(result)
         results = [res if self._blocking else res() for res in results]
-        return ParallelEnvironment.unpack_transitions(results=results, return_states=_return_state)
+        return ParallelEnv.unpack_transitions(results=results, return_states=_return_state)
 
     def sync_states(self, state, blocking: bool = True) -> None:
         """
@@ -387,7 +387,7 @@ class BatchEnv:
                 env.close()
 
 
-class ParallelEnvironment(VectorizedEnvironment):
+class ParallelEnv(VectorizedEnv):
     """
     Allow any environment to be stepped in parallel when step_batch is called.
 
@@ -396,7 +396,7 @@ class ParallelEnvironment(VectorizedEnvironment):
     Example::
 
         >>> from plangym import AtariEnv
-        >>> env = ParallelEnvironment(env_class=AtariEnv,
+        >>> env = ParallelEnv(env_class=AtariEnv,
         ...                           name="MsPacman-v0",
         ...                           clone_seeds=True,
         ...                           autoreset=True,
@@ -424,7 +424,7 @@ class ParallelEnvironment(VectorizedEnvironment):
         **kwargs,
     ):
         """
-        Initialize a :class:`ParallelEnvironment`.
+        Initialize a :class:`ParallelEnv`.
 
         Args:
             env_class: Class of the environment to be wrapped.
@@ -444,7 +444,7 @@ class ParallelEnvironment(VectorizedEnvironment):
         """
         self._blocking = blocking
         self._batch_env = None
-        super(ParallelEnvironment, self).__init__(
+        super(ParallelEnv, self).__init__(
             env_class=env_class,
             name=name,
             frameskip=frameskip,
@@ -465,13 +465,13 @@ class ParallelEnvironment(VectorizedEnvironment):
         envs = [ExternalProcess(constructor=external_callable) for _ in range(self.n_workers)]
         self._batch_env = BatchEnv(envs, blocking=self._blocking)
         # Initialize local copy last to tolerate singletons better
-        super(ParallelEnvironment, self).setup()
+        super(ParallelEnv, self).setup()
 
     def clone(self, **kwargs) -> "PlanEnv":
         """Return a copy of the environment."""
         default_kwargs = dict(blocking=self.blocking)
         default_kwargs.update(kwargs)
-        return super(ParallelEnvironment, self).clone(**default_kwargs)
+        return super(ParallelEnv, self).clone(**default_kwargs)
 
     def make_transitions(
         self,

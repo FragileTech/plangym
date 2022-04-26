@@ -4,12 +4,11 @@ from typing import Callable, Generator, Tuple, Union
 
 from gym.spaces import Space
 import numpy
-import numpy as np
 
 from plangym.core import PlanEnv, PlangymEnv
 
 
-class VectorizedEnvironment(PlangymEnv, ABC):
+class VectorizedEnv(PlangymEnv, ABC):
     """
     Base class that defines the API for working with vectorized environments.
 
@@ -17,7 +16,7 @@ class VectorizedEnvironment(PlangymEnv, ABC):
     when calling ``step_batch``.
 
     It creates a local copy of the environment that is the target of all the other
-    methods of :class:`PlanEnv`. In practise, a :class:`VectorizedEnvironment`
+    methods of :class:`PlanEnv`. In practise, a :class:`VectorizedEnv`
     acts as a wrapper of an environment initialized with the provided parameters when calling
     __init__.
 
@@ -34,7 +33,7 @@ class VectorizedEnvironment(PlangymEnv, ABC):
         **kwargs,
     ):
         """
-        Initialize a :class:`VectorizedEnvironment`.
+        Initialize a :class:`VectorizedEnv`.
 
         Args:
             env_class: Class of the environment to be wrapped.
@@ -53,15 +52,12 @@ class VectorizedEnvironment(PlangymEnv, ABC):
         self._n_workers = n_workers
         self._env_class = env_class
         self._env_kwargs = kwargs
-        self._plangym_env = None
+        self._plangym_env: Union[PlangymEnv, PlanEnv, None] = None
         self.SINGLETON = env_class.SINGLETON if hasattr(env_class, "SINGLETON") else False
-        # self.RETURNS_GYM_TUPLE = (
-        #    env_class.RETURNS_GYM_TUPLE if hasattr(env_class, "RETURNS_GYM_TUPLE") else True
-        # )
         self.STATE_IS_ARRAY = (
             env_class.STATE_IS_ARRAY if hasattr(env_class, "STATE_IS_ARRAY") else True
         )
-        super(VectorizedEnvironment, self).__init__(
+        super(VectorizedEnv, self).__init__(
             name=name,
             frameskip=frameskip,
             autoreset=autoreset,
@@ -261,7 +257,7 @@ class VectorizedEnvironment(PlangymEnv, ABC):
         """Render the environment using OpenGL. This wraps the OpenAI render method."""
         return self.plan_env.render(mode)
 
-    def get_image(self) -> np.ndarray:
+    def get_image(self) -> numpy.ndarray:
         """
         Return a numpy array containing the rendered view of the environment.
 
@@ -294,16 +290,6 @@ class VectorizedEnvironment(PlangymEnv, ABC):
         testing process of the Environment easier.
         """
         return self.plan_env.sample_action()
-
-    def sync_states(self, state: None):
-        """
-        Synchronize the workers' states with the state of `self.gym_env`.
-
-        Set all the states of the different workers of the internal :class:`BatchEnv`
-        to the same state as the internal :class:`Environment` used to apply the
-        non-vectorized steps.
-        """
-        raise NotImplementedError()
 
     def step_batch(
         self,
@@ -348,6 +334,16 @@ class VectorizedEnvironment(PlangymEnv, ABC):
         self_kwargs.update(kwargs)
         env = self.__class__(**self_kwargs)
         return env
+
+    def sync_states(self, state: None):
+        """
+        Synchronize the workers' states with the state of `self.gym_env`.
+
+        Set all the states of the different workers of the internal :class:`BatchEnv`
+        to the same state as the internal :class:`Environment` used to apply the
+        non-vectorized steps.
+        """
+        raise NotImplementedError()
 
     def make_transitions(self, actions, states, dt, return_state: bool = None):
         """Implement the logic for stepping the environment in parallel."""

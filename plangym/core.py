@@ -6,7 +6,6 @@ import gym
 from gym.spaces import Box, Space
 from gym.wrappers.gray_scale_observation import GrayScaleObservation
 import numpy
-import numpy as np
 
 from plangym.utils import process_frame, remove_time_limit
 
@@ -103,7 +102,7 @@ class PlanEnv(ABC):
         """
         return self._return_image
 
-    def get_image(self) -> Union[None, np.ndarray]:
+    def get_image(self) -> Union[None, numpy.ndarray]:
         """
         Return a numpy array containing the rendered view of the environment.
 
@@ -629,9 +628,14 @@ class PlangymEnv(PlanEnv):
         else:
             img = self.reset(return_state=False)
             cords = self.get_coords_obs(img)
-            self._obs_space = Box(low=-np.inf, high=np.inf, dtype=numpy.float32, shape=cords.shape)
+            self._obs_space = Box(
+                low=-numpy.inf,
+                high=numpy.inf,
+                dtype=numpy.float32,
+                shape=cords.shape,
+            )
 
-    def get_image(self) -> np.ndarray:
+    def get_image(self) -> numpy.ndarray:
         """
         Return a numpy array containing the rendered view of the environment.
 
@@ -665,7 +669,7 @@ class PlangymEnv(PlanEnv):
         obs, reward, terminal, info = self.gym_env.step(action)
         return obs, reward, terminal, info
 
-    def sample_action(self) -> Union[int, np.ndarray]:
+    def sample_action(self) -> Union[int, numpy.ndarray]:
         """Return a valid action that can be used to step the Environment chosen at random."""
         if hasattr(self.action_space, "sample"):
             return self.action_space.sample()

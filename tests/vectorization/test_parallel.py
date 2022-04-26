@@ -1,20 +1,18 @@
-import numpy as np
+import numpy
 import pytest
 
-from plangym.api_tests import batch_size, display, TestPlanEnv, TestPlangymEnv
+from plangym.api_tests import batch_size, display, TestPlanEnv, TestPlangymEnv  # noqa: F401
 from plangym.control.classic_control import ClassicControl
-from plangym.vectorization.parallel import BatchEnv, ExternalProcess, ParallelEnvironment
+from plangym.vectorization.parallel import BatchEnv, ExternalProcess, ParallelEnv
 from plangym.videogames.atari import AtariEnv
 
 
 def parallel_cartpole():
-    return ParallelEnvironment(
-        env_class=ClassicControl, name="CartPole-v0", blocking=True, n_workers=2
-    )
+    return ParallelEnv(env_class=ClassicControl, name="CartPole-v0", blocking=True, n_workers=2)
 
 
 def parallel_pacman():
-    return ParallelEnvironment(env_class=AtariEnv, name="MsPacman-ram-v0", n_workers=2)
+    return ParallelEnv(env_class=AtariEnv, name="MsPacman-ram-v0", n_workers=2)
 
 
 environments = [parallel_cartpole, parallel_pacman]
@@ -38,27 +36,27 @@ class TestBatchEnv:
 
     def test_reset(self, env):
         obs = env._batch_env.reset(return_states=False)
-        assert isinstance(obs, np.ndarray)
-        indices = np.arange(len(env._batch_env._envs))
+        assert isinstance(obs, numpy.ndarray)
+        indices = numpy.arange(len(env._batch_env._envs))
         state, obs = env._batch_env.reset(return_states=True, indices=indices)
         if env.STATE_IS_ARRAY:
-            assert isinstance(state, np.ndarray)
+            assert isinstance(state, numpy.ndarray)
 
 
 class TestExternalProcess:
     def test_reset(self, env):
         ep = env._batch_env[0]
         obs = ep.reset(return_states=False, blocking=True)
-        assert isinstance(obs, np.ndarray)
+        assert isinstance(obs, numpy.ndarray)
         state, obs = ep.reset(return_states=True, blocking=True)
         if env.STATE_IS_ARRAY:
-            assert isinstance(state, np.ndarray)
+            assert isinstance(state, numpy.ndarray)
 
         obs = ep.reset(return_states=False, blocking=False)()
-        assert isinstance(obs, np.ndarray)
+        assert isinstance(obs, numpy.ndarray)
         state, obs = ep.reset(return_states=True, blocking=False)()
         if env.STATE_IS_ARRAY:
-            assert isinstance(state, np.ndarray)
+            assert isinstance(state, numpy.ndarray)
 
     def test_step(self, env):
         ep = env._batch_env[0]
@@ -70,7 +68,7 @@ class TestExternalProcess:
         state, *data = ep.step(action, state, blocking=True)
         assert len(data) > 0
         if env.STATE_IS_ARRAY:
-            assert isinstance(state, np.ndarray)
+            assert isinstance(state, numpy.ndarray)
 
         state, _ = ep.reset(return_states=True, blocking=False)()
         action = env.sample_action()
