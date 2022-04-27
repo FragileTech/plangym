@@ -43,8 +43,6 @@ class VectorizedEnv(PlangymEnv, ABC):
                 when the OpenAI environment returns ``end = True``.
             delay_setup: If ``True`` do not initialize the :class:`gym.Environment`
                 and wait for ``setup`` to be called later.
-            env_callable: Callable that returns an instance of the environment
-                that will be parallelized.
             n_workers:  Number of workers that will be used to step the env.
             **kwargs: Additional keyword arguments passed to env_class.__init__.
 

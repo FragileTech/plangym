@@ -1,6 +1,7 @@
 import os
 import warnings
 
+import gym
 import pytest
 
 from plangym.control.classic_control import ClassicControl
@@ -117,5 +118,7 @@ class TestMake:
             _test_env_class(name=None, domain_name=domain_name, cls=DMControlEnv)
 
     def test_invalid_name(self):
-        with pytest.raises(ValueError):
+        with pytest.raises(gym.error.Error):
             make(name="Miaudb")
+        with pytest.raises(gym.error.UnregisteredEnv):
+            make(name="Miaudb-v0")

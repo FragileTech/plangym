@@ -61,6 +61,17 @@ warnings.filterwarnings(
         "as it behaves surprisingly on unicode inputs. Use frombuffer instead"
     ),
 )
+warnings.filterwarnings(
+    "ignore",
+    message=(
+        " DeprecationWarning: distutils Version classes are deprecated. "
+        "Use packaging.version instead."
+    ),
+)
+warnings.filterwarnings(
+    "ignore",
+    message=" WARNING:root:The use of `check_types` is deprecated and does not have any effect.",
+)
 
 
 from plangym.control import Box2DEnv, ClassicControl, DMControlEnv, LunarLander  # noqa: E402
