@@ -248,10 +248,10 @@ class PlanEnv(ABC):
         self._n_step = 0
         for _ in range(int(dt)):
             for _ in range(self.frameskip):
+                self._n_step += 1
                 step_data = self.apply_action(action)  # (obs, reward, terminal, info)
                 step_data = self.process_apply_action(*step_data)
                 self._obs_step, self._reward_step, self._terminal_step, self._info_step = step_data
-                self._n_step += 1
                 if self._terminal_step:
                     break
             if self._terminal_step:
@@ -726,6 +726,7 @@ class PlangymEnv(PlanEnv):
         """Render the environment using OpenGL. This wraps the OpenAI render method."""
         if hasattr(self.gym_env, "render"):
             return self.gym_env.render(mode=mode)
+        raise NotImplementedError()
 
     def process_obs(self, obs, **kwargs):
         """Perform optional computation for computing the observation returned by step."""

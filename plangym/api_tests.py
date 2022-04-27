@@ -221,7 +221,7 @@ class TestPlanEnv:
             assert state_is_array if env.STATE_IS_ARRAY else not state_is_array
             if state_is_array:
                 assert _state.shape == new_state.shape
-            if not env.SINGLETON:
+            if not env.SINGLETON and env.STATE_IS_ARRAY:
                 curr_state = env.get_state()
                 assert (new_state == curr_state).all(), (
                     f"original: {new_state[new_state!= curr_state]} "
