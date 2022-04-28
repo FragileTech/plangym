@@ -14,7 +14,12 @@ wrap_callable = Union[Callable[[], gym.Wrapper], Tuple[Callable[..., gym.Wrapper
 
 
 class PlanEnv(ABC):
-    """Inherit from this class to adapt environments to different problems."""
+    """
+    Inherit from this class to adapt environments to different problems.
+    
+    Base class that establishes all needed methods and blueprints to work with 
+    Gym environments.
+    """
 
     STATE_IS_ARRAY = True
     OBS_IS_ARRAY = True
@@ -37,7 +42,9 @@ class PlanEnv(ABC):
             autoreset: Automatically reset the environment when the OpenAI environment
                 returns ``end = True``.
             delay_setup: If ``True`` do not initialize the ``gym.Environment``
-                and wait for ``setup`` to be called later.
+                and wait for ``setup`` to be called later (delayed setups are necessary 
+                when one requires to serialize the object environment or to have duplicated 
+                instances). 
             return_image: If ``True`` add an "rgb" key in the `info` dictionary returned by `step`
              that contains an RGB representation of the environment state.
 
@@ -121,10 +128,16 @@ class PlanEnv(ABC):
         """
         Step the environment applying the supplied action.
 
-        Optionally set the state to the supplied state before stepping it.
+        Optionally set the state to the supplied state before stepping it (the 
+        method prepares the environment in the given state, dismissing the current 
+        state, and applies the action afterwards).  
 
         Take ``dt`` simulation steps and make the environment evolve in multiples \
         of ``self.frameskip`` for a total of ``dt`` * ``self.frameskip`` steps.
+        
+        In addition, the method allows the user to prepare the returned object, 
+        adding additional information and custom pre-processings via ``self.process_step`` 
+        and ``self.get_step_tuple`` methods.
 
         Args:
             action: Chosen action applied to the environment.
@@ -165,10 +178,10 @@ class PlanEnv(ABC):
         Restart the environment.
 
         Args:
-            return_state: If ``True`` it will return the state of the environment.
+            return_state: If ``True``, it will return the state of the environment.
 
         Returns:
-            ``obs`` if ```return_state`` is ``True`` else return ``(state, obs)``.
+            ``(state, obs)`` if ```return_state`` is ``True`` else return ``obs``.
 
         """
         obs = self.apply_reset()  # Returning info upon reset is not yet supported
@@ -183,8 +196,8 @@ class PlanEnv(ABC):
         return_state: bool = True,
     ) -> Tuple[Union[list, numpy.ndarray], ...]:
         """
-        Vectorized version of the `step` method. It allows to step a vector of \
-        states and actions.
+        Vectorized version of the `step` method. It allows the user to step a 
+        vector of states and actions.
 
         The signature and behaviour is the same as `step`, but taking a list of
         states, actions and dts as input.
@@ -192,13 +205,17 @@ class PlanEnv(ABC):
         Args:
             actions: Iterable containing the different actions to be applied.
             states: Iterable containing the different states to be set.
-            dt: int or array containing the consecutive that will be applied to each state.
-            return_state: Whether to return the state in the returned tuple. \
+            dt: int or array containing the consecutive that will be applied to each state. 
+                If array, the different values are distributed among the multiple environments
+                (contrary to ``self.frameskip``, which is a common value for any instance). 
+            return_state: Whether to return the state in the returned tuple, depending on 
+                the boolean value. \
                 If None, `step` will return the state if `state` was passed as a parameter.
 
         Returns:
-            if states is `None` returns `(observs, rewards, ends, infos)`
-            else returns `(new_states, observs, rewards, ends, infos)`.
+            If return_state is `True`, the method returns `(new_states, observs, rewards, ends, infos)`.
+            If return_state is `False`, the method returns `(observs, rewards, ends, infos)`.
+            If return_state is `None`, the returned object depends on the states parameter. 
 
         """
         dt_is_array = (isinstance(dt, numpy.ndarray) and dt.shape) or isinstance(dt, (list, tuple))
@@ -237,6 +254,11 @@ class PlanEnv(ABC):
         Take ``dt`` simulation steps and make the environment evolve in multiples\
         of ``self.frameskip`` for a total of ``dt`` * ``self.frameskip`` steps.
 
+        The method performs any post-processing to the data after applying the action
+        to the environment via ``self.process_apply_action``. 
+        
+        This method neither computes nor returns any state. 
+
         Args:
             action: Chosen action applied to the environment.
             dt: Consecutive number of times that the action will be applied.
@@ -246,14 +268,11 @@ class PlanEnv(ABC):
 
         """
         self._n_step = 0
-        for _ in range(int(dt)):
-            for _ in range(self.frameskip):
-                self._n_step += 1
-                step_data = self.apply_action(action)  # (obs, reward, terminal, info)
-                step_data = self.process_apply_action(*step_data)
-                self._obs_step, self._reward_step, self._terminal_step, self._info_step = step_data
-                if self._terminal_step:
-                    break
+        for _ in range(int(dt) * self.frameskip):
+            self._n_step += 1
+            step_data = self.apply_action(action)  # Tuple (obs, reward, terminal, info)
+            step_data = self.process_apply_action(*step_data) # Post-processing to step_data 
+            self._obs_step, self._reward_step, self._terminal_step, self._info_step = step_data
             if self._terminal_step:
                 break
         return step_data
@@ -275,10 +294,10 @@ class PlanEnv(ABC):
         Prepare the tuple that step returns.
 
         This is a post processing state to have fine-grained control over what data \
-        that step is returning.
+        the current step is returning.
 
         By default it determines:
-         - Return the state in the tuple.
+         - Return the state in the tuple (necessary information to save or load the game).
          - Adding the "rgb" key in the `info` dictionary containing an RGB \
          representation of the environment.
 
@@ -291,8 +310,10 @@ class PlanEnv(ABC):
         Returns:
             Tuple containing the environment data after calling `step`.
         """
+        # Determine whether the method has to return the environment state
         default_mode = self._state_step is not None and self._return_state_step is None
         return_state = self._return_state_step or default_mode
+        # Post processing 
         obs = self.process_obs(
             obs=obs,
             reward=reward,
@@ -437,7 +458,8 @@ class PlanEnv(ABC):
 
     def set_state(self, state: Any) -> None:
         """
-        Set the internal state of the simulation.
+        Set the internal state of the simulation. Overwrite current state by the 
+        given argument. 
 
         Args:
             state: Target state to be set in the environment.
@@ -472,10 +494,13 @@ class PlangymEnv(PlanEnv):
     ):
         """
         Initialize a :class:`PlangymEnv`.
+        
+        The user can read all private methods as instance properties. 
 
         Args:
             name: Name of the environment. Follows standard gym syntax conventions.
-            frameskip: Number of times an action will be applied for each ``dt``.
+            frameskip: Number of times an action will be applied for each ``dt``. Common 
+                argument to all environments. 
             autoreset: Automatically reset the environment when the OpenAI environment
                 returns ``end = True``.
             wrappers: Wrappers that will be applied to the underlying OpenAI env.
@@ -488,7 +513,7 @@ class PlangymEnv(PlanEnv):
         """
         self._render_mode = render_mode
         self._gym_env = None
-        self._gym_env_kwargs = kwargs or {}
+        self._gym_env_kwargs = kwargs or {}   # Dictionary containing the gym.make arguments
         self._remove_time_limit = remove_time_limit
         self._wrappers = wrappers
         self._obs_space = None
@@ -530,38 +555,38 @@ class PlangymEnv(PlanEnv):
 
     @property
     def obs_shape(self) -> Tuple[int, ...]:
-        """Tuple containing the shape of the observations returned by the Environment."""
+        """Tuple containing the shape of the *observations* returned by the Environment."""
         return self.observation_space.shape
 
     @property
     def obs_type(self) -> str:
-        """Return the type of observation returned by the environment."""
+        """Return the *type* of observation returned by the environment."""
         return self._obs_type
 
     @property
     def observation_space(self) -> Space:
-        """Return the observation_space of the environment."""
+        """Return the *observation_space* of the environment."""
         return self._obs_space
 
     @property
     def action_shape(self) -> Tuple[int, ...]:
-        """Tuple containing the shape of the actions applied to the Environment."""
+        """Tuple containing the shape of the *actions* applied to the Environment."""
         return self.action_space.shape
 
     @property
     def action_space(self) -> Space:
-        """Return the action_space of the environment."""
+        """Return the *action_space* of the environment."""
         return self._action_space
 
     @property
     def reward_range(self):
-        """Return the reward_range of the environment."""
+        """Return the *reward_range* of the environment."""
         if hasattr(self.gym_env, "reward_range"):
             return self.gym_env.reward_range
 
     @property
     def metadata(self):
-        """Return the metadata of the environment."""
+        """Return the *metadata* of the environment."""
         if hasattr(self.gym_env, "metadata"):
             return self.gym_env.metadata
         return {"render_modes": [None, "human", "rgb_array"]}
@@ -577,8 +602,13 @@ class PlangymEnv(PlanEnv):
         return self._remove_time_limit
 
     def setup(self):
-        """Initialize the target :class:`gym.Env` instance."""
-        self._gym_env = self.init_gym_env()
+        """
+        Initialize the target :class:`gym.Env` instance.
+        
+        The method calls ``self.init_gym_env`` to initialize the :class:``gym.Env`` instance.
+        It removes time limits if needed and applies wrappers introduced by the user. 
+        """
+        self._gym_env = self.init_gym_env()  
         if self.remove_time_limit:
             self._gym_env = remove_time_limit(self._gym_env)
         if self._wrappers is not None:
@@ -640,7 +670,7 @@ class PlangymEnv(PlanEnv):
         Return a numpy array containing the rendered view of the environment.
 
         Square matrices are interpreted as a greyscale image. Three-dimensional arrays
-        are interpreted as RGB images with channels (Height, Width, RGB)
+        are interpreted as RGB images with channels (Height, Width, RGB).
         """
         if hasattr(self.gym_env, "render"):
             return self.gym_env.render(mode="rgb_array")
@@ -657,7 +687,7 @@ class PlangymEnv(PlanEnv):
             return_state: If ``True`` it will return the state of the environment.
 
         Returns:
-            ``obs`` if ```return_state`` is ``True`` else return ``(state, obs)``.
+            ``(state, obs)`` if ```return_state`` is ``True`` else return ``obs``.
 
         """
         if self.gym_env is None and self.delay_setup:
@@ -665,12 +695,16 @@ class PlangymEnv(PlanEnv):
         return self.gym_env.reset()
 
     def apply_action(self, action):
-        """Accumulate rewards and calculate terminal flag after stepping the environment."""
+        """
+        Evolve the environment for one time step applying the provided action. 
+        
+        Accumulate rewards and calculate terminal flag after stepping the environment.
+        """
         obs, reward, terminal, info = self.gym_env.step(action)
         return obs, reward, terminal, info
 
     def sample_action(self) -> Union[int, numpy.ndarray]:
-        """Return a valid action that can be used to step the Environment chosen at random."""
+        """Return a valid action that can be used to step the environment chosen at random."""
         if hasattr(self.action_space, "sample"):
             return self.action_space.sample()
         return self.gym_env.action_space.sample()  # pragma: no cover
@@ -694,7 +728,7 @@ class PlangymEnv(PlanEnv):
         self._gym_env = None
 
     def init_gym_env(self) -> gym.Env:
-        """Initialize the :class:`gym.Env`` instance that the current class is wrapping."""
+        """Initialize the :class:``gym.Env`` instance that the current class is wrapping."""
         gym_env: gym.Env = gym.make(self.name, **self._gym_env_kwargs)
         gym_env.reset()
         return gym_env
@@ -729,7 +763,12 @@ class PlangymEnv(PlanEnv):
         raise NotImplementedError()
 
     def process_obs(self, obs, **kwargs):
-        """Perform optional computation for computing the observation returned by step."""
+        """
+        Perform optional computation for computing the observation returned by step.
+        
+        This is a post processing step to have fine-grained control over the returned 
+        observation.
+        """
         if self.obs_type == "coords":
             return self.get_coords_obs(obs, **kwargs)
         elif self.obs_type == "rgb":
