@@ -24,9 +24,35 @@ Plangym currently supports all the following environments:
 * OpenAI gym Box2D environments
 * OpenAI gym Atari 2600 environments
 * Deepmind's dm_control environments
-* stable-retro environments
+* Stable-retro environments
 
 ## Getting started
+
+### Stepping an environment
+```python
+import plangym
+env = plangym.make(name="CartPole-v0")
+state, obs = env.reset()
+
+state = state.copy()
+action = env.action_space.sample()
+
+data = env.step(state=state, action=action)
+new_state, observ, reward, end, info = data
+```
+We initialize the environment using the command `plangym.make`, similarly to `gym` syntax. By resetting 
+the environment, we get our initial _state_ and _observation_. The fact that the environment is returning its current
+state is one of the main features of `plangym`; we are able to __get__ and __set__ the state of the 
+environment in each step as if we were loading and saving the information of a game. This allows the user to apply 
+a specific action to an explicit state. 
+
+We interact with the environment by applying an action to a specific environment state via `plangym.Env.step`. As we 
+mentioned, we can define the exact environment state over which we apply our action. 
+
+As expected, this function returns the evolution of the environment (or next step), 
+the observed results, the reward of the performed action, if the agent enters 
+a terminal state, and additional information about the process.  
+
 
 ### Stepping a batch of states and actions
 ```python
@@ -40,6 +66,12 @@ actions = [env.action_space.sample() for _ in range(10)]
 data = env.step_batch(states=states, actions=actions)
 new_states, observs, rewards, ends, infos = data
 ```
+
+`plangym` allows applying multiple actions in a single call via the command `plangym.Env.step_batch`.
+The syntax used for this case is very similar to that employed when calling a `step` function; we only should define 
+a __list__ of states and actions and use them as arguments of the function. `plangym` will take care of 
+distributing the states and actions, returning a tuple with the results of such actions. 
+
 ### Using parallel steps
 
 ```python
@@ -54,6 +86,12 @@ actions = [env.action_space.sample() for _ in range(10)]
 data =  env.step_batch(states=states, actions=actions)
 new_states, observs, rewards, ends, infos = data
 ```
+
+`plangym` operates with parallel processes very easily. The syntax is exactly the same as the one used in the 
+previous case. We simply have to specify the number of workers when defining the environment. 
+
+The list of actions and states will be distributed among the multiple workers with the `plangym.Env.step_batch` function, 
+which returns a tuple containing the new states, observations, rewards and information of the processes. 
 
 ## Installation 
 Plangym is tested on Ubuntu 20.04 and Ubuntu 21.04 for python versions 3.7 and 3.8.
@@ -81,12 +119,12 @@ Install the system dependencies by running
 sudo apt-get install -y --no-install-suggests --no-install-recommends libglfw3 libglew-dev libgl1-mesa-glx libosmesa6 xvfb swig
 ```
 
-To install mujoco, run:
+To install MuJoCo, run:
 ```bash
 make install-mujoco
 ```
 
-Finally, install the project requirements, and plangym.
+Finally, install the project requirements and plangym.
 ```bash
 pip install -r requirements.txt
 pip install .
