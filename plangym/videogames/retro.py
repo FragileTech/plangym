@@ -12,24 +12,29 @@ from plangym.videogames.env import VideogameEnv
 class ActionDiscretizer(gym.ActionWrapper):
     """Wrap a gym-retro environment and make it use discrete actions for the Sonic game."""
 
-    def __init__(self, env):
+    buttons = ["B", "A", "MODE", "START", "UP", "DOWN", "LEFT", "RIGHT", "C", "Y", "X", "Z"]
+
+    def __init__(self, env, actions=None):
         """Initialize a :class`ActionDiscretizer`."""
         super(ActionDiscretizer, self).__init__(env)
-        buttons = ["B", "A", "MODE", "START", "UP", "DOWN", "LEFT", "RIGHT", "C", "Y", "X", "Z"]
-        actions = [
-            ["LEFT"],
-            ["RIGHT"],
-            ["LEFT", "DOWN"],
-            ["RIGHT", "DOWN"],
-            ["DOWN"],
-            ["DOWN", "B"],
-            ["B"],
-        ]
+        actions = (
+            actions
+            if actions is not None
+            else [
+                ["LEFT"],
+                ["RIGHT"],
+                ["LEFT", "DOWN"],
+                ["RIGHT", "DOWN"],
+                ["DOWN"],
+                ["DOWN", "B"],
+                ["B"],
+            ]
+        )
         self._actions = []
         for action in actions:
-            arr = numpy.array([False] * 12)
+            arr = numpy.zeros(len(self.buttons), dtype=bool)
             for button in action:
-                arr[buttons.index(button)] = True
+                arr[self.buttons.index(button)] = True
             self._actions.append(arr)
         self.action_space = spaces.Discrete(len(self._actions))
 
@@ -41,7 +46,7 @@ class ActionDiscretizer(gym.ActionWrapper):
 class RetroEnv(VideogameEnv):
     """Environment for playing ``gym-retro`` games."""
 
-    AVAILABLE_OBS_TYPES = {"coords", "rgb", "grayscale", "ram"}
+    AVAILABLE_OBS_TYPES = {"rgb", "grayscale", "ram"}
     SINGLETON = True
 
     def __init__(
@@ -92,13 +97,6 @@ class RetroEnv(VideogameEnv):
         """Forward getattr to self.gym_env."""
         return getattr(self.gym_env, item)
 
-    @staticmethod
-    def get_win_condition(info: Dict[str, Any]) -> bool:  # pragma: no cover
-        """Get win condition for games that have the end of the screen available."""
-        end_screen = info.get("screen_x", 0) >= info.get("screen_x_end", 1e6)
-        terminal = info.get("x", 0) >= info.get("screen_x_end", 1e6) or end_screen
-        return terminal
-
     def get_ram(self) -> numpy.ndarray:
         """Return the ram of the emulator as a numpy array."""
         return self.get_state()  # .copy()
@@ -144,3 +142,43 @@ class RetroEnv(VideogameEnv):
 
             self._gym_env.close()
             gc.collect()
+
+
+class SonicEnv(RetroEnv):
+    """
+    Environment that represents Sonic retro games.
+
+    This environment allows to get a vector o observations representing the position of sonic
+    as a vector of coordinates.
+    """
+
+    AVAILABLE_OBS_TYPES = {"coords", "rgb", "grayscale", "ram"}
+    _obs_keys = {"score", "lives", "zone", "rings", "level_end_bonus", "act", "x", "y"}
+
+    @staticmethod
+    def get_win_condition(info: Dict[str, Any]) -> bool:  # pragma: no cover
+        """Get win condition for games that have the end of the screen available."""
+        end_screen = info.get("screen_x", 0) >= info.get("screen_x_end", 1e6)
+        terminal = info.get("x", 0) >= info.get("screen_x_end", 1e6) or end_screen
+        return terminal
+
+    def get_coords_obs(self, obs, info=None, **kwargs) -> numpy.ndarray:
+        """Return an observation that is a vector of the data contained in info."""
+        info = info or {k:0 for k in self._obs_keys}
+        return numpy.array([v for k, v in info.items() if k in self._obs_keys])
+
+    @staticmethod
+    def get_lifes_from_info(info: Dict[str, Any]) -> int:
+        """Return the number of lifes remaining in the current game."""
+        return info.get("lives", -1)
+
+    def process_info(self, info, **kwargs) -> Dict[str, Any]:
+        in_bonus_level = info.get("screen_x_end", 1) == 0 and info.get("x", -1) != 0
+        in_boss_fight = (info.get("x", 0) > info.get("screen_x_end", 1) + 350 and
+                info.get("screen_x", 0) == info.get("screen_x_end", 1) and not in_bonus_level
+        )
+        in_transition_screen = info["screen_x_end"] == 0 and info["x"] == 0 and info["y"] == 0
+        info["in_bonus_level"] = in_bonus_level
+        # info["in_boss_fight"] = in_boss_fight
+        info["in_transition_screen"] = in_transition_screen
+        return info
