@@ -2,7 +2,7 @@
 from plangym.control import BalloonEnv, Box2DEnv, ClassicControl, DMControlEnv, LunarLander
 from plangym.environment_names import ATARI, BOX_2D, CLASSIC_CONTROL, DM_CONTROL, RETRO
 from plangym.vectorization import ParallelEnv, RayEnv
-from plangym.videogames import AtariEnv, MarioEnv, MontezumaEnv, RetroEnv
+from plangym.videogames import AtariEnv, MarioEnv, MontezumaEnv, RetroEnv, SonicEnv
 
 
 def get_planenv_class(name, domain_name, state):
@@ -13,6 +13,8 @@ def get_planenv_class(name, domain_name, state):
     #    return MinimalPong
     if name == "PlanMontezuma-v0":
         return MontezumaEnv
+    elif "sonic" in name.lower():
+        return SonicEnv
     elif state is not None or name in set(RETRO):
         return RetroEnv
     elif name in set(CLASSIC_CONTROL):
