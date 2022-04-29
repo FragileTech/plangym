@@ -7,11 +7,21 @@ from plangym.core import PlangymEnv
 
 
 class Box2DState:
-    """Extract state information from Box2D environments."""
+    """
+    Extract state information from Box2D environments.
+
+    This class implements basic functionalities to get the necessary
+    elements to construct a Box2D state.
+    """
 
     @staticmethod
     def get_body_attributes(body) -> dict:
-        """Return a dictionary containing the of all attributes of a given body."""
+        """
+        Return a dictionary containing the attributes of a given body.
+
+        Given a ``Env.world.body`` element, this method constructs a dictionary
+        whose entries describe all body attributes.
+        """
         base = {
             "mass": body.mass,
             "inertia": body.inertia,
@@ -54,7 +64,14 @@ class Box2DState:
 
     @classmethod
     def serialize_body_state(cls, state_dict):
-        """Serialize the state of the target body data."""
+        """
+        Serialize the state of the target body data.
+
+        This method takes as argument the result given by the method
+        ``self.get_body_attributes``, the latter consisting in a dictionary
+        containing all attribute elements of a body. The method returns
+        a dictionary whose values are the serialized attributes of the body.
+        """
         return {k: cls.serialize_body_attribute(v) for k, v in state_dict.items()}
 
     @staticmethod
@@ -73,7 +90,12 @@ class Box2DState:
 
     @classmethod
     def set_body_state(cls, body, state):
-        """Set the state to the target body."""
+        """
+        Set the state to the target body.
+
+        The method defines the corresponding body attribute to the value
+        selected by the user.
+        """
         state = state[0] if isinstance(state, numpy.ndarray) else state
         for k, v in state.items():
             cls.set_value_to_body(body, k, v)
@@ -81,18 +103,28 @@ class Box2DState:
 
     @classmethod
     def serialize_body(cls, body):
-        """Serialize the data of the target body instance."""
-        data = cls.get_body_attributes(body)
+        """Serialize the data of the target ``Env.world.body`` instance."""
+        data: dict = cls.get_body_attributes(body)
         return cls.serialize_body_state(data)
 
     @classmethod
     def serialize_world_state(cls, world):
-        """Serialize the state of all the bodies in world."""
+        """
+        Serialize the state of all the bodies in world.
+
+        The method serializes all body elements contained within the
+        given ``Env.world`` object.
+        """
         return [cls.serialize_body(b) for b in world.bodies]
 
     @classmethod
     def set_world_state(cls, world, state):
-        """Set the state of world to the provided state."""
+        """
+        Set the state of the world environment to the provided state.
+
+        The method states the current environment by defining its world
+        bodies' attributes.
+        """
         for body, state in zip(world.bodies, state):
             cls.set_body_state(body, state)
 
