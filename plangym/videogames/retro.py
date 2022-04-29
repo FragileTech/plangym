@@ -166,3 +166,19 @@ class SonicEnv(RetroEnv):
         """Return an observation that is a vector of the data contained in info."""
         info = info or {k:0 for k in self._obs_keys}
         return numpy.array([v for k, v in info.items() if k in self._obs_keys])
+
+    @staticmethod
+    def get_lifes_from_info(info: Dict[str, Any]) -> int:
+        """Return the number of lifes remaining in the current game."""
+        return info.get("lives", -1)
+
+    def process_info(self, info, **kwargs) -> Dict[str, Any]:
+        in_bonus_level = info.get("screen_x_end", 1) == 0 and info.get("x", -1) != 0
+        in_boss_fight = (info.get("x", 0) > info.get("screen_x_end", 1) + 350 and
+                info.get("screen_x", 0) == info.get("screen_x_end", 1) and not in_bonus_level
+        )
+        in_transition_screen = info["screen_x_end"] == 0 and info["x"] == 0 and info["y"] == 0
+        info["in_bonus_level"] = in_bonus_level
+        # info["in_boss_fight"] = in_boss_fight
+        info["in_transition_screen"] = in_transition_screen
+        return info
