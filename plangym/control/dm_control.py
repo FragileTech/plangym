@@ -18,8 +18,14 @@ except Exception:  # pragma: no cover
 
 class DMControlEnv(PlangymEnv):
     """
-    Wrap the dm_control library, so it can work for planning problems.
+    Wrap the dm_control library, a DeepMind's software stack for
+    physics-based simulation and Reinforcement Learning environments, using
+    MuJoCo physics.
 
+    For more information about the environment, please refer to
+    https://github.com/deepmind/dm_control
+
+    This class allows the implementation of dm_control in planning problems.
     It allows parallel and vectorized execution of the environments.
     """
 
@@ -44,18 +50,19 @@ class DMControlEnv(PlangymEnv):
         Initialize a :class:`DMControlEnv`.
 
         Args:
-            name: Provide the task to be solved as `domain_name-task_name`. For
-                  example 'cartpole-balance'.
+            name: Name of the task. Provide the task to be solved as
+                `domain_name-task_name`. For example 'cartpole-balance'.
             frameskip: Set a deterministic frameskip to apply the same
-                       action N times.
+                action N times.
             episodic_life: Send terminal signal after loosing a life.
             autoreset: Restart environment when reaching a terminal state.
             wrappers: Wrappers that will be applied to the underlying OpenAI env. \
-                     Every element of the iterable can be either a :class:`gym.Wrapper` \
-                     or a tuple containing ``(gym.Wrapper, kwargs)``.
-            delay_setup: If ``True`` do not initialize the ``gym.Environment`` \
-                      and wait for ``setup`` to be called later.
-            visualize_reward: The color of the agent depends on the reward on it's last timestep.
+                Every element of the iterable can be either a :class:`gym.Wrapper` \
+                or a tuple containing ``(gym.Wrapper, kwargs)``.
+            delay_setup: If ``True``, do not initialize the ``gym.Environment`` \
+                and wait for ``setup`` to be called later.
+            visualize_reward: Define the color of the agent, which depends
+                on the reward on its last timestep.
             domain_name: Same as in dm_control.suite.load.
             task_name: Same as in dm_control.suite.load.
             render_mode: None|human|rgb_array
@@ -92,6 +99,7 @@ class DMControlEnv(PlangymEnv):
 
     @staticmethod
     def _parse_names(name, domain_name, task_name):
+        """Return the name, domain name, and task name of the project."""
         if isinstance(name, str) and domain_name is None:
             domain_name = name if "-" not in name else name.split("-")[0]
 
@@ -106,7 +114,7 @@ class DMControlEnv(PlangymEnv):
         return name, domain_name, task_name
 
     def init_gym_env(self):
-        """Initialize the environment instance that the current class is wrapping."""
+        """Initialize the environment instance (dm_control) that the current class is wrapping."""
         from dm_control import suite
 
         env = suite.load(
@@ -125,6 +133,13 @@ class DMControlEnv(PlangymEnv):
             super(DMControlEnv, self).setup()
 
     def _init_action_space(self):
+        """
+        Define the action space of the environment.
+
+        This method determines the spectrum of possible actions that the
+        agent can perform. The action space consists in a grid representing
+        the Cartesian product of the closed intervals defined by the user.
+        """
         self._action_space = Box(
             low=self.action_spec().minimum,
             high=self.action_spec().maximum,
@@ -132,6 +147,7 @@ class DMControlEnv(PlangymEnv):
         )
 
     def _init_obs_space_coords(self):
+        """Define the observation space of the environment."""
         shape = self.reset(return_state=False).shape
         self._obs_space = Box(low=-numpy.inf, high=numpy.inf, shape=shape, dtype=numpy.float32)
 
@@ -144,7 +160,7 @@ class DMControlEnv(PlangymEnv):
         Return a numpy array containing the rendered view of the environment.
 
         Square matrices are interpreted as a greyscale image. Three-dimensional arrays
-        are interpreted as RGB images with channels (Height, Width, RGB)
+        are interpreted as RGB images with channels (Height, Width, RGB).
         """
         return self.gym_env.physics.render(camera_id=0)
 
@@ -169,7 +185,14 @@ class DMControlEnv(PlangymEnv):
         return True
 
     def show_game(self, sleep: float = 0.05):
-        """Render the collected RGB images."""
+        """
+        Render the collected RGB images.
+
+        When 'human' option is selected as argument for the `render` method,
+        it stores a collection of RGB images inside the ``self.viewer``
+        attribute. This method calls the latter to visualize the collected
+        images.
+        """
         import time
 
         for img in self.viewer:
@@ -228,7 +251,12 @@ class DMControlEnv(PlangymEnv):
 
     @staticmethod
     def _time_step_to_obs(time_step) -> numpy.ndarray:
-        # Concat observations in a single array, so it is easier to calculate distances
+        """
+        Stack observation values as a horizontal sequence.
+
+        Concat observations in a single array, making easier calculating
+        distances.
+        """
         obs_array = numpy.hstack(
             [numpy.array([time_step.observation[x]]).flatten() for x in time_step.observation],
         )

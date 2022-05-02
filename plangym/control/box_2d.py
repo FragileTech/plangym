@@ -140,13 +140,13 @@ class Box2DState:
 
 
 class Box2DEnv(PlangymEnv):
-    """Common interface for working with Box2D environments."""
+    """Common interface for working with Box2D environments released by `gym`."""
 
     def get_state(self) -> numpy.array:
         """
         Recover the internal state of the simulation.
 
-        An state must completely describe the Environment at a given moment.
+        A state must completely describe the Environment at a given moment.
         """
         state = Box2DState.get_env_state(self.gym_env)
         return numpy.array((state, None), dtype=object)
