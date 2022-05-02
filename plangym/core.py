@@ -204,7 +204,7 @@ class PlanEnv(ABC):
         Args:
             actions: Iterable containing the different actions to be applied.
             states: Iterable containing the different states to be set.
-            dt: int or array containing the consecutive that will be applied to each state. 
+            dt: int or array containing the consecutive that will be applied to each state.
                 If array, the different values are distributed among the multiple environments
                 (contrary to ``self.frameskip``, which is a common value for any instance).
             return_state: Whether to return the state in the returned tuple, depending on
