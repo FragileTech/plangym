@@ -16,8 +16,8 @@ wrap_callable = Union[Callable[[], gym.Wrapper], Tuple[Callable[..., gym.Wrapper
 class PlanEnv(ABC):
     """
     Inherit from this class to adapt environments to different problems.
-    
-    Base class that establishes all needed methods and blueprints to work with 
+
+    Base class that establishes all needed methods and blueprints to work with
     Gym environments.
     """
 
@@ -42,9 +42,9 @@ class PlanEnv(ABC):
             autoreset: Automatically reset the environment when the OpenAI environment
                 returns ``end = True``.
             delay_setup: If ``True`` do not initialize the ``gym.Environment``
-                and wait for ``setup`` to be called later (delayed setups are necessary 
-                when one requires to serialize the object environment or to have duplicated 
-                instances). 
+                and wait for ``setup`` to be called later (delayed setups are necessary
+                when one requires to serialize the object environment or to have duplicated
+                instances).
             return_image: If ``True`` add an "rgb" key in the `info` dictionary returned by `step`
              that contains an RGB representation of the environment state.
 
@@ -271,7 +271,7 @@ class PlanEnv(ABC):
         for _ in range(int(dt) * self.frameskip):
             self._n_step += 1
             step_data = self.apply_action(action)  # Tuple (obs, reward, terminal, info)
-            step_data = self.process_apply_action(*step_data) # Post-processing to step_data 
+            step_data = self.process_apply_action(*step_data)  # Post-processing to step_data
             self._obs_step, self._reward_step, self._terminal_step, self._info_step = step_data
             if self._terminal_step:
                 break
@@ -313,7 +313,7 @@ class PlanEnv(ABC):
         # Determine whether the method has to return the environment state
         default_mode = self._state_step is not None and self._return_state_step is None
         return_state = self._return_state_step or default_mode
-        # Post processing 
+        # Post processing
         obs = self.process_obs(
             obs=obs,
             reward=reward,
@@ -458,8 +458,8 @@ class PlanEnv(ABC):
 
     def set_state(self, state: Any) -> None:
         """
-        Set the internal state of the simulation. Overwrite current state by the 
-        given argument. 
+        Set the internal state of the simulation. Overwrite current state by the
+        given argument.
 
         Args:
             state: Target state to be set in the environment.
@@ -494,13 +494,13 @@ class PlangymEnv(PlanEnv):
     ):
         """
         Initialize a :class:`PlangymEnv`.
-        
-        The user can read all private methods as instance properties. 
+
+        The user can read all private methods as instance properties.
 
         Args:
             name: Name of the environment. Follows standard gym syntax conventions.
-            frameskip: Number of times an action will be applied for each ``dt``. Common 
-                argument to all environments. 
+            frameskip: Number of times an action will be applied for each ``dt``. Common
+                argument to all environments.
             autoreset: Automatically reset the environment when the OpenAI environment
                 returns ``end = True``.
             wrappers: Wrappers that will be applied to the underlying OpenAI env.
@@ -513,7 +513,7 @@ class PlangymEnv(PlanEnv):
         """
         self._render_mode = render_mode
         self._gym_env = None
-        self._gym_env_kwargs = kwargs or {}   # Dictionary containing the gym.make arguments
+        self._gym_env_kwargs = kwargs or {}  # Dictionary containing the gym.make arguments
         self._remove_time_limit = remove_time_limit
         self._wrappers = wrappers
         self._obs_space = None
@@ -604,11 +604,11 @@ class PlangymEnv(PlanEnv):
     def setup(self):
         """
         Initialize the target :class:`gym.Env` instance.
-        
+
         The method calls ``self.init_gym_env`` to initialize the :class:``gym.Env`` instance.
-        It removes time limits if needed and applies wrappers introduced by the user. 
+        It removes time limits if needed and applies wrappers introduced by the user.
         """
-        self._gym_env = self.init_gym_env()  
+        self._gym_env = self.init_gym_env()
         if self.remove_time_limit:
             self._gym_env = remove_time_limit(self._gym_env)
         if self._wrappers is not None:
@@ -696,8 +696,8 @@ class PlangymEnv(PlanEnv):
 
     def apply_action(self, action):
         """
-        Evolve the environment for one time step applying the provided action. 
-        
+        Evolve the environment for one time step applying the provided action.
+
         Accumulate rewards and calculate terminal flag after stepping the environment.
         """
         obs, reward, terminal, info = self.gym_env.step(action)
@@ -765,8 +765,8 @@ class PlangymEnv(PlanEnv):
     def process_obs(self, obs, **kwargs):
         """
         Perform optional computation for computing the observation returned by step.
-        
-        This is a post processing step to have fine-grained control over the returned 
+
+        This is a post processing step to have fine-grained control over the returned
         observation.
         """
         if self.obs_type == "coords":
