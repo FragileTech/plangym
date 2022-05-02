@@ -81,12 +81,12 @@ class Box2DState:
 
         body_object = getattr(body, name)
         if isinstance(body_object, b2Vec2):
-            return body_object.Set(*value)
+            body_object.Set(*value)
         elif isinstance(body_object, b2Transform):
             body_object.angle = value["angle"]
             body_object.position.Set(*value["position"])
         else:
-            return setattr(body, name, value)
+            setattr(body, name, value)
 
     @classmethod
     def set_body_state(cls, body, state):

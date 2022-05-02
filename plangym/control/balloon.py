@@ -32,7 +32,17 @@ class BalloonEnv(PlangymEnv):
         array_state: bool = True,
         **kwargs,
     ):
-        """Initialize a :class:`BalloonEnv`."""
+        """
+        Initialize a :class:`BalloonEnv`.
+
+        Args:
+            name: Name of the environment. Follows standard gym syntax conventions.
+            renderer: MatplotlibRenderer object (or any renderer object) to plot
+                the ``balloons`` environment. For more information, see the
+                official documentation.
+            array_state: boolean value. If True, transform the state object to
+                a ``numpy.array``.
+        """
         renderer = renderer or MatplotlibRenderer()
         self.STATE_IS_ARRAY = array_state
         super(BalloonEnv, self).__init__(name=name, renderer=renderer, **kwargs)
