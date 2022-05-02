@@ -128,15 +128,15 @@ class PlanEnv(ABC):
         """
         Step the environment applying the supplied action.
 
-        Optionally set the state to the supplied state before stepping it (the 
-        method prepares the environment in the given state, dismissing the current 
-        state, and applies the action afterwards).  
+        Optionally set the state to the supplied state before stepping it (the
+        method prepares the environment in the given state, dismissing the current
+        state, and applies the action afterwards).
 
         Take ``dt`` simulation steps and make the environment evolve in multiples \
         of ``self.frameskip`` for a total of ``dt`` * ``self.frameskip`` steps.
-        
-        In addition, the method allows the user to prepare the returned object, 
-        adding additional information and custom pre-processings via ``self.process_step`` 
+
+        In addition, the method allows the user to prepare the returned object,
+        adding additional information and custom pre-processings via ``self.process_step``
         and ``self.get_step_tuple`` methods.
 
         Args:
@@ -196,26 +196,26 @@ class PlanEnv(ABC):
         return_state: bool = True,
     ) -> Tuple[Union[list, numpy.ndarray], ...]:
         """
-        Vectorized version of the `step` method. It allows the user to step a 
-        vector of states and actions.
+        Allow stepping a vector of states and actions.
 
-        The signature and behaviour is the same as `step`, but taking a list of
-        states, actions and dts as input.
+        Vectorized version of the `step` method. The signature and behaviour is
+        the same as `step`, but taking a list of states, actions and dts as input.
 
         Args:
             actions: Iterable containing the different actions to be applied.
             states: Iterable containing the different states to be set.
             dt: int or array containing the consecutive that will be applied to each state. 
                 If array, the different values are distributed among the multiple environments
-                (contrary to ``self.frameskip``, which is a common value for any instance). 
-            return_state: Whether to return the state in the returned tuple, depending on 
+                (contrary to ``self.frameskip``, which is a common value for any instance).
+            return_state: Whether to return the state in the returned tuple, depending on
                 the boolean value. \
                 If None, `step` will return the state if `state` was passed as a parameter.
 
         Returns:
-            If return_state is `True`, the method returns `(new_states, observs, rewards, ends, infos)`.
-            If return_state is `False`, the method returns `(observs, rewards, ends, infos)`.
-            If return_state is `None`, the returned object depends on the states parameter. 
+            If return_state is `True`, the method returns `(new_states, observs, rewards, ends,
+            infos)`. \
+            If return_state is `False`, the method returns `(observs, rewards, ends, infos)`. \
+            If return_state is `None`, the returned object depends on the states parameter.
 
         """
         dt_is_array = (isinstance(dt, numpy.ndarray) and dt.shape) or isinstance(dt, (list, tuple))
@@ -255,9 +255,9 @@ class PlanEnv(ABC):
         of ``self.frameskip`` for a total of ``dt`` * ``self.frameskip`` steps.
 
         The method performs any post-processing to the data after applying the action
-        to the environment via ``self.process_apply_action``. 
-        
-        This method neither computes nor returns any state. 
+        to the environment via ``self.process_apply_action``.
+
+        This method neither computes nor returns any state.
 
         Args:
             action: Chosen action applied to the environment.
@@ -458,8 +458,7 @@ class PlanEnv(ABC):
 
     def set_state(self, state: Any) -> None:
         """
-        Set the internal state of the simulation. Overwrite current state by the
-        given argument.
+        Set the internal state of the simulation. Overwrite current state by the given argument.
 
         Args:
             state: Target state to be set in the environment.

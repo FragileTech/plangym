@@ -18,9 +18,10 @@ except Exception:  # pragma: no cover
 
 class DMControlEnv(PlangymEnv):
     """
-    Wrap the dm_control library, a DeepMind's software stack for
-    physics-based simulation and Reinforcement Learning environments, using
-    MuJoCo physics.
+    Wrap the `dm_control library, allowing its implementation in planning problems.
+
+    The dm_control library is a DeepMind's software stack for physics-based
+    simulation and Reinforcement Learning environments, using MuJoCo physics.
 
     For more information about the environment, please refer to
     https://github.com/deepmind/dm_control
