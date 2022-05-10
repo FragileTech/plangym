@@ -86,6 +86,18 @@ new_states, observs, rewards, ends, infos = data
 ```
 
 `plangym` allows applying multiple actions in a single call via the command `plangym.Env.step_batch`.
-The syntax used for this case is very similar to that employed when calling a `step` function; we only should define 
-a __list__ of states and actions and use them as arguments of the function. `plangym` will take care of 
-distributing the states and actions, returning a tuple with the results of such actions. 
+The syntax used for this case is reminiscent to that employed when calling a `step` function; we should define 
+a __list__ of states and actions and use them as arguments of the function `step_batch()`. `plangym` will
+take care of distributing the states and actions correspondingly, returning a tuple with the results
+of such actions. 
+
+### Making environments
+
+To initialize an environment, `plangym` uses the same syntax as `gym` via the `plangym.make` command. However, 
+this command offers more advanced options than the `gym` standard; it controls the general behavior of the API and
+its different environments, and it serves as a command center between the user and the library. 
+
+Instead of using a specific syntax for each environment (with distinct arguments and parameters),
+`plangym` unifies all options within a single, common framework under the control of
+`make()` command (hail hydra).
+
