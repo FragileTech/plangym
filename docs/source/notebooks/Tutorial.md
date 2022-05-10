@@ -99,5 +99,43 @@ its different environments, and it serves as a command center between the user a
 
 Instead of using a specific syntax for each environment (with distinct arguments and parameters),
 `plangym` unifies all options within a single, common framework under the control of
-`make()` command (hail hydra).
+`make()` command.
+
+All instance attributes are defined through the `make()` command, which classifies and distributes them accordingly whether
+they belong to `plangym` or standard parameters. In addition, `make()` also allows the user to configure the
+parameters needed for stepping the environment in parallel. One only should select the desired mode, and
+`plangym` will do the rest.
+
+```python
+import plangym
+env = plangym.make(
+    name="PlanMontezuma-v0",   # name of the environment
+    n_workers=4,  # Number of parallel processes
+    state='',  # Define a specific state for the environment
+)
+```
+Once the parameters have been introduced, the command instantiates the appropriate environment class
+with the given attributes.
+
+
+#### Make arguments
+
+`make()` accepts multiple arguments when creating an environment. We should distinguish between the arguments
+passed to configurate the environment making process and those used to instantiate the environment itself. 
+* Make arguments:  
+Attributes used to configure the process that creates the environment.
+  * name:
+  * n_workers:
+  * ray:
+  * domain_name:
+  * state
+* Environment instance attributes:
+Parameters passed when the class is created. They define and configure the attributes of the class. `make()` accepts
+these arguments as _kwargs_. 
+
+All keyword arguments that do not belong to the _Make arguments_ list are passed as _kwargs_ inside `make()`
+to instantiate the corresponding environment class (we must emphasize that `plangym` will also use
+some attributes included inside the _Make arguments_ classification as instance attributes of the class, such
+as `state` or `domain_name`)
+
 
