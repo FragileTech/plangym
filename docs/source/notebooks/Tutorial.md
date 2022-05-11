@@ -122,13 +122,13 @@ with the given attributes.
 
 `make()` accepts multiple arguments when creating an environment. We should distinguish between the arguments
 passed to configurate the environment making process and those used to instantiate the environment itself. 
-* Make arguments:  
+* Make signature:  
 Attributes used to configure the process that creates the environment.
-  * name:
-  * n_workers:
-  * ray:
-  * domain_name:
-  * state
+  * `name`:
+  * `n_workers`:
+  * `ray`:
+  * `domain_name`:
+  * `state`: 
 * Environment instance attributes:
 Parameters passed when the class is created. They define and configure the attributes of the class. `make()` accepts
 these arguments as _kwargs_. 
@@ -136,6 +136,44 @@ these arguments as _kwargs_.
 All keyword arguments that do not belong to the _Make arguments_ list are passed as _kwargs_ inside `make()`
 to instantiate the corresponding environment class (we must emphasize that `plangym` will also use
 some attributes included inside the _Make arguments_ classification as instance attributes of the class, such
-as `state` or `domain_name`)
+as `state` or `domain_name`).
+
+#### Instance attributes
+
+As mentioned, users dispose of several parameters to configure the environment creation process
+and the attributes of the class itself. Instance parameters are passed as _kwargs_ to the environment class.
+
+Inside these instance attributes, we should differentiate between the attributes managed by `plangym`, and
+those that are specific to the `gym` library. `plangym` attributes characterize the envelope that wraps
+the original `gym` environment, offering a standard interface among all the processes. `gym` attributes are
+those not managed by `plangym` and are passed __directly__ to the `gym.make` method. 
+
+The instance attributes (managed by `plangym`) common to all environment classes are: 
+* `name`: Name of the environment. Follows standard gym syntax conventions.
+* `frameskip`: Number of times an action will be applied for each ``dt``. When we __step__ the environment,
+we take `dt` simulation steps, i.e., we evolve _dt_-times the environment (by applying an action) __in each__
+step. Within __each__ simulation step `dt`, we apply the same action `frameskip` times. At the end
+of the day, the environment will have evolved `dt * frameskip` times. 
+* `autoreset`: Automatically reset the `plangym.environment` when the OpenAI environment returns ``end = True``.
+* `wrappers`: Wrappers that will be applied to the underlying OpenAI environment. Every element
+of the iterable can be either a class `gym.Wrapper` or a tuple containing ``(gym.Wrapper, kwargs)``.
+* `delay_setup`: If ``True``, `plangym` does not initialize the class `gym.environment`and
+waits for ``setup`` to be called later. Deferring the environment instantiation gives the users
+the option to create it in external processes or when demanded. This fact allows sending `plangym.environment`
+as serializable objects, leaving all the settings already defined and prepared for the user to
+instantiate the environment when needed. 
+* `remove_time_limit`: If `True`, remove the time limit from the environment.
+* `render_mode`: Select how the environment and the observations are represented. Options to be
+selected are `[None, "human", "rgb_aray"]`.
+* `episodic_life`: If `True`, `plangym` sends a terminal signal after loosing a life.
+* `obs_type`: Define how `plangym` calculates the observations. Options to be selected
+are `["coords", "rgb", "grayscale", None]`.
+* `return_image`: If ``True``, 'plangym' adds an "rgb" key in the `info` dictionary returned by
+`plangym.env.step` method. This key contains an RGB representation of the environment state.
+
+
+
+
+
 
 
