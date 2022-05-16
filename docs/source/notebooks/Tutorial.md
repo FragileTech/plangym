@@ -47,7 +47,7 @@ data = env.step(state=state, action=action)
 new_state, observ, reward, end, info = data
 ```
 
-We interact with the environment by applying an action to a specific environment state via `plangym.Env.step`.
+We interact with the environment by applying an action to a specific environment state via `plangym.PlanEnv.step`.
 We can define the exact environment state over which we apply our action. 
 
 As expected, this function returns the evolution of the environment,
@@ -55,7 +55,7 @@ the observed results, the reward of the performed action, if the agent enters
 a terminal state, and additional information about the process.
 
 If we are not interested in getting the current state of the environment, we simply define the argument
-`return_state = False` inside the methods `plangym.Env.reset` and `plangym.Env.step`: 
+`return_state = False` inside the methods `plangym.PlanEnv.reset` and `plangym.PlanEnv.step`: 
 
 ```python
 import plangym
@@ -85,7 +85,7 @@ data = env.step_batch(states=states, actions=actions)
 new_states, observs, rewards, ends, infos = data
 ```
 
-`plangym` allows applying multiple actions in a single call via the command `plangym.Env.step_batch`.
+`plangym` allows applying multiple actions in a single call via the command `plangym.PlanEnv.step_batch`.
 The syntax used for this case is reminiscent to that employed when calling a `step` function; we should define 
 a __list__ of states and actions and use them as arguments of the function `step_batch()`. `plangym` will
 take care of distributing the states and actions correspondingly, returning a tuple with the results
@@ -124,11 +124,16 @@ with the given attributes.
 passed to configurate the environment making process and those used to instantiate the environment itself. 
 * Make signature:  
 Attributes used to configure the process that creates the environment.
-  * `name`:
-  * `n_workers`:
-  * `ray`:
-  * `domain_name`:
-  * `state`: 
+  * `name`: Name of the environment.
+  * `n_workers`: Number of workers that will be used to step the environment.
+  * `ray`: Use ray for taking steps in parallel when calling `step_batch()`.
+  * `domain_name`: Return the name of the agent in the current
+  simulation. It is a keyword argument that is only valid for
+  `dm_control` environments.
+  * `state`: Define a specific state for the environment. The state parameter
+  only works for `RetroEnv`, and it is used to select the starting level of the
+  selected game. All the other environments do no accept state as a keyword argument,
+  and specific states can be set using `get_state()` and `set_state()`.
 * Environment instance attributes:
 Parameters passed when the class is created. They define and configure the attributes of the class. `make()` accepts
 these arguments as _kwargs_. 
