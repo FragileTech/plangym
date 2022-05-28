@@ -5,7 +5,7 @@ n ?= auto
 DOCKER_ORG = fragiletech
 DOCKER_TAG ?= ${PROJECT}
 ROM_FILE ?= "uncompressed ROMs.zip"
-ROM_PASSWORD ?= false
+ROM_PASSWORD ?= "NO_PASSWORD"
 VERSION ?= latest
 MUJOCO_PATH?=~/.mujoco
 
@@ -30,7 +30,11 @@ install-mujoco:
 
 .PHONY: import-roms
 import-roms:
+ifeq (${ROM_PASSWORD}, "NO_PASSWORD")
+	unzip -o ${ROM_FILE}
+else
 	unzip -o -P ${ROM_PASSWORD} ${ROM_FILE}
+endif
 	python3 import_retro_roms.py
 
 .PHONY: install-envs
@@ -98,7 +102,7 @@ docker-build:
 docker-test:
 	find -name "*.pyc" -delete
 	docker run --rm --network host -w /${PROJECT} -e MUJOCO_GL=egl -e SKIP_RENDER=True -e DISABLE_RAY=True --entrypoint python3 ${DOCKER_ORG}/${PROJECT}:${VERSION} -m pytest -n $n -s -o log_cli=true -o log_cli_level=info
-	docker run --rm --network host -w /${PROJECT} -e MUJOCO_GL=egl -e SKIP_RENDER=True -e DISABLE_RAY=False --entrypoint python3 ${DOCKER_ORG}/${PROJECT}:${VERSION} -m pytest tests/vectorization/test_ray.py -n 1 -s -o log_cli=true -o log_cli_level=info
+	docker run --rm --network host -w /${PROJECT} -e MUJOCO_GL=egl -e SKIP_RENDER=True -e DISABLE_RAY=False --entrypoint python3 ${DOCKER_ORG}/${PROJECT}:${VERSION} -m pytest tests/vectorization/test_ray.py -s -o log_cli=true -o log_cli_level=info
 
 .PHONY: docker-push
 docker-push:
