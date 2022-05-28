@@ -25,7 +25,6 @@ author = "Guillem Duran Ballester"
 # The short X.Y version
 from plangym.version import __version__
 
-
 version = __version__
 # The full version, including alpha/beta/rc tags
 release = __version__
@@ -57,6 +56,7 @@ extensions = [
 ]
 suppress_warnings = ["image.nonlocal_uri"]
 autodoc_typehints = "description"
+autodoc_mock_imports = ["ray"]
 # Autoapi settings
 autoapi_type = "python"
 autoapi_dirs = ["../../plangym"]
