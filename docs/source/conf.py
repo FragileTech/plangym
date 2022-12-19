@@ -104,6 +104,7 @@ html_static_path = ["_static"]
 
 # myst_parser options
 myst_heading_anchors = 2
+myst_number_code_blocks = ["python"]
 # myst_update_mathjax = False
 autosectionlabel_prefix_document = True
 myst_enable_extensions = [
