@@ -11,7 +11,7 @@ pandoc==2.0.1
 psycopg2-binary==2.8.4
 scipy==1.6.0
 setproctitle==1.2.2
-ipython==7.13.0
+ipython==8.10.0
 xxhash==2.0.0
 opencv-python==4.5.4.60
 pillow==8.4.0
