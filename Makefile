@@ -45,12 +45,12 @@ install-envs:
 
 .PHONY: test-parallel
 test-parallel:
-	find -name "*.pyc" -delete
+	find . -name "*.pyc" -delete
 	DISABLE_RAY=True pytest --doctest-modules -n $n -s -o log_cli=true -o log_cli_level=info
 
 .PHONY: test-ray
 test-ray:
-	find -name "*.pyc" -delete
+	find . -name "*.pyc" -delete
 	pytest tests/vectorization/test_ray.py -n 1 -s -o log_cli=true -o log_cli_level=info
 
 .PHONY: doctest
@@ -63,7 +63,7 @@ test:
 
 .PHONY: run-codecov-test
 run-codecov-test:
-	find -name "*.pyc" -delete
+	find . -name "*.pyc" -delete
 	DISABLE_RAY=True pytest --doctest-modules -n $n -s -o log_cli=true -o log_cli_level=info --cov=./ --cov-report=xml --cov-config=pyproject.toml
 	pytest tests/vectorization/test_ray.py -n 1 -s -o log_cli=true -o log_cli_level=info --cov-append --cov=./ --cov-report=xml --cov-config=pyproject.toml
 
