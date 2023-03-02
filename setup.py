@@ -38,7 +38,7 @@ setup(
     test_suite="tests",
     tests_require=["pytest>=5.3.5", "hypothesis>=5.6.0"],
     install_requires=[
-        "numpy==1.18.5",
+        "numpy",
         "pillow==8.4.0",
         "opencv-python>=4.2.0.32",
     ],
