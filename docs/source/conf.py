@@ -12,10 +12,19 @@
 #
 import os
 import sys
+from unittest.mock import MagicMock
+
+
+class Mock(MagicMock):
+    @classmethod
+    def __getattr__(cls, name):
+        return MagicMock()
 
 
 sys.path.insert(0, os.path.abspath("../../"))
 sys.setrecursionlimit(1500)
+MOCK_MODULES = []
+sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
 # -- Project information -----------------------------------------------------
 project = "plangym"
@@ -57,6 +66,7 @@ extensions = [
 ]
 suppress_warnings = ["image.nonlocal_uri"]
 autodoc_typehints = "description"
+autodoc_mock_imports = ["ray"]
 # Autoapi settings
 autoapi_type = "python"
 autoapi_dirs = ["../../plangym"]
@@ -104,6 +114,7 @@ html_static_path = ["_static"]
 
 # myst_parser options
 myst_heading_anchors = 2
+myst_number_code_blocks = ["python"]
 # myst_update_mathjax = False
 autosectionlabel_prefix_document = True
 myst_enable_extensions = [

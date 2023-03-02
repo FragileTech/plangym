@@ -24,9 +24,23 @@ Plangym currently supports all the following environments:
 * OpenAI gym Box2D environments
 * OpenAI gym Atari 2600 environments
 * Deepmind's dm_control environments
-* stable-retro environments
+* Stable-retro environments
 
 ## Getting started
+
+### Stepping an environment
+```python
+import plangym
+env = plangym.make(name="CartPole-v0")
+state, obs = env.reset()
+
+state = state.copy()
+action = env.action_space.sample()
+
+data = env.step(state=state, action=action)
+new_state, observ, reward, end, info = data
+```
+
 
 ### Stepping a batch of states and actions
 ```python
@@ -40,6 +54,8 @@ actions = [env.action_space.sample() for _ in range(10)]
 data = env.step_batch(states=states, actions=actions)
 new_states, observs, rewards, ends, infos = data
 ```
+
+
 ### Using parallel steps
 
 ```python
@@ -81,12 +97,12 @@ Install the system dependencies by running
 sudo apt-get install -y --no-install-suggests --no-install-recommends libglfw3 libglew-dev libgl1-mesa-glx libosmesa6 xvfb swig
 ```
 
-To install mujoco, run:
+To install MuJoCo, run:
 ```bash
 make install-mujoco
 ```
 
-Finally, install the project requirements, and plangym.
+Finally, install the project requirements and plangym.
 ```bash
 pip install -r requirements.txt
 pip install .
