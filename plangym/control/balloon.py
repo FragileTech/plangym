@@ -8,7 +8,11 @@ try:
     import balloon_learning_environment.env.balloon_env  # noqa: F401
     from balloon_learning_environment.env.rendering.matplotlib_renderer import MatplotlibRenderer
 except ImportError:
-    pass
+
+    def MatplotlibRenderer():  # noqa: D103
+        return None
+
+
 from plangym.core import PlangymEnv
 
 

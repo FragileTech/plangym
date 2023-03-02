@@ -12,10 +12,19 @@
 #
 import os
 import sys
+from unittest.mock import MagicMock
+
+
+class Mock(MagicMock):
+    @classmethod
+    def __getattr__(cls, name):
+        return MagicMock()
 
 
 sys.path.insert(0, os.path.abspath("../../"))
 sys.setrecursionlimit(1500)
+MOCK_MODULES = []
+sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
 # -- Project information -----------------------------------------------------
 project = "plangym"
@@ -24,6 +33,7 @@ author = "Guillem Duran Ballester"
 
 # The short X.Y version
 from plangym.version import __version__
+
 
 version = __version__
 # The full version, including alpha/beta/rc tags

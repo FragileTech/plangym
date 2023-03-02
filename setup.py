@@ -38,7 +38,7 @@ setup(
     test_suite="tests",
     tests_require=["pytest>=5.3.5", "hypothesis>=5.6.0"],
     install_requires=[
-        "numpy>=1.16.2",
+        "numpy==1.18.5",
         "pillow==8.4.0",
         "opencv-python>=4.2.0.32",
     ],
@@ -48,8 +48,6 @@ setup(
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Topic :: Software Development :: Libraries",
