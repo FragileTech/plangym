@@ -28,7 +28,7 @@ try:
     from dm_control import suite
 
     DM_CONTROL = list(suite.ALL_TASKS)
-except ImportError:
+except (ImportError, OSError):
     DM_CONTROL = []
 
 

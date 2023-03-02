@@ -3,6 +3,7 @@ import atexit
 import multiprocessing
 import sys
 import traceback
+from typing import Union
 
 import numpy
 
@@ -122,7 +123,7 @@ class ExternalProcess:
         self,
         actions,
         states=None,
-        dt: [numpy.ndarray, int] = None,
+        dt: Union[numpy.ndarray, int] = None,
         return_state: bool = None,
         blocking=True,
     ):
@@ -308,7 +309,7 @@ class BatchEnv:
         self,
         actions,
         states=None,
-        dt: [numpy.ndarray, int] = 1,
+        dt: Union[numpy.ndarray, int] = 1,
         return_state: bool = None,
     ):
         """Implement the logic for stepping the environment in parallel."""
@@ -395,7 +396,7 @@ class ParallelEnv(VectorizedEnv):
 
     Example::
 
-        >>> from plangym import AtariEnv
+        >>> from plangym.videogames import AtariEnv
         >>> env = ParallelEnv(env_class=AtariEnv,
         ...                           name="MsPacman-v0",
         ...                           clone_seeds=True,
@@ -477,7 +478,7 @@ class ParallelEnv(VectorizedEnv):
         self,
         actions: numpy.ndarray,
         states: numpy.ndarray = None,
-        dt: [numpy.ndarray, int] = 1,
+        dt: Union[numpy.ndarray, int] = 1,
         return_state: bool = None,
     ):
         """

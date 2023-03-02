@@ -76,18 +76,3 @@ warnings.filterwarnings(
 from plangym.core import PlanEnv  # noqa: E402
 from plangym.registry import make  # noqa: E402
 from plangym.version import __version__  # noqa: E402
-
-
-try:
-    from plangym.control import Box2DEnv, ClassicControl, DMControlEnv, LunarLander  # noqa: E402
-except Exception:
-    pass
-
-try:
-    from plangym.vectorization import ParallelEnv, RayEnv  # noqa: E402
-except Exception:
-    pass
-try:
-    from plangym.videogames import AtariEnv, MarioEnv, MontezumaEnv, RetroEnv  # noqa: E402
-except Exception:
-    pass

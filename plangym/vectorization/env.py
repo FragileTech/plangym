@@ -293,7 +293,7 @@ class VectorizedEnv(PlangymEnv, ABC):
         self,
         actions: numpy.ndarray,
         states: numpy.ndarray = None,
-        dt: [numpy.ndarray, int] = 1,
+        dt: Union[numpy.ndarray, int] = 1,
         return_state: bool = None,
     ):
         """
