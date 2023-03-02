@@ -1,8 +1,5 @@
 """Functionality for instantiating the environment by passing the environment id."""
-from plangym.control import BalloonEnv, Box2DEnv, ClassicControl, DMControlEnv, LunarLander
 from plangym.environment_names import ATARI, BOX_2D, CLASSIC_CONTROL, DM_CONTROL, RETRO
-from plangym.vectorization import ParallelEnv, RayEnv
-from plangym.videogames import AtariEnv, MarioEnv, MontezumaEnv, RetroEnv
 
 
 def get_planenv_class(name, domain_name, state):
@@ -12,22 +9,40 @@ def get_planenv_class(name, domain_name, state):
     # elif name == "MinimalPong-v0":
     #    return MinimalPong
     if name == "PlanMontezuma-v0":
+        from plangym.videogames import MontezumaEnv
+
         return MontezumaEnv
     elif state is not None or name in set(RETRO):
+        from plangym.videogames import RetroEnv
+
         return RetroEnv
     elif name in set(CLASSIC_CONTROL):
+        from plangym.control import ClassicControl
+
         return ClassicControl
     elif name in set(BOX_2D):
         if name == "FastLunarLander-v0":
+            from plangym.control import LunarLander
+
             return LunarLander
+        from plangym.control import Box2DEnv
+
         return Box2DEnv
     elif name in ATARI:
+        from plangym.videogames import AtariEnv
+
         return AtariEnv
     elif domain_name is not None or any(x[0] in name for x in DM_CONTROL):
+        from plangym.control import DMControlEnv
+
         return DMControlEnv
     elif "SuperMarioBros" in name:
+        from plangym.videogames import MarioEnv
+
         return MarioEnv
     elif "BalloonLearningEnvironment-v0":
+        from plangym.control import BalloonEnv
+
         return BalloonEnv
     raise ValueError(f"Environment {name} is not supported.")
 
@@ -42,8 +57,12 @@ def get_environment_class(
     """Get the class and vectorized environment and PlangymEnv class from the make params."""
     env_class = get_planenv_class(name, domain_name, state)
     if ray:
+        from plangym.vectorization import RayEnv
+
         return RayEnv, env_class
     elif n_workers is not None:
+        from plangym.vectorization import ParallelEnv
+
         return ParallelEnv, env_class
     return None, env_class
 
