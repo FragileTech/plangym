@@ -264,7 +264,7 @@ class AtariEnv(VideogameEnv):
             <ale_py._ale_py.ALEState object at 0x...>
 
         """
-        state = self.gym_env.unwrapped.clone_state(include_rng=self.clone_seeds)
+        state = self.gym_env.unwrapped.clone_full_state()
         if self.STATE_IS_ARRAY:
             state = numpy.array((state, None), dtype=object)
         return state
@@ -288,7 +288,7 @@ class AtariEnv(VideogameEnv):
         """
         if self.STATE_IS_ARRAY:
             state = state[0]
-        self.gym_env.unwrapped.restore_state(state)
+        self.gym_env.unwrapped.restore_full_state(state)
 
     def step_with_dt(self, action: Union[numpy.ndarray, int, float], dt: int = 1):
         """
