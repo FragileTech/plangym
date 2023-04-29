@@ -1,5 +1,5 @@
 """Implement a :class:`plangym.VectorizedEnv` that uses ray when calling `step_batch`."""
-from typing import List
+from typing import List, Union
 
 import numpy
 
@@ -61,7 +61,7 @@ class RemoteEnv(PlanEnv):
 
     def step_batch(
         self,
-        actions: [numpy.ndarray, list],
+        actions: Union[numpy.ndarray, list],
         states=None,
         dt: int = 1,
         return_state: bool = None,
@@ -90,7 +90,7 @@ class RemoteEnv(PlanEnv):
             return_state=return_state,
         )
 
-    def reset(self, return_state: bool = True) -> [numpy.ndarray, tuple]:
+    def reset(self, return_state: bool = True) -> Union[numpy.ndarray, tuple]:
         """Restart the environment."""
         return self.env.reset(return_state=return_state)
 
@@ -175,7 +175,7 @@ class RayEnv(VectorizedEnv):
         self,
         actions,
         states=None,
-        dt: [numpy.ndarray, int] = 1,
+        dt: Union[numpy.ndarray, int] = 1,
         return_state: bool = None,
     ):
         """Implement the logic for stepping the environment in parallel."""
@@ -199,7 +199,7 @@ class RayEnv(VectorizedEnv):
         results = ray.get(results_ids)
         return self.unpack_transitions(results=results, return_states=_return_state)
 
-    def reset(self, return_state: bool = True) -> [numpy.ndarray, tuple]:
+    def reset(self, return_state: bool = True) -> Union[numpy.ndarray, tuple]:
         """Restart the environment."""
         if self.plan_env is None and self.delay_setup:
             self.setup()
