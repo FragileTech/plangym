@@ -10,7 +10,7 @@ networkx==2.5
 linkify-it-py==1.0.2
 pandoc==2.0.1
 psycopg2-binary==2.8.4
-scipy==1.6.0
+scipy==1.10.0
 setproctitle==1.2.2
 ipython==7.13.0
 xxhash==2.0.0
