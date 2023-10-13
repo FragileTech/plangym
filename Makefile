@@ -24,7 +24,7 @@ check:
 .PHONY: install-mujoco
 install-mujoco:
 	mkdir ${MUJOCO_PATH}
-	wget https://mujoco.org/download/mujoco210-linux-x86_64.tar.gz
+	wget https://github.com/google-deepmind/mujoco/releases/download/2.1.0/mujoco210-linux-x86_64.tar.gz
 	tar -xvzf mujoco210-linux-x86_64.tar.gz -C ${MUJOCO_PATH}
 	rm mujoco210-linux-x86_64.tar.gz
 
