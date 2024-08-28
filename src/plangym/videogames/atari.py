@@ -2,8 +2,8 @@
 
 from typing import Any, Iterable
 
-import gym
-from gym.spaces import Space
+import gymnasium as gym
+from gymnasium.spaces import Space
 import numpy
 
 from plangym.core import wrap_callable
@@ -74,7 +74,7 @@ class AtariEnv(VideogameEnv):
         difficulty: int = 0,  # game difficulty, see Machado et al. 2018
         repeat_action_probability: float = 0.0,  # Sticky action probability
         full_action_space: bool = False,  # Use all actions
-        render_mode: str | None = None,  # None | human | rgb_array
+        render_mode: str | None = "rgb_array",  # None | human | rgb_array
         possible_to_win: bool = False,
         wrappers: Iterable[wrap_callable] | None = None,
         array_state: bool = True,
@@ -301,7 +301,7 @@ class AtariEnv(VideogameEnv):
 
             >>> env = AtariEnv(name="Pong-v0")
             >>> obs = env.reset(return_state=False)
-            >>> obs, reward, end, info = env.step_with_dt(env.sample_action(), dt=7)
+            >>> obs, reward, end, truncated, info = env.step_with_dt(env.sample_action(), dt=7)
             >>> assert not end
 
         """

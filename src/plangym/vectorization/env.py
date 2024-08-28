@@ -3,7 +3,7 @@
 from abc import ABC
 from typing import Callable, Generator
 
-from gym.spaces import Space
+from gymnasium.spaces import Space
 import numpy
 
 from plangym.core import PlanEnv, PlangymEnv

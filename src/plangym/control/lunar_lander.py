@@ -12,7 +12,7 @@ from plangym.core import PlangymEnv, wrap_callable
 
 try:
     from Box2D.b2 import edgeShape, fixtureDef, polygonShape, revoluteJointDef
-    from gym.envs.box2d.lunar_lander import ContactDetector, LunarLander as GymLunarLander
+    from gymnasium.envs.box2d.lunar_lander import ContactDetector, LunarLander as GymLunarLander
 
     import_error = None
 except ImportError as e:

@@ -3,14 +3,14 @@
 from typing import Iterable
 import warnings
 
-from gym.spaces import Box
+from gymnasium.spaces import Box
 import numpy
 
 from plangym.core import PlangymEnv, wrap_callable
 
 
 try:
-    from gym.envs.classic_control import rendering
+    from gymnasium.envs.classic_control import rendering
 
     novideo_mode = False
 except Exception:  # pragma: no cover

@@ -4,8 +4,8 @@ import pickle
 from typing import Iterable
 
 import cv2
-import gym
-from gym.envs.registration import registry as gym_registry
+import gymnasium as gym
+from gymnasium.envs.registration import registry as gym_registry
 import numpy
 
 from plangym.core import wrap_callable

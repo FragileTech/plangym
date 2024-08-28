@@ -2,8 +2,8 @@
 
 from typing import Any, Iterable
 
-import gym
-from gym import spaces
+import gymnasium as gym
+from gymnasium import spaces
 import numpy
 
 from plangym.core import wrap_callable

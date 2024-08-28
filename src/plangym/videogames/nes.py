@@ -2,7 +2,7 @@
 
 from typing import Any
 
-import gym
+import gymnasium as gym
 import numpy
 
 from plangym.videogames.env import VideogameEnv

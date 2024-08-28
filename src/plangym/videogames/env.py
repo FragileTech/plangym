@@ -3,7 +3,7 @@
 from abc import ABC
 from typing import Any, Iterable
 
-import gym
+import gymnasium as gym
 import numpy
 
 from plangym.core import PlangymEnv, wrap_callable
@@ -80,13 +80,13 @@ class VideogameEnv(PlangymEnv, ABC):
 
     def apply_action(self, action):
         """Evolve the environment for one time step applying the provided action."""
-        obs, reward, terminal, info = super().apply_action(action=action)
+        obs, reward, terminal, truncated, info = super().apply_action(action=action)
         info[LIFE_KEY] = self.get_lifes_from_info(info)
         past_lifes = self._info_step.get(LIFE_KEY, -1)
         lost_life = past_lifes > info[LIFE_KEY] or self._info_step.get("lost_life")
         info["lost_life"] = lost_life
         terminal = (terminal or lost_life) if self.episodic_life else terminal
-        return obs, reward, terminal, info
+        return obs, reward, terminal, truncated, info
 
     def clone(self, **kwargs) -> "VideogameEnv":
         """Return a copy of the environment."""

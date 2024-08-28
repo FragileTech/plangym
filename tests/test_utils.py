@@ -1,7 +1,7 @@
-import gym
-from gym.wrappers.atari_preprocessing import AtariPreprocessing
-from gym.wrappers.time_limit import TimeLimit
-from gym.wrappers.transform_reward import TransformReward
+import gymnasium as gym
+from gymnasium.wrappers.atari_preprocessing import AtariPreprocessing
+from gymnasium.wrappers.time_limit import TimeLimit
+from gymnasium.wrappers.transform_reward import TransformReward
 import numpy
 
 from plangym.utils import process_frame, remove_time_limit

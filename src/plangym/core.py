@@ -150,7 +150,8 @@ class PlanEnv(ABC):
         self.begin_step(action=action, state=state, dt=dt, return_state=return_state)
         if state is not None:
             self.set_state(state)
-        obs, reward, terminal, truncated, info = self.step_with_dt(action=action, dt=dt)
+        obs, reward, terminal, *truncated, info = self.step_with_dt(action=action, dt=dt)
+        truncated = truncated[0] if truncated else False
         obs, reward, terminal, truncated, info = self.process_step(
             obs=obs,
             reward=reward,

@@ -1,3 +1,4 @@
+import numpy as np
 from gym.wrappers import TimeLimit
 import numpy
 import pytest
@@ -9,7 +10,7 @@ from tests import SKIP_ATARI_TESTS
 
 if SKIP_ATARI_TESTS:
     pytest.skip("Atari not installed, skipping", allow_module_level=True)
-from src.plangym.api_tests import (
+from plangym.api_tests import (
     batch_size,
     display,
     generate_test_cases,
@@ -48,4 +49,4 @@ class TestAtariEnv:
 
     def test_n_actions(self, env):
         n_actions = env.n_actions
-        assert isinstance(n_actions, int)
+        assert isinstance(n_actions, int | np.int64)

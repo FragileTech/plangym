@@ -3,7 +3,7 @@ from typing import Tuple
 import numpy
 import pytest
 
-from src.plangym.api_tests import batch_size, display, TestPlanEnv
+from plangym.api_tests import batch_size, display, TestPlanEnv
 from plangym.core import PlanEnv
 
 

@@ -1,7 +1,7 @@
 import os
 import warnings
 
-import gym
+import gymnasium as gym
 import pytest
 
 from plangym.control.classic_control import ClassicControl
