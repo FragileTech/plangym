@@ -181,9 +181,11 @@ class PlanEnv(ABC):
             ``(state, obs)`` if ```return_state`` is ``True`` else return ``obs``.
 
         """
-        obs = self.apply_reset()  # Returning info upon reset is not yet supported
+        obs, *info = self.apply_reset()  # Returning info upon reset is not yet supported
         obs = self.process_obs(obs)
-        return (self.get_state(), obs) if return_state else obs
+        info = info[0] if info else {}
+        info = self.process_info(obs=obs, reward=0, terminal=False, info=info)
+        return (self.get_state(), obs, info) if return_state else (obs, info)
 
     def step_batch(
         self,
@@ -265,15 +267,21 @@ class PlanEnv(ABC):
             self._n_step += 1
             step_data = self.apply_action(action)  # Tuple (obs, reward, terminal, info)
             step_data = self.process_apply_action(*step_data)  # Post-processing to step_data
-            self._obs_step, self._reward_step, self._terminal_step, self._truncated_step, self._info_step = step_data
+            (
+                self._obs_step,
+                self._reward_step,
+                self._terminal_step,
+                self._truncated_step,
+                self._info_step,
+            ) = step_data
             if self._terminal_step or self._truncated_step:
                 break
         return step_data
 
     def run_autoreset(self, step_data):
         """Reset the environment automatically if needed."""
-        *_, terminal, _ = step_data  # Assumes terminal, info are the last two elements
-        if terminal and self.autoreset:
+        *_, terminal, truncated, _ = step_data  # Assumes terminal, info are the last two elements
+        if (terminal or truncated) and self.autoreset:
             self.reset(return_state=False)
 
     def get_step_tuple(
@@ -474,7 +482,7 @@ class PlangymEnv(PlanEnv):
         autoreset: bool = True,
         wrappers: Iterable[wrap_callable] | None = None,
         delay_setup: bool = False,
-        remove_time_limit=True,
+        remove_time_limit: bool = True,
         render_mode: str | None = "rgb_array",
         episodic_life=False,
         obs_type=None,  # one of coords|rgb|grayscale|None
@@ -499,6 +507,7 @@ class PlangymEnv(PlanEnv):
             remove_time_limit: If True, remove the time limit from the environment.
 
         """
+        render_mode = "rgb_array"
         kwargs["render_mode"] = kwargs.get("render_mode", render_mode)
         self._render_mode = render_mode
         self._gym_env = None
@@ -544,6 +553,8 @@ class PlangymEnv(PlanEnv):
     @property
     def obs_shape(self) -> tuple[int, ...]:
         """Tuple containing the shape of the *observations* returned by the Environment."""
+        if self.observation_space is None:
+            return None
         return self.observation_space.shape
 
     @property
@@ -622,7 +633,10 @@ class PlangymEnv(PlanEnv):
         if self.DEFAULT_OBS_TYPE == "rgb":
             self._obs_space = self.gym_env.observation_space
         else:
-            img_shape = self.get_image().shape
+            img = self.get_image()
+            if img is None:
+                raise ValueError(f"Rendering rgb_array but we are getting None: {self}")
+            img_shape = img.shape
             self._obs_space = Box(low=0, high=255, dtype=numpy.uint8, shape=img_shape)
 
     def _init_obs_space_grayscale(self):
@@ -663,9 +677,13 @@ class PlangymEnv(PlanEnv):
         are interpreted as RGB images with channels (Height, Width, RGB).
         """
         if hasattr(self.gym_env, "render"):
-            img =  self.gym_env.render()
+            img = self.gym_env.render()
             if img is None and self.render_mode == "rgb_array":
                 raise ValueError(f"Rendering rgb_array but we are getting None: {self}")
+            if self.render_mode != "rgb_array":
+                raise ValueError(
+                    f"Rendering {self.render_mode} but we are getting an image: {self}"
+                )
             return img
         raise NotImplementedError()
 

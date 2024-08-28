@@ -135,7 +135,7 @@ class TestPlanEnv:
         if env.obs_shape:
             for val in env.obs_shape:
                 assert isinstance(val, int)
-        obs = env.reset(return_state=False)
+        obs, _info = env.reset(return_state=False)
         assert obs.shape == env.obs_shape
         obs, *_ = env.step(env.sample_action())
         assert obs.shape == env.obs_shape
@@ -171,7 +171,7 @@ class TestPlanEnv:
             assert action.shape == env.action_shape
 
     def test_get_state(self, env):
-        state_reset, _obs = env.reset()
+        state_reset, _obs, _info = env.reset()
         state = env.get_state()
         state_is_array = isinstance(state, numpy.ndarray)
         assert state_is_array if env.STATE_IS_ARRAY else not state_is_array
@@ -191,9 +191,10 @@ class TestPlanEnv:
 
     def test_reset(self, env):
         _ = env.reset(return_state=False)
-        state, obs = env.reset(return_state=True)
+        state, obs, info = env.reset(return_state=True)
         state_is_array = isinstance(state, numpy.ndarray)
         obs_is_array = isinstance(obs, numpy.ndarray)
+        assert isinstance(info, dict)
         assert state_is_array if env.STATE_IS_ARRAY else not state_is_array
         assert obs_is_array if env.OBS_IS_ARRAY else not obs_is_array
 
@@ -204,9 +205,8 @@ class TestPlanEnv:
         if state is not None:
             state = _state
         action = env.sample_action()
-
         data = env.step(action, dt=dt, state=state, return_state=return_state)
-        *new_state, obs, reward, terminal, info = data
+        *new_state, obs, reward, terminal, _truncated, info = data
         assert isinstance(data, tuple)
         # Test return state works correctly
         should_return_state = state is not None if return_state is None else return_state
@@ -231,7 +231,7 @@ class TestPlanEnv:
     @pytest.mark.parametrize("return_state", [None, True, False])
     def test_step_batch(self, env, states, return_state, batch_size):
         dt = 1
-        state, _ = env.reset()
+        state, *_ = env.reset()
         if states == "None_list":
             states = [None] * batch_size
         elif states:
@@ -240,7 +240,7 @@ class TestPlanEnv:
         actions = [env.sample_action() for _ in range(batch_size)]
 
         data = env.step_batch(actions, dt=dt, states=states, return_state=return_state)
-        *new_states, observs, rewards, terminals, truncated, infos = data
+        *new_states, observs, rewards, terminals, _truncated, infos = data
         assert isinstance(data, tuple)
         # Test return state works correctly
         default_returns_state = (
@@ -275,7 +275,7 @@ class TestPlanEnv:
         action = env.sample_action()
 
         data = env.step(action, dt=dt, state=state, return_state=return_state)
-        *new_state, obs, reward, terminal, truncated, info = data
+        *new_state, obs, reward, terminal, _truncated, info = data
         assert isinstance(data, tuple)
         assert len(new_state) == 0
         step_tuple_test(env, obs, reward, terminal, info, dt=dt)
@@ -283,11 +283,11 @@ class TestPlanEnv:
     @pytest.mark.parametrize("dt", [3, "array"])
     def test_step_batch_dt_values(self, env, dt, batch_size, states=None, return_state=None):
         dt = dt if dt != "array" else numpy.random.randint(1, 4, batch_size).astype(int)
-        _state, _ = env.reset()
+        _state, *_ = env.reset()
         actions = [env.sample_action() for _ in range(batch_size)]
 
         data = env.step_batch(actions, dt=dt, states=states, return_state=return_state)
-        *new_states, observs, rewards, terminals, truncated,  infos = data
+        *new_states, observs, rewards, terminals, _truncated, infos = data
         assert isinstance(data, tuple)
         assert len(new_states) == 0, (len(new_states), return_state)
 
@@ -369,7 +369,8 @@ class TestPlangymEnv:
         )
         assert env.observation_space.shape == env.obs_shape
         if env.observation_space.shape:
-            assert env.observation_space.shape == env.reset(return_state=False).shape
+            obs, *_info = env.reset(return_state=False)
+            assert env.observation_space.shape == obs.shape
 
     def test_action_space(self, env):
         assert hasattr(env, "action_space")
@@ -425,7 +426,7 @@ class TestPlangymEnv:
     @pytest.mark.skipif(os.getenv("SKIP_RENDER", False), reason="No display in CI.")
     def test_render(self, env, display):
         with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
+            # warnings.simplefilter("ignore")
             env.render()
 
     def test_wrap_environment(self, env):

@@ -1,7 +1,7 @@
 """Generic utilities for working with environments."""
 
-import gym
-from gym.wrappers.time_limit import TimeLimit
+import gymnasium as gym
+from gymnasium.wrappers.time_limit import TimeLimit
 import numpy
 from PIL import Image
 

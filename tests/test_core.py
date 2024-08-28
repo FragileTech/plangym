@@ -44,8 +44,8 @@ class DummyPlanEnv(PlanEnv):
 
     def apply_action(self, action) -> tuple:
         self._step_count += 1
-        obs, reward, end, info = numpy.ones(10), 1, False, {}
-        return obs, reward, end, info
+        obs, reward, end, truncated, info = numpy.ones(10), 1, False, False, {}
+        return obs, reward, end, truncated, info
 
     def clone(self):
         return self

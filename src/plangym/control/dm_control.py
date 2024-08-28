@@ -43,7 +43,7 @@ class DMControlEnv(PlangymEnv):
         visualize_reward: bool = True,
         domain_name=None,
         task_name=None,
-        render_mode=None,
+        render_mode="rgb_array",
         obs_type: str | None = None,
         remove_time_limit=None,
     ):
@@ -148,7 +148,8 @@ class DMControlEnv(PlangymEnv):
 
     def _init_obs_space_coords(self):
         """Define the observation space of the environment."""
-        shape = self.reset(return_state=False).shape
+        obs = self.reset(return_state=False)
+        shape = obs.shape
         self._obs_space = Box(low=-numpy.inf, high=numpy.inf, shape=shape, dtype=numpy.float32)
 
     def action_spec(self):
