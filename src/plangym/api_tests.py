@@ -62,6 +62,7 @@ def batch_size() -> int:
 
 @pytest.fixture(scope="class")
 def display():
+    os.environ["PYVIRTUALDISPLAY_DISPLAYFD"] = "0"
     display = Display(visible=0, size=(400, 400))
     display.start()
     yield display
