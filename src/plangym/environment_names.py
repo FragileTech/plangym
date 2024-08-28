@@ -1,4 +1,5 @@
 """Lists of available environments."""
+
 CLASSIC_CONTROL = [
     "CartPole-v0",
     "CartPole-v1",

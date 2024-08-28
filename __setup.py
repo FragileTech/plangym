@@ -1,4 +1,5 @@
 """plangym package installation metadata."""
+
 from importlib.machinery import SourceFileLoader
 from pathlib import Path
 
@@ -39,7 +40,7 @@ setup(
     tests_require=["pytest>=5.3.5", "hypothesis>=5.6.0"],
     install_requires=[
         "numpy",
-        "pillow",
+        "pillow==8.4.0",
         "opencv-python>=4.2.0.32",
     ],
     extras_require=extras,

@@ -1,5 +1,4 @@
 """Implement a :class:`plangym.VectorizedEnv` that uses ray when calling `step_batch`."""
-from typing import List, Union
 
 import numpy
 
@@ -26,7 +25,7 @@ class RemoteEnv(PlanEnv):
     def unwrapped(self):
         """Completely unwrap this Environment.
 
-        Returns:
+        Returns
             plangym.Environment: The base non-wrapped plangym.Environment instance
         """
         return self.env
@@ -41,8 +40,7 @@ class RemoteEnv(PlanEnv):
         self.env = self._env_callable()
 
     def step(self, action, state=None, dt: int = 1, return_state: bool = None) -> tuple:
-        """
-        Take a simulation step and make the environment evolve.
+        """Take a simulation step and make the environment evolve.
 
         Args:
             action: Chosen action applied to the environment.
@@ -61,13 +59,12 @@ class RemoteEnv(PlanEnv):
 
     def step_batch(
         self,
-        actions: Union[numpy.ndarray, list],
+        actions: [numpy.ndarray, list],
         states=None,
         dt: int = 1,
         return_state: bool = None,
     ) -> tuple:
-        """
-        Take a step on a batch of states and actions.
+        """Take a step on a batch of states and actions.
 
         Args:
             actions: Chosen actions applied to the environment.
@@ -90,21 +87,19 @@ class RemoteEnv(PlanEnv):
             return_state=return_state,
         )
 
-    def reset(self, return_state: bool = True) -> Union[numpy.ndarray, tuple]:
+    def reset(self, return_state: bool = True) -> [numpy.ndarray, tuple]:
         """Restart the environment."""
         return self.env.reset(return_state=return_state)
 
     def get_state(self):
-        """
-        Recover the internal state of the simulation.
+        """Recover the internal state of the simulation.
 
         A state must completely describe the Environment at a given moment.
         """
         return self.env.get_state()
 
     def set_state(self, state):
-        """
-        Set the internal state of the simulation.
+        """Set the internal state of the simulation.
 
         Args:
             state: Target state to be set in the environment.
@@ -128,8 +123,7 @@ class RayEnv(VectorizedEnv):
         n_workers: int = 8,
         **kwargs,
     ):
-        """
-        Initialize a :class:`ParallelEnv`.
+        """Initialize a :class:`ParallelEnv`.
 
         Args:
             env_class: Class of the environment to be wrapped.
@@ -158,7 +152,7 @@ class RayEnv(VectorizedEnv):
         )
 
     @property
-    def workers(self) -> List[RemoteEnv]:
+    def workers(self) -> list[RemoteEnv]:
         """Remote actors exposing copies of the environment."""
         return self._workers
 
@@ -175,7 +169,7 @@ class RayEnv(VectorizedEnv):
         self,
         actions,
         states=None,
-        dt: Union[numpy.ndarray, int] = 1,
+        dt: [numpy.ndarray, int] = 1,
         return_state: bool = None,
     ):
         """Implement the logic for stepping the environment in parallel."""
@@ -199,7 +193,7 @@ class RayEnv(VectorizedEnv):
         results = ray.get(results_ids)
         return self.unpack_transitions(results=results, return_states=_return_state)
 
-    def reset(self, return_state: bool = True) -> Union[numpy.ndarray, tuple]:
+    def reset(self, return_state: bool = True) -> [numpy.ndarray, tuple]:
         """Restart the environment."""
         if self.plan_env is None and self.delay_setup:
             self.setup()
@@ -207,8 +201,7 @@ class RayEnv(VectorizedEnv):
         return super(RayEnv, self).reset(return_state=return_state)
 
     def sync_states(self, state: None) -> None:
-        """
-        Synchronize all the copies of the wrapped environment.
+        """Synchronize all the copies of the wrapped environment.
 
         Set all the states of the different workers of the internal :class:`BatchEnv`
          to the same state as the internal :class:`Environment` used to apply the

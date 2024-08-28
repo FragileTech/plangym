@@ -1,5 +1,6 @@
 """Environment for playing Mario bros using gym-super-mario-bros."""
-from typing import Any, Dict, Optional
+
+from typing import Any
 
 import gym
 import numpy
@@ -55,8 +56,7 @@ class NesEnv(VideogameEnv):
         return self.gym_env.unwrapped
 
     def get_image(self) -> numpy.ndarray:
-        """
-        Return a numpy array containing the rendered view of the environment.
+        """Return a numpy array containing the rendered view of the environment.
 
         Square matrices are interpreted as a greyscale image. Three-dimensional arrays
         are interpreted as RGB images with channels (Height, Width, RGB)
@@ -67,17 +67,15 @@ class NesEnv(VideogameEnv):
         """Return a copy of the emulator environment."""
         return self.nes_env.ram.copy()
 
-    def get_state(self, state: Optional[numpy.ndarray] = None) -> numpy.ndarray:
-        """
-        Recover the internal state of the simulation.
+    def get_state(self, state: numpy.ndarray | None = None) -> numpy.ndarray:
+        """Recover the internal state of the simulation.
 
         A state must completely describe the Environment at a given moment.
         """
         return self.gym_env.get_state(state)
 
     def set_state(self, state: numpy.ndarray) -> None:
-        """
-        Set the internal state of the simulation.
+        """Set the internal state of the simulation.
 
         Args:
             state: Target state to be set in the environment.
@@ -122,8 +120,7 @@ class MarioEnv(NesEnv):
         original_reward: bool = False,
         **kwargs,
     ):
-        """
-        Initialize a MarioEnv.
+        """Initialize a MarioEnv.
 
         Args:
             name: Name of the environment.
@@ -135,9 +132,8 @@ class MarioEnv(NesEnv):
         self._original_reward = original_reward
         super(MarioEnv, self).__init__(name=name, **kwargs)
 
-    def get_state(self, state: Optional[numpy.ndarray] = None) -> numpy.ndarray:
-        """
-        Recover the internal state of the simulation.
+    def get_state(self, state: numpy.ndarray | None = None) -> numpy.ndarray:
+        """Recover the internal state of the simulation.
 
         A state must completely describe the Environment at a given moment.
         """
@@ -156,7 +152,7 @@ class MarioEnv(NesEnv):
         gym_env.reset()
         return gym_env
 
-    def _update_info(self, info: Dict[str, Any]) -> Dict[str, Any]:
+    def _update_info(self, info: dict[str, Any]) -> dict[str, Any]:
         info["player_state"] = self.nes_env._player_state
         info["area"] = self.nes_env._area
         info["left_x_position"] = self.nes_env._left_x_position
@@ -187,7 +183,7 @@ class MarioEnv(NesEnv):
     def get_coords_obs(
         self,
         obs: numpy.ndarray,
-        info: Dict[str, Any] = None,
+        info: dict[str, Any] = None,
         **kwargs,
     ) -> numpy.ndarray:
         """Return the information contained in info as an observation if obs_type == "info"."""
@@ -223,6 +219,6 @@ class MarioEnv(NesEnv):
         """Return True if terminal or mario is dying."""
         return terminal or info.get("is_dying", False) or info.get("is_dead", False)
 
-    def process_info(self, info, **kwargs) -> Dict[str, Any]:
+    def process_info(self, info, **kwargs) -> dict[str, Any]:
         """Add additional data to the info dictionary."""
         return self._update_info(info)

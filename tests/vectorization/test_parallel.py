@@ -1,7 +1,7 @@
 import numpy
 import pytest
 
-from plangym.api_tests import batch_size, display, TestPlanEnv, TestPlangymEnv  # noqa: F401
+from src.plangym.api_tests import batch_size, display, TestPlanEnv, TestPlangymEnv
 from plangym.control.classic_control import ClassicControl
 from plangym.vectorization.parallel import BatchEnv, ExternalProcess, ParallelEnv
 from plangym.videogames.atari import AtariEnv

@@ -1,6 +1,7 @@
 """Plangym API implementation."""
+
 from abc import ABC
-from typing import Callable, Generator, Tuple, Union
+from typing import Callable, Generator
 
 from gym.spaces import Space
 import numpy
@@ -9,8 +10,7 @@ from plangym.core import PlanEnv, PlangymEnv
 
 
 class VectorizedEnv(PlangymEnv, ABC):
-    """
-    Base class that defines the API for working with vectorized environments.
+    """Base class that defines the API for working with vectorized environments.
 
     A vectorized environment allows to step several copies of the environment in parallel
     when calling ``step_batch``.
@@ -32,8 +32,7 @@ class VectorizedEnv(PlangymEnv, ABC):
         n_workers: int = 8,
         **kwargs,
     ):
-        """
-        Initialize a :class:`VectorizedEnv`.
+        """Initialize a :class:`VectorizedEnv`.
 
         Args:
             env_class: Class of the environment to be wrapped.
@@ -50,7 +49,7 @@ class VectorizedEnv(PlangymEnv, ABC):
         self._n_workers = n_workers
         self._env_class = env_class
         self._env_kwargs = kwargs
-        self._plangym_env: Union[PlangymEnv, PlanEnv, None] = None
+        self._plangym_env: PlangymEnv | PlanEnv | None = None
         self.SINGLETON = env_class.SINGLETON if hasattr(env_class, "SINGLETON") else False
         self.STATE_IS_ARRAY = (
             env_class.STATE_IS_ARRAY if hasattr(env_class, "STATE_IS_ARRAY") else True
@@ -73,12 +72,12 @@ class VectorizedEnv(PlangymEnv, ABC):
         return self._plangym_env
 
     @property
-    def obs_shape(self) -> Tuple[int]:
+    def obs_shape(self) -> tuple[int]:
         """Tuple containing the shape of the observations returned by the Environment."""
         return self.plan_env.obs_shape
 
     @property
-    def action_shape(self) -> Tuple[int]:
+    def action_shape(self) -> tuple[int]:
         """Tuple containing the shape of the actions applied to the Environment."""
         return self.plan_env.action_shape
 
@@ -98,7 +97,7 @@ class VectorizedEnv(PlangymEnv, ABC):
         try:
             return self.plan_env.gym_env
         except AttributeError:
-            return
+            return None
 
     def __getattr__(self, item):
         """Forward attributes to the wrapped environment."""
@@ -106,11 +105,10 @@ class VectorizedEnv(PlangymEnv, ABC):
 
     @staticmethod
     def split_similar_chunks(
-        vector: Union[list, numpy.ndarray],
+        vector: list | numpy.ndarray,
         n_chunks: int,
-    ) -> Generator[Union[list, numpy.ndarray], None, None]:
-        """
-        Split an indexable object into similar chunks.
+    ) -> Generator[list | numpy.ndarray, None, None]:
+        """Split an indexable object into similar chunks.
 
         Args:
             vector: Target indexable object to be split.
@@ -190,8 +188,7 @@ class VectorizedEnv(PlangymEnv, ABC):
         dt: int = 1,
         return_state: bool = None,
     ):
-        """
-        Step the environment applying a given action from an arbitrary state.
+        """Step the environment applying a given action from an arbitrary state.
 
         If is not provided the signature matches the `step` method from OpenAI gym.
 
@@ -210,8 +207,7 @@ class VectorizedEnv(PlangymEnv, ABC):
         return self.plan_env.step(action=action, state=state, dt=dt, return_state=return_state)
 
     def reset(self, return_state: bool = True):
-        """
-        Reset the environment and returns the first observation, or the first \
+        """Reset the environment and returns the first observation, or the first \
         (state, obs) tuple.
 
         Args:
@@ -229,20 +225,18 @@ class VectorizedEnv(PlangymEnv, ABC):
         return (state, obs) if return_state else obs
 
     def get_state(self):
-        """
-        Recover the internal state of the simulation.
+        """Recover the internal state of the simulation.
 
         A state completely describes the Environment at a given moment.
 
-        Returns:
+        Returns
             State of the simulation.
 
         """
         return self.plan_env.get_state()
 
     def set_state(self, state):
-        """
-        Set the internal state of the simulation.
+        """Set the internal state of the simulation.
 
         Args:
             state: Target state to be set in the environment.
@@ -256,17 +250,15 @@ class VectorizedEnv(PlangymEnv, ABC):
         return self.plan_env.render(mode)
 
     def get_image(self) -> numpy.ndarray:
-        """
-        Return a numpy array containing the rendered view of the environment.
+        """Return a numpy array containing the rendered view of the environment.
 
         Square matrices are interpreted as a greyscale image. Three-dimensional arrays
         are interpreted as RGB images with channels (Height, Width, RGB)
         """
         return self.plan_env.get_image()
 
-    def step_with_dt(self, action: Union[numpy.ndarray, int, float], dt: int = 1) -> tuple:
-        """
-        Take ``dt`` simulation steps and make the environment evolve in multiples \
+    def step_with_dt(self, action: numpy.ndarray | int | float, dt: int = 1) -> tuple:
+        """Take ``dt`` simulation steps and make the environment evolve in multiples \
         of ``self.frameskip`` for a total of ``dt`` * ``self.frameskip`` steps.
 
         Args:
@@ -281,8 +273,7 @@ class VectorizedEnv(PlangymEnv, ABC):
         return self.plan_env.step_with_dt(action=action, dt=dt)
 
     def sample_action(self):
-        """
-        Return a valid action that can be used to step the Environment.
+        """Return a valid action that can be used to step the Environment.
 
         Implementing this method is optional, and it's only intended to make the
         testing process of the Environment easier.
@@ -293,11 +284,10 @@ class VectorizedEnv(PlangymEnv, ABC):
         self,
         actions: numpy.ndarray,
         states: numpy.ndarray = None,
-        dt: Union[numpy.ndarray, int] = 1,
+        dt: numpy.ndarray | int = 1,
         return_state: bool = None,
     ):
-        """
-        Vectorized version of the ``step`` method.
+        """Vectorized version of the ``step`` method.
 
         It allows to step a vector of states and actions. The signature and
         behaviour is the same as ``step``, but taking a list of states, actions
@@ -334,8 +324,7 @@ class VectorizedEnv(PlangymEnv, ABC):
         return env
 
     def sync_states(self, state: None):
-        """
-        Synchronize the workers' states with the state of `self.gym_env`.
+        """Synchronize the workers' states with the state of `self.gym_env`.
 
         Set all the states of the different workers of the internal :class:`BatchEnv`
         to the same state as the internal :class:`Environment` used to apply the

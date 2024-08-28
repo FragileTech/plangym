@@ -1,9 +1,9 @@
 """Handle parallelization for ``plangym.Environment`` that allows vectorized steps."""
+
 import atexit
 import multiprocessing
 import sys
 import traceback
-from typing import Union
 
 import numpy
 
@@ -12,8 +12,7 @@ from plangym.vectorization.env import VectorizedEnv
 
 
 class ExternalProcess:
-    """
-    Step environment in a separate process for lock free paralellism.
+    """Step environment in a separate process for lock free paralellism.
 
     The environment will be created in the external process by calling the
     specified callable. This can be an environment class, or a function
@@ -42,8 +41,7 @@ class ExternalProcess:
     _CLOSE = 5
 
     def __init__(self, constructor):
-        """
-        Initialize a :class:`ExternalProcess`.
+        """Initialize a :class:`ExternalProcess`.
 
         Args:
             constructor: Callable that returns the target environment that will be parallelized.
@@ -71,8 +69,7 @@ class ExternalProcess:
         return self._action_space
 
     def __getattr__(self, name):
-        """
-        Request an attribute from the environment.
+        """Request an attribute from the environment.
 
         Note that this involves communication with the external process, so it can \
         be slow.
@@ -88,8 +85,7 @@ class ExternalProcess:
         return self._receive()
 
     def call(self, name, *args, **kwargs):
-        """
-        Asynchronously call a method of the external environment.
+        """Asynchronously call a method of the external environment.
 
         Args:
           name: Name of the method to call.
@@ -109,7 +105,7 @@ class ExternalProcess:
         try:
             self._conn.send((self._CLOSE, None))
             self._conn.close()
-        except IOError:
+        except OSError:
             # The connection was already closed.
             pass
         self._process.join()
@@ -123,12 +119,11 @@ class ExternalProcess:
         self,
         actions,
         states=None,
-        dt: Union[numpy.ndarray, int] = None,
+        dt: numpy.ndarray | int = None,
         return_state: bool = None,
         blocking=True,
     ):
-        """
-        Vectorized version of the ``step`` method.
+        """Vectorized version of the ``step`` method.
 
         It allows to step a vector of states and actions. The signature and \
         behaviour is the same as ``step``, but taking a list of states, actions \
@@ -151,8 +146,7 @@ class ExternalProcess:
         return promise() if blocking else promise
 
     def step(self, action, state=None, dt: int = 1, blocking=True):
-        """
-        Step the environment.
+        """Step the environment.
 
         Args:
           action: The action to apply to the environment.
@@ -169,8 +163,7 @@ class ExternalProcess:
         return promise() if blocking else promise
 
     def reset(self, blocking=True, return_states: bool = False):
-        """
-        Reset the environment.
+        """Reset the environment.
 
         Args:
           blocking: Whether to wait for the result.
@@ -185,14 +178,13 @@ class ExternalProcess:
         return promise() if blocking else promise
 
     def _receive(self):
-        """
-        Wait for a message from the worker process and return its payload.
+        """Wait for a message from the worker process and return its payload.
 
-        Raises:
+        Raises
           Exception: An exception was raised inside the worker process.
           KeyError: The received message is of an unknown type.
 
-        Returns:
+        Returns
           Payload object of the message.
 
         """
@@ -203,11 +195,10 @@ class ExternalProcess:
             raise Exception(stacktrace)  # pragma: no cover
         if message == self._RESULT:
             return payload
-        raise KeyError("Received unexpected message {}".format(message))  # pragma: no cover
+        raise KeyError(f"Received unexpected message {message}")  # pragma: no cover
 
     def _worker(self, constructor, conn):
-        """
-        Wait for actions and send back environment results.
+        """Wait for actions and send back environment results.
 
         Args:
           constructor: Constructor for the OpenAI Gym environment.
@@ -242,7 +233,7 @@ class ExternalProcess:
                     assert payload is None
                     break  # pragma: no cover
                 raise KeyError(
-                    "Received message of unknown type {}".format(message),
+                    f"Received message of unknown type {message}",
                 )  # pragma: no cover
         except Exception:  # pragma: no cover # pylint: disable=broad-except
             stacktrace = "".join(traceback.format_exception(*sys.exc_info()))
@@ -251,8 +242,7 @@ class ExternalProcess:
 
 
 class BatchEnv:
-    """
-    Combine multiple environments to step them in batch.
+    """Combine multiple environments to step them in batch.
 
     It is mostly a copy paste from \
     https://github.com/tensorflow/agents/blob/master/agents/tools/wrappers.py \
@@ -272,8 +262,7 @@ class BatchEnv:
     """
 
     def __init__(self, envs, blocking):
-        """
-        Initialize a :class:`BatchEnv`.
+        """Initialize a :class:`BatchEnv`.
 
         Args:
             envs: List of :class:`ExternalProcess` that contain the target environment.
@@ -293,8 +282,7 @@ class BatchEnv:
         return self._envs[index]
 
     def __getattr__(self, name):
-        """
-        Forward unimplemented attributes to one of the original environments.
+        """Forward unimplemented attributes to one of the original environments.
 
         Args:
           name: Attribute that was accessed.
@@ -309,7 +297,7 @@ class BatchEnv:
         self,
         actions,
         states=None,
-        dt: Union[numpy.ndarray, int] = 1,
+        dt: numpy.ndarray | int = 1,
         return_state: bool = None,
     ):
         """Implement the logic for stepping the environment in parallel."""
@@ -335,8 +323,7 @@ class BatchEnv:
         return ParallelEnv.unpack_transitions(results=results, return_states=_return_state)
 
     def sync_states(self, state, blocking: bool = True) -> None:
-        """
-        Set the same state to all the environments that are inside an external process.
+        """Set the same state to all the environments that are inside an external process.
 
         Args:
             state: Target state to set on the environments.
@@ -354,8 +341,7 @@ class BatchEnv:
                 continue
 
     def reset(self, indices=None, return_states: bool = True):
-        """
-        Reset the environment and return the resulting batch observations, \
+        """Reset the environment and return the resulting batch observations, \
         or batch of observations and states.
 
         Args:
@@ -389,8 +375,7 @@ class BatchEnv:
 
 
 class ParallelEnv(VectorizedEnv):
-    """
-    Allow any environment to be stepped in parallel when step_batch is called.
+    """Allow any environment to be stepped in parallel when step_batch is called.
 
     It creates a local instance of the target environment to call all other methods.
 
@@ -424,8 +409,7 @@ class ParallelEnv(VectorizedEnv):
         blocking: bool = False,
         **kwargs,
     ):
-        """
-        Initialize a :class:`ParallelEnv`.
+        """Initialize a :class:`ParallelEnv`.
 
         Args:
             env_class: Class of the environment to be wrapped.
@@ -478,11 +462,10 @@ class ParallelEnv(VectorizedEnv):
         self,
         actions: numpy.ndarray,
         states: numpy.ndarray = None,
-        dt: Union[numpy.ndarray, int] = 1,
+        dt: numpy.ndarray | int = 1,
         return_state: bool = None,
     ):
-        """
-        Vectorized version of the ``step`` method.
+        """Vectorized version of the ``step`` method.
 
         It allows to step a vector of states and actions. The signature and
         behaviour is the same as ``step``, but taking a list of states, actions
@@ -508,8 +491,7 @@ class ParallelEnv(VectorizedEnv):
         )
 
     def sync_states(self, state: None):
-        """
-        Synchronize all the copies of the wrapped environment.
+        """Synchronize all the copies of the wrapped environment.
 
         Set all the states of the different workers of the internal :class:`BatchEnv`
          to the same state as the internal :class:`Environment` used to apply the

@@ -7,7 +7,7 @@ from tests import SKIP_ATARI_TESTS
 
 if SKIP_ATARI_TESTS:
     pytest.skip("Atari not installed, skipping", allow_module_level=True)
-from plangym.api_tests import batch_size, display, TestPlanEnv, TestPlangymEnv  # noqa: F401
+from src.plangym.api_tests import batch_size, display, TestPlanEnv, TestPlangymEnv
 
 
 def montezuma():
@@ -52,7 +52,7 @@ class TestMontezumaPosLevel:
         assert isinstance(hash(pos_level), int)
 
     def test_compate(self, pos_level):
-        assert pos_level.__eq__(MontezumaPosLevel(*pos_level.tuple))
+        assert pos_level == MontezumaPosLevel(*pos_level.tuple)
         assert not pos_level == 6
 
     def test_get_state(self, pos_level):
@@ -64,7 +64,7 @@ class TestMontezumaPosLevel:
         assert pos_level.tuple == (10, 9, 8, 7, 6)
 
     def test_repr(self, pos_level):
-        assert isinstance(pos_level.__repr__(), str)
+        assert isinstance(repr(pos_level), str)
 
 
 class TestCustomMontezuma:

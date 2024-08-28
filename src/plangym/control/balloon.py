@@ -1,4 +1,5 @@
 """Implement the ``plangym`` API for the Balloon Learning Environment."""
+
 from typing import Any
 
 import numpy
@@ -17,8 +18,7 @@ from plangym.core import PlangymEnv
 
 
 class BalloonEnv(PlangymEnv):
-    """
-    This class implements the 'BalloonLearningEnvironment-v0' released by Google in the \
+    """This class implements the 'BalloonLearningEnvironment-v0' released by Google in the \
     balloon_learning_environment.
 
     For more information about the environment, please refer to \
@@ -36,8 +36,7 @@ class BalloonEnv(PlangymEnv):
         array_state: bool = True,
         **kwargs,
     ):
-        """
-        Initialize a :class:`BalloonEnv`.
+        """Initialize a :class:`BalloonEnv`.
 
         Args:
             name: Name of the environment. Follows standard gym syntax conventions.

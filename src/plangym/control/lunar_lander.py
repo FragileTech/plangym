@@ -1,7 +1,8 @@
 """Implementation of LunarLander with no fire coming out of the engines that steps faster."""
+
 import copy
 import math
-from typing import Iterable, Optional
+from typing import Iterable
 
 import numpy
 
@@ -220,7 +221,6 @@ class FastGymLunarLander(GymLunarLander):
         fire_me_discrete = not self.continuous and action == 2
         fire_main_engine = fire_me_continuous or fire_me_discrete
         if fire_main_engine:
-
             if self.continuous:
                 m_power = (numpy.clip(action[0], 0.0, 1.0) + 1.0) * 0.5  # 0.5..1.0
                 assert m_power >= 0.5 and m_power <= 1.0
@@ -357,7 +357,7 @@ class LunarLander(PlangymEnv):
         delay_setup: bool = False,
         deterministic: bool = False,
         continuous: bool = False,
-        render_mode: Optional[str] = None,
+        render_mode: str | None = None,
         remove_time_limit=None,
         **kwargs,
     ):
@@ -397,8 +397,7 @@ class LunarLander(PlangymEnv):
         return gym_env
 
     def get_state(self) -> numpy.ndarray:
-        """
-        Recover the internal state of the simulation.
+        """Recover the internal state of the simulation.
 
         An state must completely describe the Environment at a given moment.
         """
@@ -414,8 +413,7 @@ class LunarLander(PlangymEnv):
         return numpy.array((state, None), dtype=object)
 
     def set_state(self, state: numpy.ndarray) -> None:
-        """
-        Set the internal state of the simulation.
+        """Set the internal state of the simulation.
 
         Args:
             state: Target state to be set in the environment.

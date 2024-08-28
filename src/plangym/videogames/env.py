@@ -1,6 +1,7 @@
 """Plangym API implementation."""
+
 from abc import ABC
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Iterable
 
 import gym
 import numpy
@@ -26,12 +27,11 @@ class VideogameEnv(PlangymEnv, ABC):
         delay_setup: bool = False,
         remove_time_limit: bool = True,
         obs_type: str = "rgb",  # ram | rgb | grayscale
-        render_mode: Optional[str] = None,  # None | human | rgb_array
+        render_mode: str | None = None,  # None | human | rgb_array
         wrappers: Iterable[wrap_callable] = None,
         **kwargs,
     ):
-        """
-        Initialize a :class:`VideogameEnv`.
+        """Initialize a :class:`VideogameEnv`.
 
         Args:
             name: Name of the environment. Follows standard gym syntax conventions.
@@ -74,7 +74,7 @@ class VideogameEnv(PlangymEnv, ABC):
         return self.action_space.n
 
     @staticmethod
-    def get_lifes_from_info(info: Dict[str, Any]) -> int:
+    def get_lifes_from_info(info: dict[str, Any]) -> int:
         """Return the number of lifes remaining in the current game."""
         return info.get("life", -1)
 

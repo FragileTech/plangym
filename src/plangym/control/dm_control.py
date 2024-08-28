@@ -1,5 +1,6 @@
 """Implement the ``plangym`` API for ``dm_control`` environments."""
-from typing import Iterable, Optional
+
+from typing import Iterable
 import warnings
 
 from gym.spaces import Box
@@ -17,8 +18,7 @@ except Exception:  # pragma: no cover
 
 
 class DMControlEnv(PlangymEnv):
-    """
-    Wrap the `dm_control library, allowing its implementation in planning problems.
+    """Wrap the `dm_control library, allowing its implementation in planning problems.
 
     The dm_control library is a DeepMind's software stack for physics-based
     simulation and Reinforcement Learning environments, using MuJoCo physics.
@@ -44,11 +44,10 @@ class DMControlEnv(PlangymEnv):
         domain_name=None,
         task_name=None,
         render_mode=None,
-        obs_type: Optional[str] = None,
+        obs_type: str | None = None,
         remove_time_limit=None,
     ):
-        """
-        Initialize a :class:`DMControlEnv`.
+        """Initialize a :class:`DMControlEnv`.
 
         Args:
             name: Name of the task. Provide the task to be solved as
@@ -134,8 +133,7 @@ class DMControlEnv(PlangymEnv):
             super(DMControlEnv, self).setup()
 
     def _init_action_space(self):
-        """
-        Define the action space of the environment.
+        """Define the action space of the environment.
 
         This method determines the spectrum of possible actions that the
         agent can perform. The action space consists in a grid representing
@@ -157,8 +155,7 @@ class DMControlEnv(PlangymEnv):
         return self.gym_env.action_spec()
 
     def get_image(self) -> numpy.ndarray:
-        """
-        Return a numpy array containing the rendered view of the environment.
+        """Return a numpy array containing the rendered view of the environment.
 
         Square matrices are interpreted as a greyscale image. Three-dimensional arrays
         are interpreted as RGB images with channels (Height, Width, RGB).
@@ -166,8 +163,7 @@ class DMControlEnv(PlangymEnv):
         return self.gym_env.physics.render(camera_id=0)
 
     def render(self, mode="human"):
-        """
-        Store all the RGB images rendered to be shown when the `show_game`\
+        """Store all the RGB images rendered to be shown when the `show_game`\
         function is called.
 
         Args:
@@ -186,8 +182,7 @@ class DMControlEnv(PlangymEnv):
         return True
 
     def show_game(self, sleep: float = 0.05):
-        """
-        Render the collected RGB images.
+        """Render the collected RGB images.
 
         When 'human' option is selected as argument for the `render` method,
         it stores a collection of RGB images inside the ``self.viewer``
@@ -201,8 +196,7 @@ class DMControlEnv(PlangymEnv):
             time.sleep(sleep)
 
     def get_coords_obs(self, obs, **kwargs) -> numpy.ndarray:
-        """
-        Get the environment observation from a time_step object.
+        """Get the environment observation from a time_step object.
 
         Args:
             obs: Time step object returned after stepping the environment.
@@ -214,8 +208,7 @@ class DMControlEnv(PlangymEnv):
         return self._time_step_to_obs(time_step=obs)
 
     def set_state(self, state: numpy.ndarray) -> None:
-        """
-        Set the state of the simulator to the target State.
+        """Set the state of the simulator to the target State.
 
         Args:
             state: numpy.ndarray containing the information about the state to be set.
@@ -227,14 +220,13 @@ class DMControlEnv(PlangymEnv):
             self.gym_env.physics.set_state(state)
 
     def get_state(self) -> numpy.ndarray:
-        """
-        Return a tuple containing the three arrays that characterize the state\
+        """Return a tuple containing the three arrays that characterize the state\
          of the system.
 
         Each tuple contains the position of the robot, its velocity
          and the control variables currently being applied.
 
-        Returns:
+        Returns
             Tuple of numpy arrays containing all the information needed to describe
             the current state of the simulation.
         """
@@ -252,8 +244,7 @@ class DMControlEnv(PlangymEnv):
 
     @staticmethod
     def _time_step_to_obs(time_step) -> numpy.ndarray:
-        """
-        Stack observation values as a horizontal sequence.
+        """Stack observation values as a horizontal sequence.
 
         Concat observations in a single array, making easier calculating
         distances.

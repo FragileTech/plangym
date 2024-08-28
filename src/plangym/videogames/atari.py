@@ -1,5 +1,6 @@
 """Implement the ``plangym`` API for Atari environments."""
-from typing import Any, Dict, Iterable, Optional, Union
+
+from typing import Any, Iterable
 
 import gym
 from gym.spaces import Space
@@ -18,8 +19,7 @@ def ale_to_ram(ale) -> numpy.ndarray:
 
 
 class AtariEnv(VideogameEnv):
-    """
-    Create an environment to play OpenAI gym Atari Games that uses AtariALE as the emulator.
+    """Create an environment to play OpenAI gym Atari Games that uses AtariALE as the emulator.
 
     Args:
         name: Name of the environment. Follows standard gym syntax conventions.
@@ -74,15 +74,14 @@ class AtariEnv(VideogameEnv):
         difficulty: int = 0,  # game difficulty, see Machado et al. 2018
         repeat_action_probability: float = 0.0,  # Sticky action probability
         full_action_space: bool = False,  # Use all actions
-        render_mode: Optional[str] = None,  # None | human | rgb_array
+        render_mode: str | None = None,  # None | human | rgb_array
         possible_to_win: bool = False,
         wrappers: Iterable[wrap_callable] = None,
         array_state: bool = True,
         clone_seeds: bool = False,
         **kwargs,
     ):
-        """
-        Initialize a :class:`AtariEnvironment`.
+        """Initialize a :class:`AtariEnvironment`.
 
         Args:
             name: Name of the environment. Follows standard gym syntax conventions.
@@ -141,8 +140,7 @@ class AtariEnv(VideogameEnv):
 
     @property
     def ale(self):
-        """
-        Return the ``ale`` interface of the underlying :class:`gym.Env`.
+        """Return the ``ale`` interface of the underlying :class:`gym.Env`.
 
         Example::
 
@@ -188,13 +186,12 @@ class AtariEnv(VideogameEnv):
             return "grayscale"
         return "rgb"
 
-    def get_lifes_from_info(self, info: Dict[str, Any]) -> int:
+    def get_lifes_from_info(self, info: dict[str, Any]) -> int:
         """Return the number of lives remaining in the current game."""
         return info.get("ale.lives", super().get_lifes_from_info(info))
 
     def get_image(self) -> numpy.ndarray:
-        """
-        Return a numpy array containing the rendered view of the environment.
+        """Return a numpy array containing the rendered view of the environment.
 
         Image is a three-dimensional array interpreted as an RGB image with
         channels (Height, Width, RGB). Ignores wrappers as it loads the
@@ -210,8 +207,7 @@ class AtariEnv(VideogameEnv):
         return self.gym_env.ale.getScreenRGB()
 
     def get_ram(self) -> numpy.ndarray:
-        """
-        Return a numpy array containing the content of the emulator's RAM.
+        """Return a numpy array containing the content of the emulator's RAM.
 
         The RAM is a vector array interpreted as the memory of the emulator.
 
@@ -222,7 +218,7 @@ class AtariEnv(VideogameEnv):
             >>> ram.shape, ram.dtype
             ((128,), dtype('uint8'))
         """
-        return self.gym_env.ale.getRAM()
+        return ale_to_ram(self.ale)
 
     def init_gym_env(self) -> gym.Env:
         """Initialize the :class:`gym.Env`` instance that the Environment is wrapping."""
@@ -246,8 +242,7 @@ class AtariEnv(VideogameEnv):
         return gym_env
 
     def get_state(self) -> numpy.ndarray:
-        """
-        Recover the internal state of the simulation.
+        """Recover the internal state of the simulation.
 
         If clone seed is False the environment will be stochastic.
         Cloning the full state ensures the environment is deterministic.
@@ -264,14 +259,13 @@ class AtariEnv(VideogameEnv):
             <ale_py._ale_py.ALEState object at 0x...>
 
         """
-        state = self.gym_env.unwrapped.clone_full_state()
+        state = self.gym_env.unwrapped.clone_state()
         if self.STATE_IS_ARRAY:
             state = numpy.array((state, None), dtype=object)
         return state
 
     def set_state(self, state: numpy.ndarray) -> None:
-        """
-        Set the internal state of the simulation.
+        """Set the internal state of the simulation.
 
         Args:
             state: Target state to be set in the environment.
@@ -288,11 +282,10 @@ class AtariEnv(VideogameEnv):
         """
         if self.STATE_IS_ARRAY:
             state = state[0]
-        self.gym_env.unwrapped.restore_full_state(state)
+        self.gym_env.unwrapped.restore_state(state)
 
-    def step_with_dt(self, action: Union[numpy.ndarray, int, float], dt: int = 1):
-        """
-        Take ``dt`` simulation steps and make the environment evolve in multiples \
+    def step_with_dt(self, action: numpy.ndarray | int | float, dt: int = 1):
+        """Take ``dt`` simulation steps and make the environment evolve in multiples \
         of ``self.frameskip`` for a total of ``dt`` * ``self.frameskip`` steps.
 
         Args:
@@ -329,8 +322,7 @@ class AtariPyEnvironment(AtariEnv):
     """Create an environment to play OpenAI gym Atari Games that uses AtariPy as the emulator."""
 
     def get_state(self) -> numpy.ndarray:  # pragma: no cover
-        """
-        Recover the internal state of the simulation.
+        """Recover the internal state of the simulation.
 
         If clone seed is False the environment will be stochastic.
         Cloning the full state ensures the environment is deterministic.
@@ -341,8 +333,7 @@ class AtariPyEnvironment(AtariEnv):
             return self.gym_env.unwrapped.clone_state()
 
     def set_state(self, state: numpy.ndarray) -> None:  # pragma: no cover
-        """
-        Set the internal state of the simulation.
+        """Set the internal state of the simulation.
 
         Args:
             state: Target state to be set in the environment.
@@ -358,8 +349,7 @@ class AtariPyEnvironment(AtariEnv):
             self.gym_env.unwrapped.restore_state(state)
 
     def get_ram(self) -> numpy.ndarray:  # pragma: no cover
-        """
-        Return a numpy array containing the content of the emulator's RAM.
+        """Return a numpy array containing the content of the emulator's RAM.
 
         The RAM is a vector array interpreted as the memory of the emulator.
         """

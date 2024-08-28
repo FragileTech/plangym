@@ -1,4 +1,5 @@
 """Implement the ``plangym`` API for ``gym`` classic control environments."""
+
 import copy
 
 import numpy
@@ -14,8 +15,7 @@ class ClassicControl(PlangymEnv):
         return numpy.array(copy.copy(self.gym_env.unwrapped.state))
 
     def set_state(self, state: numpy.ndarray):
-        """
-        Set the internal state of the environemnt.
+        """Set the internal state of the environemnt.
 
         Args:
             state: Target state to be set in the environment.

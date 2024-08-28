@@ -4,7 +4,7 @@ import pytest
 
 
 pytest.importorskip("balloon_learning_environment")
-from plangym.api_tests import (  # noqa: F401
+from src.plangym.api_tests import (
     batch_size,
     display,
     generate_test_cases,

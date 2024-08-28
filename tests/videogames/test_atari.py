@@ -9,7 +9,7 @@ from tests import SKIP_ATARI_TESTS
 
 if SKIP_ATARI_TESTS:
     pytest.skip("Atari not installed, skipping", allow_module_level=True)
-from plangym.api_tests import (  # noqa: F401
+from src.plangym.api_tests import (
     batch_size,
     display,
     generate_test_cases,
@@ -34,9 +34,12 @@ def env(request) -> AtariEnv:
 
 class TestAtariEnv:
     def test_ale_to_ram(self, env):
+        _ = env.reset()
         ram = ale_to_ram(env.ale)
+        env_ram = env.get_ram()
         assert isinstance(ram, numpy.ndarray)
-        assert (ram == env.get_ram()).all()
+        assert ram.shape == env_ram.shape
+        assert (ram == env_ram).all()
 
     def test_get_image(self):
         env = qbert_ram()

@@ -1,7 +1,6 @@
 import copy
 from itertools import product
 import os
-from typing import Iterable
 import warnings
 
 import gym
@@ -12,7 +11,6 @@ from pyvirtualdisplay import Display
 import plangym
 from plangym.core import PlanEnv, PlangymEnv
 from plangym.vectorization.env import VectorizedEnv
-from plangym.videogames.env import LIFE_KEY
 
 
 def generate_test_cases(
@@ -100,7 +98,6 @@ def step_batch_tuple_test(env, batch_size, observs, rewards, terminals, infos, d
 
 
 class TestPlanEnv:
-
     CLASS_ATTRIBUTES = ("OBS_IS_ARRAY", "STATE_IS_ARRAY", "SINGLETON")
     PROPERTIES = (
         "unwrapped",
@@ -224,8 +221,8 @@ class TestPlanEnv:
             if not env.SINGLETON and env.STATE_IS_ARRAY:
                 curr_state = env.get_state()
                 assert (new_state == curr_state).all(), (
-                    f"original: {new_state[new_state!= curr_state]} "
-                    f"env: {curr_state[new_state!= curr_state]}"
+                    f"original: {new_state[new_state != curr_state]} "
+                    f"env: {curr_state[new_state != curr_state]}"
                 )
         else:
             assert len(new_state) == 0
@@ -254,7 +251,7 @@ class TestPlanEnv:
         if should_return_state:
             assert len(new_states) == 1
             new_states = new_states[0]
-            # Todo: update check when returning batch arrays is available
+            # TODO: update check when returning batch arrays is available
             assert isinstance(new_states, list)
             state_is_array = isinstance(new_states[0], numpy.ndarray)
             assert state_is_array if env.STATE_IS_ARRAY else not state_is_array

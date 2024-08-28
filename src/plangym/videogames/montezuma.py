@@ -1,6 +1,7 @@
 """Implementation of the montezuma environment adapted for planning problems."""
+
 import pickle
-from typing import Iterable, Optional, Tuple, Union
+from typing import Iterable
 
 import cv2
 import gym
@@ -165,7 +166,7 @@ class CustomMontezuma:
             return self.get_coords()
         return obs
 
-    def step(self, action) -> Tuple[numpy.ndarray, float, bool, dict]:
+    def step(self, action) -> tuple[numpy.ndarray, float, bool, dict]:
         """Step the environment."""
         obs, reward, done, info = self.env.step(action)
         self.ram = self.env.unwrapped.ale.getRAM()
@@ -380,7 +381,7 @@ class CustomMontezuma:
         return self.pos
 
     @staticmethod
-    def get_room_xy(room) -> Tuple[Union[None, Tuple[int, int]]]:
+    def get_room_xy(room) -> tuple[None | tuple[int, int]]:
         """Get the tuple that encodes the provided room."""
         if KNOWN_XY[room] is None:
             for y, l in enumerate(PYRAMID):
@@ -404,7 +405,7 @@ class CustomMontezuma:
         """Create a MontezumaPosLevel object using the provided data."""
         return MontezumaPosLevel(pos.level, score, pos.room, pos.x, pos.y)
 
-    def render(self, mode="human", **kwargs) -> Union[None, numpy.ndarray]:
+    def render(self, mode="human", **kwargs) -> None | numpy.ndarray:
         """Render the environment."""
         return self.env.render(mode=mode)
 
@@ -430,7 +431,7 @@ class MontezumaEnv(AtariEnv):
         difficulty: int = 0,  # game difficulty, see Machado et al. 2018
         repeat_action_probability: float = 0.0,  # Sticky action probability
         full_action_space: bool = False,  # Use all actions
-        render_mode: Optional[str] = None,  # None | human | rgb_array
+        render_mode: str | None = None,  # None | human | rgb_array
         possible_to_win: bool = True,
         wrappers: Iterable[wrap_callable] = None,
         array_state: bool = True,
@@ -471,8 +472,7 @@ class MontezumaEnv(AtariEnv):
         return CustomMontezuma(**kwargs)
 
     def get_state(self) -> numpy.ndarray:
-        """
-        Recover the internal state of the simulation.
+        """Recover the internal state of the simulation.
 
         If clone seed is False the environment will be stochastic.
         Cloning the full state ensures the environment is deterministic.
@@ -509,8 +509,7 @@ class MontezumaEnv(AtariEnv):
         return array
 
     def set_state(self, state: numpy.ndarray):
-        """
-        Set the internal state of the simulation.
+        """Set the internal state of the simulation.
 
         Args:
             state: Target state to be set in the environment.

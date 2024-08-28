@@ -1,4 +1,5 @@
 """Generic utilities for working with environments."""
+
 import gym
 from gym.wrappers.time_limit import TimeLimit
 import numpy
@@ -52,8 +53,7 @@ def process_frame(
     height: int = None,
     mode: str = "RGB",
 ) -> numpy.ndarray:
-    """
-    Use PIL to resize an RGB frame to a specified height and width \
+    """Use PIL to resize an RGB frame to a specified height and width \
     or changing it to a different mode.
 
     Args:

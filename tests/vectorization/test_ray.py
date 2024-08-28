@@ -13,7 +13,7 @@ from plangym.videogames.atari import AtariEnv
 pytest.importorskip("ray")
 if os.getenv("DISABLE_RAY", False) and str(os.getenv("DISABLE_RAY", "False")).lower() != "false":
     pytest.skip("Ray not installed or disabled", allow_module_level=True)
-from plangym.api_tests import batch_size, display, TestPlanEnv, TestPlangymEnv  # noqa: F401
+from src.plangym.api_tests import batch_size, display, TestPlanEnv, TestPlangymEnv
 
 
 def ray_cartpole():

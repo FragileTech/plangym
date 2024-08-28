@@ -1,6 +1,7 @@
 """Plangym API implementation."""
+
 from abc import ABC
-from typing import Any, Callable, Dict, Iterable, Optional, Tuple, Union
+from typing import Any, Callable, Iterable, Union
 
 import gym
 from gym.spaces import Box, Space
@@ -10,12 +11,11 @@ import numpy
 from plangym.utils import process_frame, remove_time_limit
 
 
-wrap_callable = Union[Callable[[], gym.Wrapper], Tuple[Callable[..., gym.Wrapper], Dict[str, Any]]]
+wrap_callable = Union[Callable[[], gym.Wrapper], tuple[Callable[..., gym.Wrapper], dict[str, Any]]]
 
 
 class PlanEnv(ABC):
-    """
-    Inherit from this class to adapt environments to different problems.
+    """Inherit from this class to adapt environments to different problems.
 
     Base class that establishes all needed methods and blueprints to work with
     Gym environments.
@@ -33,8 +33,7 @@ class PlanEnv(ABC):
         delay_setup: bool = False,
         return_image: bool = False,
     ):
-        """
-        Initialize a :class:`Environment`.
+        """Initialize a :class:`Environment`.
 
         Args:
             name: Name of the environment.
@@ -79,21 +78,20 @@ class PlanEnv(ABC):
         return self._name
 
     @property
-    def obs_shape(self) -> Tuple[int]:
+    def obs_shape(self) -> tuple[int]:
         """Tuple containing the shape of the observations returned by the Environment."""
         raise NotImplementedError()
 
     @property
-    def action_shape(self) -> Tuple[int]:
+    def action_shape(self) -> tuple[int]:
         """Tuple containing the shape of the actions applied to the Environment."""
         raise NotImplementedError()
 
     @property
     def unwrapped(self) -> "PlanEnv":
-        """
-        Completely unwrap this Environment.
+        """Completely unwrap this Environment.
 
-        Returns:
+        Returns
             plangym.Environment: The base non-wrapped plangym.Environment instance
 
         """
@@ -101,17 +99,15 @@ class PlanEnv(ABC):
 
     @property
     def return_image(self) -> bool:
-        """
-        Return `return_image` flag.
+        """Return `return_image` flag.
 
         If ``True`` add an "rgb" key in the `info` dictionary returned by `step` \
         that contains an RGB representation of the environment state.
         """
         return self._return_image
 
-    def get_image(self) -> Union[None, numpy.ndarray]:
-        """
-        Return a numpy array containing the rendered view of the environment.
+    def get_image(self) -> None | numpy.ndarray:
+        """Return a numpy array containing the rendered view of the environment.
 
         Square matrices are interpreted as a grayscale image. Three-dimensional arrays
         are interpreted as RGB images with channels (Height, Width, RGB)
@@ -120,13 +116,12 @@ class PlanEnv(ABC):
 
     def step(
         self,
-        action: Union[numpy.ndarray, int, float],
+        action: numpy.ndarray | int | float,
         state: numpy.ndarray = None,
         dt: int = 1,
-        return_state: Optional[bool] = None,
+        return_state: bool | None = None,
     ) -> tuple:
-        """
-        Step the environment applying the supplied action.
+        """Step the environment applying the supplied action.
 
         Optionally set the state to the supplied state before stepping it (the
         method prepares the environment in the given state, dismissing the current
@@ -173,9 +168,8 @@ class PlanEnv(ABC):
     def reset(
         self,
         return_state: bool = True,
-    ) -> Union[numpy.ndarray, Tuple[numpy.ndarray, numpy.ndarray]]:
-        """
-        Restart the environment.
+    ) -> numpy.ndarray | tuple[numpy.ndarray, numpy.ndarray]:
+        """Restart the environment.
 
         Args:
             return_state: If ``True``, it will return the state of the environment.
@@ -190,13 +184,12 @@ class PlanEnv(ABC):
 
     def step_batch(
         self,
-        actions: Union[numpy.ndarray, Iterable[Union[numpy.ndarray, int]]],
-        states: Union[numpy.ndarray, Iterable] = None,
-        dt: Union[int, numpy.ndarray] = 1,
+        actions: numpy.ndarray | Iterable[numpy.ndarray | int],
+        states: numpy.ndarray | Iterable = None,
+        dt: int | numpy.ndarray = 1,
         return_state: bool = True,
-    ) -> Tuple[Union[list, numpy.ndarray], ...]:
-        """
-        Allow stepping a vector of states and actions.
+    ) -> tuple[list | numpy.ndarray, ...]:
+        """Allow stepping a vector of states and actions.
 
         Vectorized version of the `step` method. The signature and behaviour is
         the same as `step`, but taking a list of states, actions and dts as input.
@@ -240,18 +233,15 @@ class PlanEnv(ABC):
         return self.__class__(**clone_kwargs)
 
     def sample_action(self):  # pragma: no cover
-        """
-        Return a valid action that can be used to step the Environment.
+        """Return a valid action that can be used to step the Environment.
 
         Implementing this method is optional, and it's only intended to make the
         testing process of the Environment easier.
         """
-        pass
 
     # Internal API -----------------------------------------------------------------------------
-    def step_with_dt(self, action: Union[numpy.ndarray, int, float], dt: int = 1):
-        """
-        Take ``dt`` simulation steps and make the environment evolve in multiples\
+    def step_with_dt(self, action: numpy.ndarray | int | float, dt: int = 1):
+        """Take ``dt`` simulation steps and make the environment evolve in multiples\
         of ``self.frameskip`` for a total of ``dt`` * ``self.frameskip`` steps.
 
         The method performs any post-processing to the data after applying the action
@@ -290,8 +280,7 @@ class PlanEnv(ABC):
         terminal,
         info,
     ):
-        """
-        Prepare the tuple that step returns.
+        """Prepare the tuple that step returns.
 
         This is a post processing state to have fine-grained control over what data \
         the current step is returning.
@@ -346,14 +335,12 @@ class PlanEnv(ABC):
         return step_data
 
     def setup(self) -> None:
-        """
-        Run environment initialization.
+        """Run environment initialization.
 
         Including in this function all the code which makes the environment impossible
         to serialize will allow to dispatch the environment to different workers and
         initialize it once it's copied to the target process.
         """
-        pass
 
     def begin_step(self, action=None, dt=None, state=None, return_state: bool = None):
         """Perform setup of step variables before starting `step_with_dt`."""
@@ -374,8 +361,7 @@ class PlanEnv(ABC):
         terminal,
         info,
     ):
-        """
-        Perform any post-processing to the data returned by `apply_action`.
+        """Perform any post-processing to the data returned by `apply_action`.
 
         Args:
             obs: Observation of the environment.
@@ -398,8 +384,7 @@ class PlanEnv(ABC):
         terminal,
         info,
     ):
-        """
-        Prepare the returned info dictionary.
+        """Prepare the returned info dictionary.
 
         This is a post processing step to have fine-grained control over what data \
         the info dictionary contains.
@@ -421,7 +406,6 @@ class PlanEnv(ABC):
 
     def close(self) -> None:
         """Tear down the current environment."""
-        pass
 
     # Developer API -----------------------------------------------------------------------------
     def process_obs(self, obs, **kwargs):
@@ -436,7 +420,7 @@ class PlanEnv(ABC):
         """Perform optional computation for computing the terminal flag returned by step."""
         return terminal
 
-    def process_info(self, info, **kwargs) -> Dict[str, Any]:
+    def process_info(self, info, **kwargs) -> dict[str, Any]:
         """Perform optional computation for computing the info dictionary returned by step."""
         return info
 
@@ -449,16 +433,14 @@ class PlanEnv(ABC):
         raise NotImplementedError()
 
     def get_state(self) -> Any:
-        """
-        Recover the internal state of the simulation.
+        """Recover the internal state of the simulation.
 
         A state must completely describe the Environment at a given moment.
         """
         raise NotImplementedError()
 
     def set_state(self, state: Any) -> None:
-        """
-        Set the internal state of the simulation. Overwrite current state by the given argument.
+        """Set the internal state of the simulation. Overwrite current state by the given argument.
 
         Args:
             state: Target state to be set in the environment.
@@ -485,14 +467,13 @@ class PlangymEnv(PlanEnv):
         wrappers: Iterable[wrap_callable] = None,
         delay_setup: bool = False,
         remove_time_limit=True,
-        render_mode: Optional[str] = None,
+        render_mode: str | None = None,
         episodic_life=False,
         obs_type=None,  # one of coords|rgb|grayscale|None
         return_image=False,
         **kwargs,
     ):
-        """
-        Initialize a :class:`PlangymEnv`.
+        """Initialize a :class:`PlangymEnv`.
 
         The user can read all private methods as instance properties.
 
@@ -553,7 +534,7 @@ class PlangymEnv(PlanEnv):
         return self._gym_env
 
     @property
-    def obs_shape(self) -> Tuple[int, ...]:
+    def obs_shape(self) -> tuple[int, ...]:
         """Tuple containing the shape of the *observations* returned by the Environment."""
         return self.observation_space.shape
 
@@ -568,7 +549,7 @@ class PlangymEnv(PlanEnv):
         return self._obs_space
 
     @property
-    def action_shape(self) -> Tuple[int, ...]:
+    def action_shape(self) -> tuple[int, ...]:
         """Tuple containing the shape of the *actions* applied to the Environment."""
         return self.action_space.shape
 
@@ -591,7 +572,7 @@ class PlangymEnv(PlanEnv):
         return {"render_modes": [None, "human", "rgb_array"]}
 
     @property
-    def render_mode(self) -> Union[None, str]:
+    def render_mode(self) -> None | str:
         """Return how the game will be rendered. Values: None | human | rgb_array."""
         return self._render_mode
 
@@ -601,8 +582,7 @@ class PlangymEnv(PlanEnv):
         return self._remove_time_limit
 
     def setup(self):
-        """
-        Initialize the target :class:`gym.Env` instance.
+        """Initialize the target :class:`gym.Env` instance.
 
         The method calls ``self.init_gym_env`` to initialize the :class:``gym.Env`` instance.
         It removes time limits if needed and applies wrappers introduced by the user.
@@ -637,7 +617,6 @@ class PlangymEnv(PlanEnv):
             self._obs_space = Box(low=0, high=255, dtype=numpy.uint8, shape=img_shape)
 
     def _init_obs_space_grayscale(self):
-
         if self.DEFAULT_OBS_TYPE == "grayscale":
             self._obs_space = self.gym_env.observation_space
         elif self.DEFAULT_OBS_TYPE == "rgb":
@@ -665,8 +644,7 @@ class PlangymEnv(PlanEnv):
             )
 
     def get_image(self) -> numpy.ndarray:
-        """
-        Return a numpy array containing the rendered view of the environment.
+        """Return a numpy array containing the rendered view of the environment.
 
         Square matrices are interpreted as a greyscale image. Three-dimensional arrays
         are interpreted as RGB images with channels (Height, Width, RGB).
@@ -678,9 +656,8 @@ class PlangymEnv(PlanEnv):
     def apply_reset(
         self,
         return_state: bool = True,
-    ) -> Union[numpy.ndarray, Tuple[numpy.ndarray, numpy.ndarray]]:
-        """
-        Restart the environment.
+    ) -> numpy.ndarray | tuple[numpy.ndarray, numpy.ndarray]:
+        """Restart the environment.
 
         Args:
             return_state: If ``True`` it will return the state of the environment.
@@ -694,15 +671,14 @@ class PlangymEnv(PlanEnv):
         return self.gym_env.reset()
 
     def apply_action(self, action):
-        """
-        Evolve the environment for one time step applying the provided action.
+        """Evolve the environment for one time step applying the provided action.
 
         Accumulate rewards and calculate terminal flag after stepping the environment.
         """
         obs, reward, terminal, info = self.gym_env.step(action)
         return obs, reward, terminal, info
 
-    def sample_action(self) -> Union[int, numpy.ndarray]:
+    def sample_action(self) -> int | numpy.ndarray:
         """Return a valid action that can be used to step the environment chosen at random."""
         if hasattr(self.action_space, "sample"):
             return self.action_space.sample()
@@ -762,8 +738,7 @@ class PlangymEnv(PlanEnv):
         raise NotImplementedError()
 
     def process_obs(self, obs, **kwargs):
-        """
-        Perform optional computation for computing the observation returned by step.
+        """Perform optional computation for computing the observation returned by step.
 
         This is a post processing step to have fine-grained control over the returned
         observation.

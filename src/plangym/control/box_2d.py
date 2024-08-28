@@ -1,4 +1,5 @@
 """Implement the ``plangym`` API for Box2D environments."""
+
 import copy
 
 import numpy
@@ -7,8 +8,7 @@ from plangym.core import PlangymEnv
 
 
 class Box2DState:
-    """
-    Extract state information from Box2D environments.
+    """Extract state information from Box2D environments.
 
     This class implements basic functionalities to get the necessary
     elements to construct a Box2D state.
@@ -16,8 +16,7 @@ class Box2DState:
 
     @staticmethod
     def get_body_attributes(body) -> dict:
-        """
-        Return a dictionary containing the attributes of a given body.
+        """Return a dictionary containing the attributes of a given body.
 
         Given a ``Env.world.body`` element, this method constructs a dictionary
         whose entries describe all body attributes.
@@ -64,8 +63,7 @@ class Box2DState:
 
     @classmethod
     def serialize_body_state(cls, state_dict):
-        """
-        Serialize the state of the target body data.
+        """Serialize the state of the target body data.
 
         This method takes as argument the result given by the method
         ``self.get_body_attributes``, the latter consisting in a dictionary
@@ -90,8 +88,7 @@ class Box2DState:
 
     @classmethod
     def set_body_state(cls, body, state):
-        """
-        Set the state to the target body.
+        """Set the state to the target body.
 
         The method defines the corresponding body attribute to the value
         selected by the user.
@@ -109,8 +106,7 @@ class Box2DState:
 
     @classmethod
     def serialize_world_state(cls, world):
-        """
-        Serialize the state of all the bodies in world.
+        """Serialize the state of all the bodies in world.
 
         The method serializes all body elements contained within the
         given ``Env.world`` object.
@@ -119,8 +115,7 @@ class Box2DState:
 
     @classmethod
     def set_world_state(cls, world, state):
-        """
-        Set the state of the world environment to the provided state.
+        """Set the state of the world environment to the provided state.
 
         The method states the current environment by defining its world
         bodies' attributes.
@@ -143,8 +138,7 @@ class Box2DEnv(PlangymEnv):
     """Common interface for working with Box2D environments released by `gym`."""
 
     def get_state(self) -> numpy.array:
-        """
-        Recover the internal state of the simulation.
+        """Recover the internal state of the simulation.
 
         A state must completely describe the Environment at a given moment.
         """
@@ -152,8 +146,7 @@ class Box2DEnv(PlangymEnv):
         return numpy.array((state, None), dtype=object)
 
     def set_state(self, state: numpy.ndarray) -> None:
-        """
-        Set the internal state of the simulation.
+        """Set the internal state of the simulation.
 
         Args:
             state: Target state to be set in the environment.

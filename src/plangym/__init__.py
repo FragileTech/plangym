@@ -1,4 +1,5 @@
 """Various environments for plangym."""
+
 import warnings
 
 
@@ -73,6 +74,6 @@ warnings.filterwarnings(
     message=" WARNING:root:The use of `check_types` is deprecated and does not have any effect.",
 )
 
-from plangym.core import PlanEnv  # noqa: E402
-from plangym.registry import make  # noqa: E402
-from plangym.version import __version__  # noqa: E402
+from plangym.core import PlanEnv
+from plangym.registry import make
+from plangym.version import __version__

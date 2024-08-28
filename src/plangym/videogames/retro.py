@@ -1,5 +1,6 @@
 """Implement the ``plangym`` API for retro environments."""
-from typing import Any, Dict, Iterable, Optional
+
+from typing import Any, Iterable
 
 import gym
 from gym import spaces
@@ -12,19 +13,23 @@ from plangym.videogames.env import VideogameEnv
 class ActionDiscretizer(gym.ActionWrapper):
     """Wrap a gym-retro environment and make it use discrete actions for the Sonic game."""
 
-    def __init__(self, env):
+    def __init__(self, env, actions=None):
         """Initialize a :class`ActionDiscretizer`."""
         super(ActionDiscretizer, self).__init__(env)
         buttons = ["B", "A", "MODE", "START", "UP", "DOWN", "LEFT", "RIGHT", "C", "Y", "X", "Z"]
-        actions = [
-            ["LEFT"],
-            ["RIGHT"],
-            ["LEFT", "DOWN"],
-            ["RIGHT", "DOWN"],
-            ["DOWN"],
-            ["DOWN", "B"],
-            ["B"],
-        ]
+        actions = (
+            [
+                ["LEFT"],
+                ["RIGHT"],
+                ["LEFT", "DOWN"],
+                ["RIGHT", "DOWN"],
+                ["DOWN"],
+                ["DOWN", "B"],
+                ["B"],
+            ]
+            if actions is None
+            else actions
+        )
         self._actions = []
         for action in actions:
             arr = numpy.array([False] * 12)
@@ -53,12 +58,11 @@ class RetroEnv(VideogameEnv):
         delay_setup: bool = False,
         remove_time_limit: bool = True,
         obs_type: str = "rgb",  # ram | rgb | grayscale
-        render_mode: Optional[str] = None,  # None | human | rgb_array
+        render_mode: str | None = None,  # None | human | rgb_array
         wrappers: Iterable[wrap_callable] = None,
         **kwargs,
     ):
-        """
-        Initialize a :class:`RetroEnv`.
+        """Initialize a :class:`RetroEnv`.
 
         Args:
             name: Name of the environment. Follows standard gym syntax conventions.
@@ -93,7 +97,7 @@ class RetroEnv(VideogameEnv):
         return getattr(self.gym_env, item)
 
     @staticmethod
-    def get_win_condition(info: Dict[str, Any]) -> bool:  # pragma: no cover
+    def get_win_condition(info: dict[str, Any]) -> bool:  # pragma: no cover
         """Get win condition for games that have the end of the screen available."""
         end_screen = info.get("screen_x", 0) >= info.get("screen_x_end", 1e6)
         terminal = info.get("x", 0) >= info.get("screen_x_end", 1e6) or end_screen
