@@ -3,9 +3,9 @@
 from abc import ABC
 from typing import Any, Callable, Iterable, Union
 
-import gymnasium as gym
-from gymnasium.spaces import Box, Space
-from gymnasium.wrappers.gray_scale_observation import GrayScaleObservation
+import gym
+from gym.spaces import Box, Space
+from gym.wrappers.gray_scale_observation import GrayScaleObservation
 import numpy
 
 from plangym.utils import process_frame, remove_time_limit
@@ -59,7 +59,6 @@ class PlanEnv(ABC):
         self._obs_step = None
         self._reward_step = 0
         self._terminal_step = False
-        self._truncated_step = False
         self._info_step = {}
         self._action_step = None
         self._dt_step = None
@@ -150,19 +149,17 @@ class PlanEnv(ABC):
         self.begin_step(action=action, state=state, dt=dt, return_state=return_state)
         if state is not None:
             self.set_state(state)
-        obs, reward, terminal, truncated, info = self.step_with_dt(action=action, dt=dt)
-        obs, reward, terminal, truncated, info = self.process_step(
+        obs, reward, terminal, info = self.step_with_dt(action=action, dt=dt)
+        obs, reward, terminal, info = self.process_step(
             obs=obs,
             reward=reward,
             terminal=terminal,
-            truncated=truncated,
             info=info,
         )
         step_data = self.get_step_tuple(
             obs=obs,
             reward=reward,
             terminal=terminal,
-            truncated=truncated,
             info=info,
         )
         self.run_autoreset(step_data)  # Resets at the end to preserve the environment state.
@@ -265,8 +262,8 @@ class PlanEnv(ABC):
             self._n_step += 1
             step_data = self.apply_action(action)  # Tuple (obs, reward, terminal, info)
             step_data = self.process_apply_action(*step_data)  # Post-processing to step_data
-            self._obs_step, self._reward_step, self._terminal_step, self._truncated_step, self._info_step = step_data
-            if self._terminal_step or self._truncated_step:
+            self._obs_step, self._reward_step, self._terminal_step, self._info_step = step_data
+            if self._terminal_step:
                 break
         return step_data
 
@@ -281,7 +278,6 @@ class PlanEnv(ABC):
         obs,
         reward,
         terminal,
-        truncated,
         info,
     ):
         """Prepare the tuple that step returns.
@@ -333,9 +329,9 @@ class PlanEnv(ABC):
             info=info,
         )
         return (
-            (self.get_state(), obs, reward, terminal, truncated, info)
+            (self.get_state(), obs, reward, terminal, info)
             if return_state
-            else (obs, reward, terminal, truncated, info)
+            else (obs, reward, terminal, info)
         )
 
     def setup(self) -> None:
@@ -363,7 +359,6 @@ class PlanEnv(ABC):
         obs,
         reward,
         terminal,
-        truncated,
         info,
     ):
         """Perform any post-processing to the data returned by `apply_action`.
@@ -381,14 +376,13 @@ class PlanEnv(ABC):
         terminal = terminal or self._terminal_step
         reward = self._reward_step + reward
         info["n_step"] = int(self._n_step)
-        return obs, reward, terminal, truncated, info
+        return obs, reward, terminal, info
 
     def process_step(
         self,
         obs,
         reward,
         terminal,
-        truncated,
         info,
     ):
         """Prepare the returned info dictionary.
@@ -410,7 +404,7 @@ class PlanEnv(ABC):
         info["dt"] = self._dt_step
         if self.return_image:
             info["rgb"] = self.get_image()
-        return obs, reward, terminal, truncated, info
+        return obs, reward, terminal, info
 
     def close(self) -> None:
         """Tear down the current environment."""
@@ -475,7 +469,7 @@ class PlangymEnv(PlanEnv):
         wrappers: Iterable[wrap_callable] | None = None,
         delay_setup: bool = False,
         remove_time_limit=True,
-        render_mode: str | None = "rgb_array",
+        render_mode: str | None = None,
         episodic_life=False,
         obs_type=None,  # one of coords|rgb|grayscale|None
         return_image=False,
@@ -499,7 +493,6 @@ class PlangymEnv(PlanEnv):
             remove_time_limit: If True, remove the time limit from the environment.
 
         """
-        kwargs["render_mode"] = kwargs.get("render_mode", render_mode)
         self._render_mode = render_mode
         self._gym_env = None
         self._gym_env_kwargs = kwargs or {}  # Dictionary containing the gym.make arguments
@@ -612,7 +605,7 @@ class PlangymEnv(PlanEnv):
             self._init_obs_space_grayscale()
         elif self.obs_type == "coords":
             self._init_obs_space_coords()
-        if self.observation_space is None or self._obs_space is None:
+        if self.observation_space is None:
             self._obs_space = self.gym_env.observation_space
 
     def _init_action_space(self):
@@ -633,10 +626,7 @@ class PlangymEnv(PlanEnv):
             self._gym_env = GrayScaleObservation(self._gym_env)
             self._obs_space = self._gym_env.observation_space
         else:
-            img = self.get_image()
-            if img is None:
-                raise ValueError(f"Rendering rgb_array but we are getting None: {self}")
-            shape = img.shape
+            shape = self.get_image().shape
             self._obs_space = Box(low=0, high=255, dtype=numpy.uint8, shape=(shape[0], shape[1]))
 
     def _init_obs_space_coords(self):
@@ -663,10 +653,7 @@ class PlangymEnv(PlanEnv):
         are interpreted as RGB images with channels (Height, Width, RGB).
         """
         if hasattr(self.gym_env, "render"):
-            img =  self.gym_env.render()
-            if img is None and self.render_mode == "rgb_array":
-                raise ValueError(f"Rendering rgb_array but we are getting None: {self}")
-            return img
+            return self.gym_env.render(mode="rgb_array")
         raise NotImplementedError()
 
     def apply_reset(
@@ -691,8 +678,8 @@ class PlangymEnv(PlanEnv):
 
         Accumulate rewards and calculate terminal flag after stepping the environment.
         """
-        obs, reward, terminal, truncated, info = self.gym_env.step(action)
-        return obs, reward, terminal, truncated, info
+        obs, reward, terminal, info = self.gym_env.step(action)
+        return obs, reward, terminal, info
 
     def sample_action(self) -> int | numpy.ndarray:
         """Return a valid action that can be used to step the environment chosen at random."""
@@ -749,10 +736,10 @@ class PlangymEnv(PlanEnv):
         """Apply a single OpenAI gym wrapper to the environment."""
         self._gym_env = wrapper(self.gym_env, *args, **kwargs)
 
-    def render(self):
+    def render(self, mode="human"):
         """Render the environment using OpenGL. This wraps the OpenAI render method."""
         if hasattr(self.gym_env, "render"):
-            return self.gym_env.render()
+            return self.gym_env.render(mode=mode)
         raise NotImplementedError()
 
     def process_obs(self, obs, **kwargs):

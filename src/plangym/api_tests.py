@@ -3,7 +3,7 @@ from itertools import product
 import os
 import warnings
 
-import gym
+import gymnasium as gym
 import numpy
 import pytest
 from pyvirtualdisplay import Display
@@ -240,7 +240,7 @@ class TestPlanEnv:
         actions = [env.sample_action() for _ in range(batch_size)]
 
         data = env.step_batch(actions, dt=dt, states=states, return_state=return_state)
-        *new_states, observs, rewards, terminals, infos = data
+        *new_states, observs, rewards, terminals, truncated, infos = data
         assert isinstance(data, tuple)
         # Test return state works correctly
         default_returns_state = (
@@ -275,7 +275,7 @@ class TestPlanEnv:
         action = env.sample_action()
 
         data = env.step(action, dt=dt, state=state, return_state=return_state)
-        *new_state, obs, reward, terminal, info = data
+        *new_state, obs, reward, terminal, truncated, info = data
         assert isinstance(data, tuple)
         assert len(new_state) == 0
         step_tuple_test(env, obs, reward, terminal, info, dt=dt)
@@ -287,7 +287,7 @@ class TestPlanEnv:
         actions = [env.sample_action() for _ in range(batch_size)]
 
         data = env.step_batch(actions, dt=dt, states=states, return_state=return_state)
-        *new_states, observs, rewards, terminals, infos = data
+        *new_states, observs, rewards, terminals, truncated,  infos = data
         assert isinstance(data, tuple)
         assert len(new_states) == 0, (len(new_states), return_state)
 
