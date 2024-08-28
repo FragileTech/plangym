@@ -13,15 +13,15 @@ def get_planenv_class(name, domain_name, state):
         from plangym.videogames import MontezumaEnv
 
         return MontezumaEnv
-    elif state is not None or name in set(RETRO):
+    if state is not None or name in set(RETRO):
         from plangym.videogames import RetroEnv
 
         return RetroEnv
-    elif name in set(CLASSIC_CONTROL):
+    if name in set(CLASSIC_CONTROL):
         from plangym.control import ClassicControl
 
         return ClassicControl
-    elif name in set(BOX_2D):
+    if name in set(BOX_2D):
         if name == "FastLunarLander-v0":
             from plangym.control import LunarLander
 
@@ -29,19 +29,19 @@ def get_planenv_class(name, domain_name, state):
         from plangym.control import Box2DEnv
 
         return Box2DEnv
-    elif name in ATARI:
+    if name in ATARI:
         from plangym.videogames import AtariEnv
 
         return AtariEnv
-    elif domain_name is not None or any(x[0] in name for x in DM_CONTROL):
+    if domain_name is not None or any(x[0] in name for x in DM_CONTROL):
         from plangym.control import DMControlEnv
 
         return DMControlEnv
-    elif "SuperMarioBros" in name:
+    if "SuperMarioBros" in name:
         from plangym.videogames import MarioEnv
 
         return MarioEnv
-    elif "BalloonLearningEnvironment-v0":
+    if "BalloonLearningEnvironment-v0":
         from plangym.control import BalloonEnv
 
         return BalloonEnv
@@ -49,11 +49,11 @@ def get_planenv_class(name, domain_name, state):
 
 
 def get_environment_class(
-    name: str = None,
-    n_workers: int = None,
+    name: str | None = None,
+    n_workers: int | None = None,
     ray: bool = False,
-    domain_name: str = None,
-    state: str = None,
+    domain_name: str | None = None,
+    state: str | None = None,
 ):
     """Get the class and vectorized environment and PlangymEnv class from the make params."""
     env_class = get_planenv_class(name, domain_name, state)
@@ -61,7 +61,7 @@ def get_environment_class(
         from plangym.vectorization import RayEnv
 
         return RayEnv, env_class
-    elif n_workers is not None:
+    if n_workers is not None:
         from plangym.vectorization import ParallelEnv
 
         return ParallelEnv, env_class
@@ -69,11 +69,11 @@ def get_environment_class(
 
 
 def make(
-    name: str = None,
-    n_workers: int = None,
+    name: str | None = None,
+    n_workers: int | None = None,
     ray: bool = False,
-    domain_name: str = None,
-    state: str = None,
+    domain_name: str | None = None,
+    state: str | None = None,
     **kwargs,
 ):
     """Create the appropriate PlangymEnv from the environment name and other parameters."""

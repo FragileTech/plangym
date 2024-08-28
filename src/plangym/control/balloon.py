@@ -45,10 +45,11 @@ class BalloonEnv(PlangymEnv):
                 official documentation.
             array_state: boolean value. If True, transform the state object to
                 a ``numpy.array``.
+
         """
         renderer = renderer or MatplotlibRenderer()
         self.STATE_IS_ARRAY = array_state
-        super(BalloonEnv, self).__init__(name=name, renderer=renderer, **kwargs)
+        super().__init__(name=name, renderer=renderer, **kwargs)
 
     def get_state(self) -> Any:
         """Get the state of the environment."""
@@ -63,6 +64,6 @@ class BalloonEnv(PlangymEnv):
             state = state[0]
         return self.gym_env.unwrapped.arena.set_simulator_state(state)
 
-    def seed(self, seed: int = None):
+    def seed(self, seed: int | None = None):
         """Ignore seeding until next release."""
         return

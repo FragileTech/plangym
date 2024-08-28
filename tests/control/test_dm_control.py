@@ -60,7 +60,7 @@ class TestDMControl:
         assert hasattr(env, "render_mode")
         assert env.render_mode in {"human", "rgb_array", "coords", None}
 
-    @pytest.mark.skipif(os.getenv("SKIP_RENDER", False), reason="No display in CI.")
+    @pytest.mark.skipif(os.getenv("SKIP_RENDER", None), reason="No display in CI.")
     def test_render(self, env):
         env.reset()
         obs_rgb = env.render(mode="rgb_array")

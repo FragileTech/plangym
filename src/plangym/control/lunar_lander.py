@@ -96,7 +96,7 @@ class FastGymLunarLander(GymLunarLander):
         self.observation_space = None
         self.action_space = None
         self.continuous = continuous
-        super(FastGymLunarLander, self).__init__()
+        super().__init__()
 
     def reset(self) -> tuple:
         """Reset the environment to its initial state."""
@@ -196,7 +196,7 @@ class FastGymLunarLander(GymLunarLander):
                 rjd.upperAngle = -0.9 + 0.5
             leg.joint = self.world.CreateJoint(rjd)
             self.legs.append(leg)
-        self.drawlist = [self.lander] + self.legs
+        self.drawlist = [self.lander, *self.legs]
 
         return self.step(numpy.array([0, 0]) if self.continuous else 0)[0]
 
@@ -205,7 +205,7 @@ class FastGymLunarLander(GymLunarLander):
         if self.continuous:
             action = numpy.clip(action, -1, +1).astype(numpy.float32)
         else:
-            assert self.action_space.contains(action), "%r (%s) invalid " % (action, type(action))
+            assert self.action_space.contains(action), f"{action!r} ({type(action)}) invalid "
 
         # Engines
         tip = (math.sin(self.lander.angle), math.cos(self.lander.angle))
@@ -240,7 +240,7 @@ class FastGymLunarLander(GymLunarLander):
         # Orientation engines
         s_power = 0.0
         fire_oe_continuous = self.continuous and numpy.abs(action[1]) > 0.5
-        fire_oe_discrete = not self.continuous and action in [1, 3]
+        fire_oe_discrete = not self.continuous and action in {1, 3}
         fire_orientation_engine = fire_oe_continuous or fire_oe_discrete
         if fire_orientation_engine:
             if self.continuous:
@@ -349,11 +349,11 @@ class LunarLander(PlangymEnv):
 
     def __init__(
         self,
-        name: str = None,
+        name: str | None = None,
         frameskip: int = 1,
         episodic_life: bool = True,
         autoreset: bool = True,
-        wrappers: Iterable[wrap_callable] = None,
+        wrappers: Iterable[wrap_callable] | None = None,
         delay_setup: bool = False,
         deterministic: bool = False,
         continuous: bool = False,
@@ -364,7 +364,7 @@ class LunarLander(PlangymEnv):
         """Initialize a :class:`LunarLander`."""
         self._deterministic = deterministic
         self._continuous = continuous
-        super(LunarLander, self).__init__(
+        super().__init__(
             name="LunarLander-plangym",
             frameskip=frameskip,
             episodic_life=episodic_life,

@@ -52,8 +52,7 @@ def generate_test_cases(
             )
 
         yield _make_env
-    for custom_test in custom_tests:
-        yield custom_test
+    yield from custom_tests
 
 
 @pytest.fixture(scope="class")
@@ -92,7 +91,7 @@ def step_batch_tuple_test(env, batch_size, observs, rewards, terminals, infos, d
     assert len(observs) == batch_size
     assert len(infos) == batch_size
 
-    dts = dt if isinstance(dt, (list, numpy.ndarray)) else [dt] * batch_size
+    dts = dt if isinstance(dt, list | numpy.ndarray) else [dt] * batch_size
     for obs, reward, terminal, info, dt in zip(list(observs), rewards, terminals, infos, dts):
         step_tuple_test(env=env, obs=obs, reward=reward, terminal=terminal, info=info, dt=dt)
 
@@ -172,7 +171,7 @@ class TestPlanEnv:
             assert action.shape == env.action_shape
 
     def test_get_state(self, env):
-        state_reset, obs = env.reset()
+        state_reset, _obs = env.reset()
         state = env.get_state()
         state_is_array = isinstance(state, numpy.ndarray)
         assert state_is_array if env.STATE_IS_ARRAY else not state_is_array
@@ -210,7 +209,7 @@ class TestPlanEnv:
         *new_state, obs, reward, terminal, info = data
         assert isinstance(data, tuple)
         # Test return state works correctly
-        should_return_state = (return_state is None and state is not None) or return_state
+        should_return_state = state is not None if return_state is None else return_state
         if should_return_state:
             assert len(new_state) == 1
             new_state = new_state[0]
@@ -284,7 +283,7 @@ class TestPlanEnv:
     @pytest.mark.parametrize("dt", [3, "array"])
     def test_step_batch_dt_values(self, env, dt, batch_size, states=None, return_state=None):
         dt = dt if dt != "array" else numpy.random.randint(1, 4, batch_size).astype(int)
-        state, _ = env.reset()
+        _state, _ = env.reset()
         actions = [env.sample_action() for _ in range(batch_size)]
 
         data = env.step_batch(actions, dt=dt, states=states, return_state=return_state)

@@ -54,7 +54,7 @@ class TestMake:
         if name == "FastLunarLander-v0":
             _test_env_class(name, LunarLander)
             return
-        elif name == "CarRacing-v0" and os.getenv("SKIP_RENDER", False):
+        if name == "CarRacing-v0" and os.getenv("SKIP_RENDER", None):
             return
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")

@@ -76,7 +76,7 @@ class AtariEnv(VideogameEnv):
         full_action_space: bool = False,  # Use all actions
         render_mode: str | None = None,  # None | human | rgb_array
         possible_to_win: bool = False,
-        wrappers: Iterable[wrap_callable] = None,
+        wrappers: Iterable[wrap_callable] | None = None,
         array_state: bool = True,
         clone_seeds: bool = False,
         **kwargs,
@@ -125,7 +125,7 @@ class AtariEnv(VideogameEnv):
         self._full_action_space = full_action_space
         self.STATE_IS_ARRAY = array_state
         self.DEFAULT_OBS_TYPE = self._get_default_obs_type(name, obs_type)
-        super(AtariEnv, self).__init__(
+        super().__init__(
             name=name,
             frameskip=frameskip,
             episodic_life=episodic_life,
@@ -182,7 +182,7 @@ class AtariEnv(VideogameEnv):
         """Return the observation type of the internal Atari gym environment."""
         if "ram" in name or obs_type == "ram":
             return "ram"
-        elif obs_type == "grayscale":
+        if obs_type == "grayscale":
             return "grayscale"
         return "rgb"
 
@@ -224,18 +224,18 @@ class AtariEnv(VideogameEnv):
         """Initialize the :class:`gym.Env`` instance that the Environment is wrapping."""
         # Remove any undocumented wrappers
         try:
-            default_env_kwargs = dict(
-                obs_type=self.obs_type,  # ram | rgb | grayscale
-                frameskip=self.frameskip,  # frame skip
-                mode=self._mode,  # game mode, see Machado et al. 2018
-                difficulty=self.difficulty,  # game difficulty, see Machado et al. 2018
-                repeat_action_probability=self.repeat_action_probability,  # Sticky action prob
-                full_action_space=self.full_action_space,  # Use all actions
-                render_mode=self.render_mode,  # None | human | rgb_array
-            )
+            default_env_kwargs = {
+                "obs_type": self.obs_type,  # ram | rgb | grayscale
+                "frameskip": self.frameskip,  # frame skip
+                "mode": self._mode,  # game mode, see Machado et al. 2018
+                "difficulty": self.difficulty,  # game difficulty, see Machado et al. 2018
+                "repeat_action_probability": self.repeat_action_probability,  # Sticky action prob
+                "full_action_space": self.full_action_space,  # Use all actions
+                "render_mode": self.render_mode,  # None | human | rgb_array
+            }
             default_env_kwargs.update(self._gym_env_kwargs)
             self._gym_env_kwargs = default_env_kwargs
-            gym_env = super(AtariEnv, self).init_gym_env()
+            gym_env = super().init_gym_env()
         except RuntimeError:
             gym_env: gym.Env = gym.make(self.name)
             gym_env.reset()
@@ -279,6 +279,7 @@ class AtariEnv(VideogameEnv):
             >>> env.set_state(state)
             >>> (state == env.get_state()).all()
             True
+
         """
         if self.STATE_IS_ARRAY:
             state = state[0]
@@ -304,16 +305,16 @@ class AtariEnv(VideogameEnv):
             >>> assert not end
 
         """
-        return super(AtariEnv, self).step_with_dt(action=action, dt=dt)
+        return super().step_with_dt(action=action, dt=dt)
 
     def clone(self, **kwargs) -> "VideogameEnv":
         """Return a copy of the environment."""
-        params = dict(
-            mode=self.mode,
-            difficulty=self.difficulty,
-            repeat_action_probability=self.repeat_action_probability,
-            full_action_space=self.full_action_space,
-        )
+        params = {
+            "mode": self.mode,
+            "difficulty": self.difficulty,
+            "repeat_action_probability": self.repeat_action_probability,
+            "full_action_space": self.full_action_space,
+        }
         params.update(**kwargs)
         return super(VideogameEnv, self).clone(**params)
 
@@ -329,8 +330,7 @@ class AtariPyEnvironment(AtariEnv):
         """
         if self.clone_seeds:
             return self.gym_env.unwrapped.clone_full_state()
-        else:
-            return self.gym_env.unwrapped.clone_state()
+        return self.gym_env.unwrapped.clone_state()
 
     def set_state(self, state: numpy.ndarray) -> None:  # pragma: no cover
         """Set the internal state of the simulation.

@@ -26,7 +26,7 @@ from plangym.videogames.atari import AtariEnv
 class MontezumaPosLevel:
     """Contains the information of Panama Joe."""
 
-    __slots__ = ["level", "score", "room", "x", "y", "tuple"]
+    __slots__ = ["level", "room", "score", "tuple", "x", "y"]
 
     def __init__(self, level, score, room, x, y):
         """Initialize a :class:`MontezumaPosLevel`."""
@@ -146,7 +146,7 @@ class CustomMontezuma:
         obs = self.env.reset()
         self.cur_lives = 5
         for _ in range(3):
-            obs, *_, info = self.env.step(0)
+            obs, *_, _info = self.env.step(0)
         self.ram = self.env.unwrapped.ale.getRAM()
         self.cur_score = 0
         self.cur_steps = 0
@@ -208,7 +208,7 @@ class CustomMontezuma:
         y, x = numpy.mean(face_pixels, axis=0)
         room = 1
         level = 0
-        old_objects = tuple()
+        old_objects = ()
         if self.pos is not None:
             room = self.pos.room
             level = self.pos.level
@@ -242,12 +242,12 @@ class CustomMontezuma:
         """Extract the position of the objects in the provided observation."""
         object_part = (obs[25:45, 55:110, 0] != 0).astype(numpy.uint8) * 255
         connected_components = cv2.connectedComponentsWithStats(object_part)
-        pixel_areas = list(e[-1] for e in connected_components[2])[1:]
+        pixel_areas = [e[-1] for e in connected_components[2]][1:]
 
         if self.objects_remember_rooms:
             cur_object = []
             old_objects = list(old_objects)
-            for _, n_pixels in enumerate(OBJECT_PIXELS):
+            for n_pixels in OBJECT_PIXELS:
                 if n_pixels != 40 and self.only_keys:  # pragma: no cover
                     continue
                 if n_pixels in pixel_areas:  # pragma: no cover
@@ -262,28 +262,25 @@ class CustomMontezuma:
 
             return tuple(cur_object)
 
-        else:
-            cur_object = 0
-            for i, n_pixels in enumerate(OBJECT_PIXELS):
-                if n_pixels in pixel_areas:  # pragma: no cover
-                    pixel_areas.remove(n_pixels)
-                    cur_object |= 1 << i
+        cur_object = 0
+        for i, n_pixels in enumerate(OBJECT_PIXELS):
+            if n_pixels in pixel_areas:  # pragma: no cover
+                pixel_areas.remove(n_pixels)
+                cur_object |= 1 << i
 
-            if self.only_keys:
-                # These are the key bytes
-                cur_object &= KEY_BITS
-            return cur_object
+        if self.only_keys:
+            # These are the key bytes
+            cur_object &= KEY_BITS
+        return cur_object
 
     def get_coords(self) -> numpy.ndarray:
         """Return an observation containing the position and the flattened screen of the game."""
-        coords = numpy.array([self.pos.x, self.pos.y, self.pos.room, self.score_objects])
-        return coords
+        return numpy.array([self.pos.x, self.pos.y, self.pos.room, self.score_objects])
 
     def state_to_numpy(self) -> numpy.ndarray:
         """Return a numpy array containing the current state of the game."""
         state = self.unwrapped.clone_state(include_rng=False)
-        state = numpy.frombuffer(pickle.dumps(state), dtype=numpy.uint8)
-        return state
+        return numpy.frombuffer(pickle.dumps(state), dtype=numpy.uint8)
 
     def _restore_state(self, state) -> None:
         """Restore the state of the game from the provided numpy array."""
@@ -371,8 +368,7 @@ class CustomMontezuma:
 
     def is_ram_death(self) -> bool:
         """Return a death signal extracted from the ram of the environment."""
-        if self.ram[58] > self.cur_lives:  # pragma: no cover
-            self.cur_lives = self.ram[58]
+        self.cur_lives = max(self.ram[58], self.cur_lives)
         return self.ram[55] != 0 or self.ram[58] < self.cur_lives
 
     def get_pos(self) -> MontezumaPosLevel:
@@ -433,13 +429,13 @@ class MontezumaEnv(AtariEnv):
         full_action_space: bool = False,  # Use all actions
         render_mode: str | None = None,  # None | human | rgb_array
         possible_to_win: bool = True,
-        wrappers: Iterable[wrap_callable] = None,
+        wrappers: Iterable[wrap_callable] | None = None,
         array_state: bool = True,
         clone_seeds: bool = True,
         **kwargs,
     ):
         """Initialize a :class:`MontezumaEnv`."""
-        super(MontezumaEnv, self).__init__(
+        super().__init__(
             name="MontezumaRevengeDeterministic-v4",
             frameskip=frameskip,
             autoreset=autoreset,
@@ -460,7 +456,7 @@ class MontezumaEnv(AtariEnv):
         )
 
     def _get_default_obs_type(self, name, obs_type) -> str:
-        value = super(MontezumaEnv, self)._get_default_obs_type(name, obs_type)
+        value = super()._get_default_obs_type(name, obs_type)
         if obs_type == "coords":
             value = obs_type
         return value
@@ -505,8 +501,7 @@ class MontezumaEnv(AtariEnv):
         assert len(metadata) == 7
         posarray = numpy.array(pos.tuple, dtype=float)
         assert len(posarray) == 5
-        array = numpy.concatenate([full_state, metadata, posarray]).astype(numpy.float32)
-        return array
+        return numpy.concatenate([full_state, metadata, posarray]).astype(numpy.float32)
 
     def set_state(self, state: numpy.ndarray):
         """Set the internal state of the simulation.
@@ -516,6 +511,7 @@ class MontezumaEnv(AtariEnv):
 
         Returns:
             None
+
         """
         pos_vals = state[-5:].tolist()
         pos = MontezumaPosLevel(

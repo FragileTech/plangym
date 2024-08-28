@@ -38,7 +38,7 @@ class DMControlEnv(PlangymEnv):
         frameskip: int = 1,
         episodic_life: bool = False,
         autoreset: bool = True,
-        wrappers: Iterable[wrap_callable] = None,
+        wrappers: Iterable[wrap_callable] | None = None,
         delay_setup: bool = False,
         visualize_reward: bool = True,
         domain_name=None,
@@ -66,12 +66,13 @@ class DMControlEnv(PlangymEnv):
             domain_name: Same as in dm_control.suite.load.
             task_name: Same as in dm_control.suite.load.
             render_mode: None|human|rgb_array
+
         """
         self._visualize_reward = visualize_reward
         self.viewer = []
         self._viewer = None
         name, self._domain_name, self._task_name = self._parse_names(name, domain_name, task_name)
-        super(DMControlEnv, self).__init__(
+        super().__init__(
             name=name,
             frameskip=frameskip,
             episodic_life=episodic_life,
@@ -110,7 +111,7 @@ class DMControlEnv(PlangymEnv):
                 f"Invalid combination: name {name},"
                 f" domain_name {domain_name}, task_name {task_name}",
             )
-        name = "-".join([domain_name, task_name])
+        name = f"{domain_name}-{task_name}"
         return name, domain_name, task_name
 
     def init_gym_env(self):
@@ -130,7 +131,7 @@ class DMControlEnv(PlangymEnv):
         """Initialize the target :class:`gym.Env` instance."""
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            super(DMControlEnv, self).setup()
+            super().setup()
 
     def _init_action_space(self):
         """Define the action space of the environment.
@@ -173,11 +174,12 @@ class DMControlEnv(PlangymEnv):
 
         Returns:
             numpy.ndarray when mode == `rgb_array`. True when mode == `human`
+
         """
         img = self.get_image()
         if mode == "rgb_array":
             return img
-        elif mode == "human":
+        if mode == "human":
             self.viewer.append(img)
         return True
 
@@ -204,6 +206,7 @@ class DMControlEnv(PlangymEnv):
 
         Returns:
             Numpy array containing the environment observation.
+
         """
         return self._time_step_to_obs(time_step=obs)
 
@@ -215,6 +218,7 @@ class DMControlEnv(PlangymEnv):
 
         Returns:
             None
+
         """
         with self.gym_env.physics.reset_context():
             self.gym_env.physics.set_state(state)
@@ -229,6 +233,7 @@ class DMControlEnv(PlangymEnv):
         Returns
             Tuple of numpy arrays containing all the information needed to describe
             the current state of the simulation.
+
         """
         return self.gym_env.physics.get_state()
 
@@ -249,15 +254,14 @@ class DMControlEnv(PlangymEnv):
         Concat observations in a single array, making easier calculating
         distances.
         """
-        obs_array = numpy.hstack(
+        return numpy.hstack(
             [numpy.array([time_step.observation[x]]).flatten() for x in time_step.observation],
         )
-        return obs_array
 
     def close(self):
         """Tear down the environment and close rendering."""
         try:
-            super(DMControlEnv, self).close()
+            super().close()
             if self._viewer is not None:
                 self._viewer.close()
         except Exception:

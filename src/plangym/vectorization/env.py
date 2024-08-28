@@ -54,7 +54,7 @@ class VectorizedEnv(PlangymEnv, ABC):
         self.STATE_IS_ARRAY = (
             env_class.STATE_IS_ARRAY if hasattr(env_class, "STATE_IS_ARRAY") else True
         )
-        super(VectorizedEnv, self).__init__(
+        super().__init__(
             name=name,
             frameskip=frameskip,
             autoreset=autoreset,
@@ -186,7 +186,7 @@ class VectorizedEnv(PlangymEnv, ABC):
         action: numpy.ndarray,
         state: numpy.ndarray = None,
         dt: int = 1,
-        return_state: bool = None,
+        return_state: bool | None = None,
     ):
         """Step the environment applying a given action from an arbitrary state.
 
@@ -285,7 +285,7 @@ class VectorizedEnv(PlangymEnv, ABC):
         actions: numpy.ndarray,
         states: numpy.ndarray = None,
         dt: numpy.ndarray | int = 1,
-        return_state: bool = None,
+        return_state: bool | None = None,
     ):
         """Vectorized version of the ``step`` method.
 
@@ -305,7 +305,7 @@ class VectorizedEnv(PlangymEnv, ABC):
             `(new_states, observs, rewards, ends, infos)`.
 
         """
-        dt_is_array = (isinstance(dt, numpy.ndarray) and dt.shape) or isinstance(dt, (list, tuple))
+        dt_is_array = dt.shape if isinstance(dt, numpy.ndarray) else isinstance(dt, list | tuple)
         dt = dt if dt_is_array else numpy.ones(len(actions), dtype=int) * dt
         return self.make_transitions(actions, states, dt, return_state=return_state)
 
@@ -320,8 +320,7 @@ class VectorizedEnv(PlangymEnv, ABC):
             **self._env_kwargs,
         )
         self_kwargs.update(kwargs)
-        env = self.__class__(**self_kwargs)
-        return env
+        return self.__class__(**self_kwargs)
 
     def sync_states(self, state: None):
         """Synchronize the workers' states with the state of `self.gym_env`.
@@ -332,6 +331,6 @@ class VectorizedEnv(PlangymEnv, ABC):
         """
         raise NotImplementedError()
 
-    def make_transitions(self, actions, states, dt, return_state: bool = None):
+    def make_transitions(self, actions, states, dt, return_state: bool | None = None):
         """Implement the logic for stepping the environment in parallel."""
         raise NotImplementedError()

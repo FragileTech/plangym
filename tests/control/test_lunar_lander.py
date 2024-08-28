@@ -50,6 +50,6 @@ class TestFastGymLunarLander:
         gym_env = FastGymLunarLander()
         gym_env.reset()
         for _ in range(1000):
-            *_, end, info = gym_env.step(gym_env.action_space.sample())
+            *_, end, _info = gym_env.step(gym_env.action_space.sample())
             if end:
                 break

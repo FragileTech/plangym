@@ -27,6 +27,7 @@ class RemoteEnv(PlanEnv):
 
         Returns
             plangym.Environment: The base non-wrapped plangym.Environment instance
+
         """
         return self.env
 
@@ -39,7 +40,7 @@ class RemoteEnv(PlanEnv):
         """Init the wrapped environment."""
         self.env = self._env_callable()
 
-    def step(self, action, state=None, dt: int = 1, return_state: bool = None) -> tuple:
+    def step(self, action, state=None, dt: int = 1, return_state: bool | None = None) -> tuple:
         """Take a simulation step and make the environment evolve.
 
         Args:
@@ -54,6 +55,7 @@ class RemoteEnv(PlanEnv):
         Returns:
             if states is None returns (observs, rewards, ends, infos)
             else returns(new_states, observs, rewards, ends, infos)
+
         """
         return self.env.step(action=action, state=state, dt=dt, return_state=return_state)
 
@@ -62,7 +64,7 @@ class RemoteEnv(PlanEnv):
         actions: [numpy.ndarray, list],
         states=None,
         dt: int = 1,
-        return_state: bool = None,
+        return_state: bool | None = None,
     ) -> tuple:
         """Take a step on a batch of states and actions.
 
@@ -79,6 +81,7 @@ class RemoteEnv(PlanEnv):
         Returns:
             if states is None returns (observs, rewards, ends, infos)
             else returns(new_states, observs, rewards, ends, infos)
+
         """
         return self.env.step_batch(
             actions=actions,
@@ -106,6 +109,7 @@ class RemoteEnv(PlanEnv):
 
         Returns:
             None
+
         """
         return self.env.set_state(state=state)
 
@@ -141,7 +145,7 @@ class RayEnv(VectorizedEnv):
 
         """
         self._workers = None
-        super(RayEnv, self).__init__(
+        super().__init__(
             env_class=env_class,
             name=name,
             frameskip=frameskip,
@@ -163,18 +167,18 @@ class RayEnv(VectorizedEnv):
         ray.get([w.setup.remote() for w in workers])
         self._workers = workers
         # Initialize local copy last to tolerate singletons better
-        super(RayEnv, self).setup()
+        super().setup()
 
     def make_transitions(
         self,
         actions,
         states=None,
         dt: [numpy.ndarray, int] = 1,
-        return_state: bool = None,
+        return_state: bool | None = None,
     ):
         """Implement the logic for stepping the environment in parallel."""
         no_states = states is None or states[0] is None
-        _return_state = ((not no_states) and return_state is None) or return_state
+        _return_state = return_state is None if not no_states else return_state
         chunks = self.batch_step_data(
             actions=actions,
             states=states,
@@ -198,7 +202,7 @@ class RayEnv(VectorizedEnv):
         if self.plan_env is None and self.delay_setup:
             self.setup()
         ray.get([w.reset.remote(return_state=return_state) for w in self.workers])
-        return super(RayEnv, self).reset(return_state=return_state)
+        return super().reset(return_state=return_state)
 
     def sync_states(self, state: None) -> None:
         """Synchronize all the copies of the wrapped environment.

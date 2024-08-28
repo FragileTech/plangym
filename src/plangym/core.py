@@ -211,7 +211,7 @@ class PlanEnv(ABC):
             If return_state is `None`, the returned object depends on the states parameter.
 
         """
-        dt_is_array = (isinstance(dt, numpy.ndarray) and dt.shape) or isinstance(dt, (list, tuple))
+        dt_is_array = dt.shape if isinstance(dt, numpy.ndarray) else isinstance(dt, list | tuple)
         dt = dt if dt_is_array else numpy.ones(len(actions), dtype=int) * dt
         no_states = states is None or states[0] is None
         states = [None] * len(actions) if no_states else states
@@ -223,12 +223,12 @@ class PlanEnv(ABC):
 
     def clone(self, **kwargs) -> "PlanEnv":
         """Return a copy of the environment."""
-        clone_kwargs = dict(
-            name=self.name,
-            frameskip=self.frameskip,
-            autoreset=self.autoreset,
-            delay_setup=self.delay_setup,
-        )
+        clone_kwargs = {
+            "name": self.name,
+            "frameskip": self.frameskip,
+            "autoreset": self.autoreset,
+            "delay_setup": self.delay_setup,
+        }
         clone_kwargs.update(kwargs)
         return self.__class__(**clone_kwargs)
 
@@ -298,6 +298,7 @@ class PlanEnv(ABC):
 
         Returns:
             Tuple containing the environment data after calling `step`.
+
         """
         # Determine whether the method has to return the environment state
         default_mode = self._state_step is not None and self._return_state_step is None
@@ -327,12 +328,11 @@ class PlanEnv(ABC):
             terminal=terminal,
             info=info,
         )
-        step_data = (
+        return (
             (self.get_state(), obs, reward, terminal, info)
             if return_state
             else (obs, reward, terminal, info)
         )
-        return step_data
 
     def setup(self) -> None:
         """Run environment initialization.
@@ -342,7 +342,7 @@ class PlanEnv(ABC):
         initialize it once it's copied to the target process.
         """
 
-    def begin_step(self, action=None, dt=None, state=None, return_state: bool = None):
+    def begin_step(self, action=None, dt=None, state=None, return_state: bool | None = None):
         """Perform setup of step variables before starting `step_with_dt`."""
         self._n_step = 0
         self._obs_step = None
@@ -371,6 +371,7 @@ class PlanEnv(ABC):
 
         Returns:
             Tuple containing the processed data.
+
         """
         terminal = terminal or self._terminal_step
         reward = self._reward_step + reward
@@ -397,6 +398,7 @@ class PlanEnv(ABC):
 
         Returns:
             Tuple containing the environment data after calling `step`.
+
         """
         info["n_step"] = info.get("n_step", int(self._n_step))
         info["dt"] = self._dt_step
@@ -464,7 +466,7 @@ class PlangymEnv(PlanEnv):
         name: str,
         frameskip: int = 1,
         autoreset: bool = True,
-        wrappers: Iterable[wrap_callable] = None,
+        wrappers: Iterable[wrap_callable] | None = None,
         delay_setup: bool = False,
         remove_time_limit=True,
         render_mode: str | None = None,
@@ -504,7 +506,7 @@ class PlangymEnv(PlanEnv):
                 f"values are: {self.AVAILABLE_OBS_TYPES}"
             )
         self._obs_type = obs_type or self.DEFAULT_OBS_TYPE
-        super(PlangymEnv, self).__init__(
+        super().__init__(
             name=name,
             frameskip=frameskip,
             autoreset=autoreset,
@@ -514,13 +516,12 @@ class PlangymEnv(PlanEnv):
 
     def __str__(self):
         """Pretty print the environment."""
-        text = (
+        return (
             f"{self.__class__} {self.name} with parameters:\n"
             f"obs_type={self.obs_type}, render_mode={self.render_mode}\n"
             f"frameskip={self.frameskip}, obs_shape={self.obs_shape},\n"
             f"action_shape={self.action_shape}"
         )
-        return text
 
     def __repr__(self):
         """Pretty print the environment."""
@@ -563,6 +564,7 @@ class PlangymEnv(PlanEnv):
         """Return the *reward_range* of the environment."""
         if hasattr(self.gym_env, "reward_range"):
             return self.gym_env.reward_range
+        return None
 
     @property
     def metadata(self):
@@ -632,7 +634,8 @@ class PlangymEnv(PlanEnv):
             if hasattr(self.gym_env, "observation_space"):
                 self._obs_space = self.gym_env.observation_space
             else:
-                raise NotImplementedError("No observation_space implemented.")
+                msg = "No observation_space implemented."
+                raise NotImplementedError(msg)
         else:
             img = self.reset(return_state=False)
             cords = self.get_coords_obs(img)
@@ -686,14 +689,14 @@ class PlangymEnv(PlanEnv):
 
     def clone(self, **kwargs) -> "PlangymEnv":
         """Return a copy of the environment."""
-        env_kwargs = dict(
-            wrappers=self._wrappers,
-            remove_time_limit=self._remove_time_limit,
-            render_mode=self.render_mode,
-        )
+        env_kwargs = {
+            "wrappers": self._wrappers,
+            "remove_time_limit": self._remove_time_limit,
+            "render_mode": self.render_mode,
+        }
         env_kwargs.update(kwargs)
         env_kwargs.update(self._gym_env_kwargs)
-        env: PlangymEnv = super(PlangymEnv, self).clone(**env_kwargs)
+        env: PlangymEnv = super().clone(**env_kwargs)
         return env
 
     def close(self):
@@ -701,6 +704,7 @@ class PlangymEnv(PlanEnv):
         if hasattr(self, "_gym_env") and hasattr(self._gym_env, "close"):
             return self._gym_env.close()
         self._gym_env = None
+        return None
 
     def init_gym_env(self) -> gym.Env:
         """Initialize the :class:``gym.Env`` instance that the current class is wrapping."""
@@ -712,6 +716,7 @@ class PlangymEnv(PlanEnv):
         """Seed the underlying :class:`gym.Env`."""
         if hasattr(self.gym_env, "seed"):
             return self.gym_env.seed(seed)
+        return None
 
     def apply_wrappers(self, wrappers: Iterable[wrap_callable]):
         """Wrap the underlying OpenAI gym environment."""
@@ -720,7 +725,7 @@ class PlangymEnv(PlanEnv):
                 wrapper, kwargs = item
                 if isinstance(kwargs, dict):
                     self.wrap(wrapper, **kwargs)
-                elif isinstance(kwargs, (list, tuple)):
+                elif isinstance(kwargs, list | tuple):
                     self.wrap(wrapper, *kwargs)
                 else:
                     self.wrap(wrapper, kwargs)
@@ -745,9 +750,9 @@ class PlangymEnv(PlanEnv):
         """
         if self.obs_type == "coords":
             return self.get_coords_obs(obs, **kwargs)
-        elif self.obs_type == "rgb":
+        if self.obs_type == "rgb":
             return self.get_rgb_obs(obs, **kwargs)
-        elif self.obs_type == "grayscale":
+        if self.obs_type == "grayscale":
             return self.get_grayscale_obs(obs, **kwargs)
         return obs
 

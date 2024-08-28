@@ -1,5 +1,4 @@
 import os
-from pathlib import Path
 import sys
 import zipfile
 
@@ -43,17 +42,15 @@ def main():
         nonlocal imported_games
         try:
             data, hash = retro.data.groom_rom(filename, f)
-        except (IOError, ValueError):
-            print("FAILED", filename)
+        except (OSError, ValueError):
             return
         if hash in known_hashes:
             game, ext, curpath = known_hashes[hash]
             # print('Importing', game)
-            rompath = os.path.join(curpath, game, "rom%s" % ext)
+            rompath = os.path.join(curpath, game, f"rom{ext}")
             # print("ROM PATH", rompath)
             with open(rompath, "wb") as f:
                 f.write(data)
-            print("SUCCESS", game, rompath)
             imported_games += 1
 
     for path in paths:
@@ -69,8 +66,6 @@ def main():
                             pass
                     else:
                         save_if_matches(filename, f)
-
-    print("Imported %i games" % imported_games)
 
 
 if __name__ == "__main__":

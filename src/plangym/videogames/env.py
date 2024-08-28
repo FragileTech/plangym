@@ -28,7 +28,7 @@ class VideogameEnv(PlangymEnv, ABC):
         remove_time_limit: bool = True,
         obs_type: str = "rgb",  # ram | rgb | grayscale
         render_mode: str | None = None,  # None | human | rgb_array
-        wrappers: Iterable[wrap_callable] = None,
+        wrappers: Iterable[wrap_callable] | None = None,
         **kwargs,
     ):
         """Initialize a :class:`VideogameEnv`.
@@ -56,7 +56,7 @@ class VideogameEnv(PlangymEnv, ABC):
         """
         self.episodic_life = episodic_life
         self._info_step = {LIFE_KEY: -1, "lost_life": False}
-        super(VideogameEnv, self).__init__(
+        super().__init__(
             name=name,
             frameskip=frameskip,
             autoreset=autoreset,
@@ -80,7 +80,7 @@ class VideogameEnv(PlangymEnv, ABC):
 
     def apply_action(self, action):
         """Evolve the environment for one time step applying the provided action."""
-        obs, reward, terminal, info = super(VideogameEnv, self).apply_action(action=action)
+        obs, reward, terminal, info = super().apply_action(action=action)
         info[LIFE_KEY] = self.get_lifes_from_info(info)
         past_lifes = self._info_step.get(LIFE_KEY, -1)
         lost_life = past_lifes > info[LIFE_KEY] or self._info_step.get("lost_life")
@@ -90,18 +90,20 @@ class VideogameEnv(PlangymEnv, ABC):
 
     def clone(self, **kwargs) -> "VideogameEnv":
         """Return a copy of the environment."""
-        params = dict(
-            episodic_life=self.episodic_life,
-            obs_type=self.obs_type,
-            render_mode=self.render_mode,
-        )
+        params = {
+            "episodic_life": self.episodic_life,
+            "obs_type": self.obs_type,
+            "render_mode": self.render_mode,
+        }
         params.update(**kwargs)
-        return super(VideogameEnv, self).clone(**params)
+        return super().clone(**params)
 
-    def begin_step(self, action=None, dt=None, state=None, return_state: bool = None) -> None:
+    def begin_step(
+        self, action=None, dt=None, state=None, return_state: bool | None = None
+    ) -> None:
         """Perform setup of step variables before starting `step_with_dt`."""
         self._info_step = {LIFE_KEY: -1, "lost_life": False}
-        super(VideogameEnv, self).begin_step(
+        super().begin_step(
             action=action,
             dt=dt,
             state=state,
@@ -110,7 +112,7 @@ class VideogameEnv(PlangymEnv, ABC):
 
     def init_spaces(self) -> None:
         """Initialize the action_space and the observation_space of the environment."""
-        super(VideogameEnv, self).init_spaces()
+        super().init_spaces()
         if self.obs_type == "ram":
             if self.DEFAULT_OBS_TYPE == "ram":
                 space = self.gym_env.observation_space
@@ -121,7 +123,7 @@ class VideogameEnv(PlangymEnv, ABC):
 
     def process_obs(self, obs, **kwargs):
         """Return the ram vector if obs_type == "ram" or and image otherwise."""
-        obs = super(VideogameEnv, self).process_obs(obs, **kwargs)
+        obs = super().process_obs(obs, **kwargs)
         if self.obs_type == "ram" and self.DEFAULT_OBS_TYPE != "ram":
             obs = self.get_ram()
         return obs

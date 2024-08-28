@@ -81,5 +81,4 @@ class TestExternalProcess:
         ep = env._batch_env[0]
         ep.observation_space
         ep.action_space.sample()
-        ep.__getattr__("unwrapped")
         ep.unwrapped

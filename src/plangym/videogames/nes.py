@@ -91,7 +91,7 @@ class NesEnv(VideogameEnv):
         if self.nes_env._env is None:
             return
         try:
-            super(NesEnv, self).close()
+            super().close()
         except ValueError:  # pragma: no cover
             pass
 
@@ -127,10 +127,11 @@ class MarioEnv(NesEnv):
             movement_type: One of {complex|simple|right}
             original_reward: If False return a custom reward based on mario position and level.
             **kwargs: passed to super().__init__.
+
         """
         self._movement_type = movement_type
         self._original_reward = original_reward
-        super(MarioEnv, self).__init__(name=name, **kwargs)
+        super().__init__(name=name, **kwargs)
 
     def get_state(self, state: numpy.ndarray | None = None) -> numpy.ndarray:
         """Recover the internal state of the simulation.
@@ -139,7 +140,7 @@ class MarioEnv(NesEnv):
         """
         state = numpy.empty(250288, dtype=numpy.byte) if state is None else state
         state[-2:] = 0  # Some states use the last two bytes. Set to zero by default.
-        return super(MarioEnv, self).get_state(state)
+        return super().get_state(state)
 
     def init_gym_env(self) -> gym.Env:
         """Initialize the :class:`NESEnv`` instance that the current class is wrapping."""
@@ -183,7 +184,7 @@ class MarioEnv(NesEnv):
     def get_coords_obs(
         self,
         obs: numpy.ndarray,
-        info: dict[str, Any] = None,
+        info: dict[str, Any] | None = None,
         **kwargs,
     ) -> numpy.ndarray:
         """Return the information contained in info as an observation if obs_type == "info"."""

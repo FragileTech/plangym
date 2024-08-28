@@ -52,14 +52,13 @@ class Box2DState:
         from Box2D.Box2D import b2Transform, b2Vec2
 
         if isinstance(value, b2Vec2):
-            return tuple([*value.copy()])
-        elif isinstance(value, b2Transform):
+            return (*value.copy(),)
+        if isinstance(value, b2Transform):
             return {
                 "angle": float(value.angle),
-                "position": tuple([*value.position.copy()]),
+                "position": (*value.position.copy(),),
             }
-        else:
-            return copy.copy(value)
+        return copy.copy(value)
 
     @classmethod
     def serialize_body_state(cls, state_dict):

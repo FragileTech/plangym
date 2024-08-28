@@ -26,7 +26,7 @@ def remove_time_limit(gym_env: gym.Env) -> gym.Env:
         try:
             if isinstance(gym_env, TimeLimit):
                 return gym_env.env
-            elif isinstance(gym_env.env, gym.Wrapper) and isinstance(gym_env.env, TimeLimit):
+            if isinstance(gym_env.env, gym.Wrapper) and isinstance(gym_env.env, TimeLimit):
                 gym_env.env = gym_env.env.env
             # This is an ugly hack to make sure that we can remove the TimeLimit even
             # if somebody is crazy enough to apply three other wrappers on top of the TimeLimit
@@ -49,8 +49,8 @@ def remove_time_limit(gym_env: gym.Env) -> gym.Env:
 
 def process_frame(
     frame: numpy.ndarray,
-    width: int = None,
-    height: int = None,
+    width: int | None = None,
+    height: int | None = None,
     mode: str = "RGB",
 ) -> numpy.ndarray:
     """Use PIL to resize an RGB frame to a specified height and width \

@@ -19,7 +19,7 @@ class DummyPlanEnv(PlanEnv):
     @property
     def action_shape(self) -> tuple[int]:
         """Tuple containing the shape of the actions applied to the Environment."""
-        return tuple()
+        return ()
 
     def get_image(self):
         return numpy.zeros((10, 10, 3))
