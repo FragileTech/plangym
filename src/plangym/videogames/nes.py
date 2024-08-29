@@ -298,11 +298,10 @@ class MarioEnv(NesEnv):
 
     def init_gym_env(self) -> gym.Env:
         """Initialize the :class:`NESEnv`` instance that the current class is wrapping."""
-        import gym_super_mario_bros  # noqa: PLC0415
+        from plangym.videogames.super_mario_gym.registration import make  # noqa: PLC0415
         from gym_super_mario_bros.actions import COMPLEX_MOVEMENT  # noqa: PLC0415
-        # from nes_py.wrappers import JoypadSpace
 
-        env = gym_super_mario_bros.make(self.name)
+        env = make(self.name)
         gym_env = NESWrapper(JoypadSpace(env.unwrapped, COMPLEX_MOVEMENT))
         gym_env.reset()
         return gym_env

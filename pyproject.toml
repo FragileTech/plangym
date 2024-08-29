@@ -182,7 +182,7 @@ docstring-quotes = "double"
 "montezuma.py" = ["PLR2004", "S101", "ARG002", "TD002"]
 "registry.py" = ["PLC0415", "PLR0911"]
 "**/docs/**" = ["INP001", "PTH100"]
-"**/deprecated/**" = ["ALL"]
+"**/super_mario_gym/**" = ["ALL"]
 "**/{tests,docs,tools}/*" = [
     "E402", "F401", "F811", "D", "S101", "PLR2004", "S105",
     "PLW1514", "PTH123", "PTH107", "N811", "PLC0415", "ARG002",
