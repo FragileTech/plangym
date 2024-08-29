@@ -5,10 +5,9 @@ from typing import Any, Callable, Iterable
 
 import gymnasium as gym
 from gymnasium.spaces import Box, Space
-from gymnasium.wrappers.gray_scale_observation import GrayScaleObservation
 import numpy
 
-from plangym.utils import process_frame, remove_time_limit
+from plangym.utils import process_frame, remove_time_limit, GrayScaleObservation
 
 
 wrap_callable = Callable[[], gym.Wrapper] | tuple[Callable[..., gym.Wrapper] | dict[str, Any]]
@@ -364,6 +363,7 @@ class PlanEnv(ABC):
         self._obs_step = None
         self._reward_step = 0
         self._terminal_step = False
+        self._truncated_step = False
         self._info_step = {}
         self._action_step = action
         self._dt_step = dt
@@ -714,14 +714,24 @@ class PlangymEnv(PlanEnv):
         # FIXME: WTF this return_state thing?
         if self.gym_env is None and self.delay_setup:
             self.setup()
-        return self.gym_env.reset()
+        data = self.gym_env.reset()
+        if isinstance(data, tuple) and len(data) == 2:  # noqa: PLR2004
+            obs, info = data
+        else:
+            obs, info = data, {}
+        return obs, info
 
     def apply_action(self, action):
         """Evolve the environment for one time step applying the provided action.
 
         Accumulate rewards and calculate terminal flag after stepping the environment.
         """
-        obs, reward, terminal, truncated, info = self.gym_env.step(action)
+        data = self.gym_env.step(action)
+        if len(data) == 5:  # noqa: PLR2004
+            obs, reward, terminal, truncated, info = data
+        else:
+            obs, reward, terminal, info = data
+            truncated = False
         return obs, reward, terminal, truncated, info
 
     def sample_action(self) -> int | numpy.ndarray:

@@ -134,3 +134,18 @@ Contributions are very welcome! Please check the [contributing guidelines](CONTR
 
 If you have any suggestions for improvement, or you want to report a bug please open 
 an [issue](https://github.com/FragileTech/plangym/issues).
+
+
+# Installing nes-py
+
+#### Step 1: Install necessary development tools and libraries
+sudo apt-get update
+sudo apt-get install build-essential clang
+
+#### Step 2: Verify the compiler and include paths
+#### Ensure you are using g++ instead of clang++ if clang++ is not properly configured
+export CXX=g++
+export CC=gcc
+
+# Rebuild the project
+rye install nes-py --git=https://github.com/FragileTech/nes-py
