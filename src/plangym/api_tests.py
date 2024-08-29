@@ -93,8 +93,8 @@ def step_batch_tuple_test(env, batch_size, observs, rewards, terminals, infos, d
     assert len(infos) == batch_size
 
     dts = dt if isinstance(dt, list | numpy.ndarray) else [dt] * batch_size
-    for obs, reward, terminal, info, dt in zip(list(observs), rewards, terminals, infos, dts):
-        step_tuple_test(env=env, obs=obs, reward=reward, terminal=terminal, info=info, dt=dt)
+    for obs, reward, terminal, info, dt_ in zip(list(observs), rewards, terminals, infos, dts):
+        step_tuple_test(env=env, obs=obs, reward=reward, terminal=terminal, info=info, dt=dt_)
 
 
 class TestPlanEnv:
@@ -187,7 +187,7 @@ class TestPlanEnv:
         if env.STATE_IS_ARRAY:
             env_state = env.get_state()
             assert state.shape == env_state.shape
-            if state.dtype != object and not env.SINGLETON:
+            if state.dtype is object and not env.SINGLETON:
                 assert (state == env_state).all(), (state, env.get_state())
 
     def test_reset(self, env):
@@ -284,7 +284,8 @@ class TestPlanEnv:
 
     @pytest.mark.parametrize("dt", [3, "array"])
     def test_step_batch_dt_values(self, env, dt, batch_size, states=None, return_state=None):
-        dt = dt if dt != "array" else numpy.random.randint(1, 4, batch_size).astype(int)
+        rng = numpy.random.default_rng()
+        dt = dt if dt != "array" else rng.integers(1, 4, batch_size).astype(int)
         _state, *_ = env.reset()
         actions = [env.sample_action() for _ in range(batch_size)]
 
@@ -435,7 +436,7 @@ class TestPlangymEnv:
     def test_wrap_environment(self, env):
         if isinstance(env, VectorizedEnv):
             return
-        from gym.wrappers.transform_reward import TransformReward
+        from gym.wrappers.transform_reward import TransformReward  # noqa: PLC0415
 
         wrappers = [(TransformReward, {"f": lambda x: x})]
         env.apply_wrappers(wrappers)
@@ -454,6 +455,9 @@ class TestPlangymEnv:
 
 
 class TestVideogameEnv:
+    """Test the VideogameEnv class."""
+
     def test_ram(self, env):
+        """Test the ram property."""
         assert hasattr(env, "get_ram")
         assert isinstance(env.get_ram(), numpy.ndarray)

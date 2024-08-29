@@ -381,9 +381,9 @@ class CustomMontezuma:
     def get_room_xy(room) -> tuple[None | tuple[int, int]]:
         """Get the tuple that encodes the provided room."""
         if KNOWN_XY[room] is None:
-            for y, l in enumerate(PYRAMID):
-                if room in l:
-                    KNOWN_XY[room] = (l.index(room), y)
+            for y, loc in enumerate(PYRAMID):
+                if room in loc:
+                    KNOWN_XY[room] = (loc.index(room), y)
                     break
         return KNOWN_XY[room]
 

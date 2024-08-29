@@ -1,7 +1,7 @@
 """Plangym API implementation."""
 
 from abc import ABC
-from typing import Any, Callable, Iterable, Union
+from typing import Any, Callable, Iterable
 
 import gymnasium as gym
 from gymnasium.spaces import Box, Space
@@ -11,7 +11,7 @@ import numpy
 from plangym.utils import process_frame, remove_time_limit
 
 
-wrap_callable = Union[Callable[[], gym.Wrapper], tuple[Callable[..., gym.Wrapper], dict[str, Any]]]
+wrap_callable = Callable[[], gym.Wrapper] | tuple[Callable[..., gym.Wrapper] | dict[str, Any]]
 
 
 class PlanEnv(ABC):
@@ -247,7 +247,9 @@ class PlanEnv(ABC):
 
     # Internal API -----------------------------------------------------------------------------
     def step_with_dt(self, action: numpy.ndarray | int | float, dt: int = 1):
-        """Take ``dt`` simulation steps and make the environment evolve in multiples\
+        """Step the environment applying the supplied action dt times.
+
+        Take ``dt`` simulation steps and make the environment evolve in multiples\
         of ``self.frameskip`` for a total of ``dt`` * ``self.frameskip`` steps.
 
         The method performs any post-processing to the data after applying the action
@@ -308,6 +310,7 @@ class PlanEnv(ABC):
             reward: Reward signal.
             terminal: Boolean indicating if the environment is finished.
             info: Dictionary containing additional information about the environment.
+            truncated: Boolean indicating if the environment was truncated.
 
         Returns:
             Tuple containing the environment data after calling `step`.
@@ -382,6 +385,7 @@ class PlanEnv(ABC):
             reward: Reward signal.
             terminal: Boolean indicating if the environment is finished.
             info: Dictionary containing additional information about the environment.
+            truncated: Boolean indicating if the environment was truncated.
 
         Returns:
             Tuple containing the processed data.
@@ -410,6 +414,7 @@ class PlanEnv(ABC):
             reward: Reward signal.
             terminal: Boolean indicating if the environment is finished.
             info: Dictionary containing additional information about the environment.
+            truncated: Boolean indicating if the environment was truncated.
 
         Returns:
             Tuple containing the environment data after calling `step`.
@@ -506,7 +511,12 @@ class PlangymEnv(PlanEnv):
             delay_setup: If ``True`` do not initialize the :class:`gym.Environment`
                 and wait for ``setup`` to be called later.
             remove_time_limit: If True, remove the time limit from the environment.
-
+            render_mode: One of {None, "human", "rgb_aray"}. How the game will be rendered.
+            episodic_life: Return ``end = True`` when losing a life.
+            obs_type: One of {"rgb", "grayscale", "coords"}. Type of observation returned.
+            return_image: If ``True`` add a "rgb" key in the `info` dictionary returned by `step`
+                that contains an RGB representation of the environment state.
+            kwargs: Additional arguments to be passed to the ``gym.make`` function.
         """
         render_mode = "rgb_array"
         kwargs["render_mode"] = kwargs.get("render_mode", render_mode)
@@ -701,6 +711,7 @@ class PlangymEnv(PlanEnv):
             ``(state, obs)`` if ```return_state`` is ``True`` else return ``obs``.
 
         """
+        # FIXME: WTF this return_state thing?
         if self.gym_env is None and self.delay_setup:
             self.setup()
         return self.gym_env.reset()

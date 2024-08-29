@@ -144,9 +144,9 @@ class MarioEnv(NesEnv):
 
     def init_gym_env(self) -> gym.Env:
         """Initialize the :class:`NESEnv`` instance that the current class is wrapping."""
-        import gym_super_mario_bros
-        from gym_super_mario_bros.actions import COMPLEX_MOVEMENT  # , SIMPLE_MOVEMENT
-        from nes_py.wrappers import JoypadSpace
+        import gym_super_mario_bros  # noqa: PLC0415
+        from gym_super_mario_bros.actions import COMPLEX_MOVEMENT  # noqa: PLC0415
+        from nes_py.wrappers import JoypadSpace  # noqa: PLC0415
 
         env = gym_super_mario_bros.make(self.name)
         gym_env = JoypadSpace(env.unwrapped, COMPLEX_MOVEMENT)
@@ -163,7 +163,7 @@ class MarioEnv(NesEnv):
         info["y_pixel"] = self.nes_env._y_pixel
         info["y_viewport"] = self.nes_env._y_viewport
         info["x_position_last"] = self.nes_env._x_position_last
-        info["in_pipe"] = (info["player_state"] == 0x02) or (info["player_state"] == 0x03)
+        info["in_pipe"] = (info["player_state"] == 0x02) or (info["player_state"] == 0x03)  # noqa: PLR2004
         return info
 
     def _get_info(
@@ -185,7 +185,7 @@ class MarioEnv(NesEnv):
         self,
         obs: numpy.ndarray,
         info: dict[str, Any] | None = None,
-        **kwargs,
+        **kwargs,  # noqa: ARG002
     ) -> numpy.ndarray:
         """Return the information contained in info as an observation if obs_type == "info"."""
         if self.obs_type == "coords":
@@ -203,7 +203,7 @@ class MarioEnv(NesEnv):
             )
         return obs
 
-    def process_reward(self, reward, info, **kwargs) -> float:
+    def process_reward(self, reward, info, **kwargs) -> float:  # noqa: ARG002
         """Return a custom reward based on the x, y coordinates and level mario is in."""
         if not self._original_reward:
             reward = (
@@ -216,10 +216,10 @@ class MarioEnv(NesEnv):
             )
         return reward
 
-    def process_terminal(self, terminal, info, **kwargs) -> bool:
+    def process_terminal(self, terminal, info, **kwargs) -> bool:  # noqa: ARG002
         """Return True if terminal or mario is dying."""
         return terminal or info.get("is_dying", False) or info.get("is_dead", False)
 
-    def process_info(self, info, **kwargs) -> dict[str, Any]:
+    def process_info(self, info, **kwargs) -> dict[str, Any]:  # noqa: ARG002
         """Add additional data to the info dictionary."""
         return self._update_info(info)

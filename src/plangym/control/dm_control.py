@@ -1,6 +1,7 @@
 """Implement the ``plangym`` API for ``dm_control`` environments."""
 
 from typing import Iterable
+import time
 import warnings
 
 from gymnasium.spaces import Box
@@ -45,7 +46,7 @@ class DMControlEnv(PlangymEnv):
         task_name=None,
         render_mode="rgb_array",
         obs_type: str | None = None,
-        remove_time_limit=None,
+        remove_time_limit=None,  # noqa: ARG002
     ):
         """Initialize a :class:`DMControlEnv`.
 
@@ -65,7 +66,9 @@ class DMControlEnv(PlangymEnv):
                 on the reward on its last timestep.
             domain_name: Same as in dm_control.suite.load.
             task_name: Same as in dm_control.suite.load.
-            render_mode: None|human|rgb_array
+            render_mode: None|human|rgb_array.
+            remove_time_limit: Ignored.
+            obs_type: One of {"coords", "rgb", "grayscale"}.
 
         """
         self._visualize_reward = visualize_reward
@@ -116,7 +119,7 @@ class DMControlEnv(PlangymEnv):
 
     def init_gym_env(self):
         """Initialize the environment instance (dm_control) that the current class is wrapping."""
-        from dm_control import suite
+        from dm_control import suite  # noqa: PLC0415
 
         env = suite.load(
             domain_name=self.domain_name,
@@ -165,7 +168,9 @@ class DMControlEnv(PlangymEnv):
         return self.gym_env.physics.render(camera_id=0)
 
     def render(self, mode="human"):
-        """Store all the RGB images rendered to be shown when the `show_game`\
+        """Render the environment.
+
+        Store all the RGB images rendered to be shown when the `show_game`\
         function is called.
 
         Args:
@@ -192,13 +197,11 @@ class DMControlEnv(PlangymEnv):
         attribute. This method calls the latter to visualize the collected
         images.
         """
-        import time
-
         for img in self.viewer:
             self._viewer.imshow(img)
             time.sleep(sleep)
 
-    def get_coords_obs(self, obs, **kwargs) -> numpy.ndarray:
+    def get_coords_obs(self, obs, **kwargs) -> numpy.ndarray:  # noqa: ARG002
         """Get the environment observation from a time_step object.
 
         Args:
@@ -225,7 +228,9 @@ class DMControlEnv(PlangymEnv):
             self.gym_env.physics.set_state(state)
 
     def get_state(self) -> numpy.ndarray:
-        """Return a tuple containing the three arrays that characterize the state\
+        """Return the state of the environment.
+
+        Return a tuple containing the three arrays that characterize the state\
          of the system.
 
         Each tuple contains the position of the robot, its velocity
@@ -265,5 +270,5 @@ class DMControlEnv(PlangymEnv):
             super().close()
             if self._viewer is not None:
                 self._viewer.close()
-        except Exception:
+        except Exception:  # noqa: S110
             pass

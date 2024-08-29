@@ -10,7 +10,7 @@ try:
     from balloon_learning_environment.env.rendering.matplotlib_renderer import MatplotlibRenderer
 except ImportError:
 
-    def MatplotlibRenderer():  # noqa: D103
+    def MatplotlibRenderer():  # noqa: D103, N802
         return None
 
 
@@ -18,7 +18,9 @@ from plangym.core import PlangymEnv
 
 
 class BalloonEnv(PlangymEnv):
-    """This class implements the 'BalloonLearningEnvironment-v0' released by Google in the \
+    """Balloon Learning Environment.
+
+    Implements the 'BalloonLearningEnvironment-v0' released by Google in the \
     balloon_learning_environment.
 
     For more information about the environment, please refer to \
@@ -45,6 +47,7 @@ class BalloonEnv(PlangymEnv):
                 official documentation.
             array_state: boolean value. If True, transform the state object to
                 a ``numpy.array``.
+            kwargs: Additional arguments to be passed to the ``gym.make`` function.
 
         """
         renderer = renderer or MatplotlibRenderer()
@@ -64,6 +67,6 @@ class BalloonEnv(PlangymEnv):
             state = state[0]
         return self.gym_env.unwrapped.arena.set_simulator_state(state)
 
-    def seed(self, seed: int | None = None):
+    def seed(self, seed: int | None = None):  # noqa: ARG002
         """Ignore seeding until next release."""
         return

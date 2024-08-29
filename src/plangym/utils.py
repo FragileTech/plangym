@@ -53,7 +53,9 @@ def process_frame(
     height: int | None = None,
     mode: str = "RGB",
 ) -> numpy.ndarray:
-    """Use PIL to resize an RGB frame to a specified height and width \
+    """Resize an RGB frame to a specified shape and mode.
+
+    Use PIL to resize an RGB frame to a specified height and width \
     or changing it to a different mode.
 
     Args:

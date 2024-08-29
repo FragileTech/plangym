@@ -78,6 +78,7 @@ class RetroEnv(VideogameEnv):
             wrappers: Wrappers that will be applied to the underlying OpenAI env. \
                      Every element of the iterable can be either a :class:`gym.Wrapper` \
                      or a tuple containing ``(gym.Wrapper, kwargs)``.
+            kwargs: Additional arguments to be passed to the ``gym.make`` function.
 
         """
         super().__init__(
@@ -123,7 +124,7 @@ class RetroEnv(VideogameEnv):
 
     def init_gym_env(self) -> gym.Env:
         """Initialize the retro environment."""
-        import retro
+        import retro  # noqa: PLC0415
 
         if self._gym_env is not None:
             self._gym_env.close()

@@ -186,11 +186,11 @@ class RayEnv(VectorizedEnv):
             batch_size=len(self.workers),
         )
         results_ids = []
-        for env, states_batch, actions_batch, dt in zip(self.workers, *chunks):
+        for env, states_batch, actions_batch, _dt in zip(self.workers, *chunks):
             result = env.step_batch.remote(
                 actions=actions_batch,
                 states=states_batch,
-                dt=dt,
+                dt=_dt,
                 return_state=return_state,
             )
             results_ids.append(result)

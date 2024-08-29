@@ -47,7 +47,7 @@ def env(request) -> DMControlEnv:
     yield env
     try:
         env.close()
-    except Exception:
+    except Exception:  # noqa S110
         pass
 
 

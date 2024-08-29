@@ -9,7 +9,7 @@ import numpy
 from plangym.core import PlanEnv, PlangymEnv
 
 
-class VectorizedEnv(PlangymEnv, ABC):
+class VectorizedEnv(PlangymEnv, ABC):  # noqa: PLR0904
     """Base class that defines the API for working with vectorized environments.
 
     A vectorized environment allows to step several copies of the environment in parallel
@@ -208,8 +208,10 @@ class VectorizedEnv(PlangymEnv, ABC):
         return self.plan_env.step(action=action, state=state, dt=dt, return_state=return_state)
 
     def reset(self, return_state: bool = True):
-        """Reset the environment and returns the first observation, or the first \
-        (state, obs) tuple.
+        """Reset the environment.
+
+        Reset the environment and returns the first observation, or the first \
+        (state, obs, info) tuple.
 
         Args:
             return_state: If true return a also the initial state of the env.
@@ -246,7 +248,7 @@ class VectorizedEnv(PlangymEnv, ABC):
         self.plan_env.set_state(state)
         self.sync_states(state)
 
-    def render(self, mode="human"):
+    def render(self, mode="human"):  # noqa: ARG002
         """Render the environment using OpenGL. This wraps the OpenAI render method."""
         return self.plan_env.render()
 
@@ -259,7 +261,9 @@ class VectorizedEnv(PlangymEnv, ABC):
         return self.plan_env.get_image()
 
     def step_with_dt(self, action: numpy.ndarray | int | float, dt: int = 1) -> tuple:
-        """Take ``dt`` simulation steps and make the environment evolve in multiples \
+        """Step the environment ``dt`` times with the same action.
+
+        Take ``dt`` simulation steps and make the environment evolve in multiples \
         of ``self.frameskip`` for a total of ``dt`` * ``self.frameskip`` steps.
 
         Args:

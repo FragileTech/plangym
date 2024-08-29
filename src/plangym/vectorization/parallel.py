@@ -58,14 +58,14 @@ class ExternalProcess:
     def observation_space(self):
         """Return the observation space of the internal environment."""
         if not self._observ_space:
-            self._observ_space = self.__getattr__("observation_space")
+            self._observ_space = self.observation_space
         return self._observ_space
 
     @property
     def action_space(self):
         """Return the action space of the internal environment."""
         if not self._action_space:
-            self._action_space = self.__getattr__("action_space")
+            self._action_space = self.action_space
         return self._action_space
 
     def __getattr__(self, name):
@@ -313,11 +313,11 @@ class BatchEnv:
             dt=dt,
             batch_size=len(self._envs),
         )
-        for env, states_batch, actions_batch, dt in zip(self._envs, *chunks):
+        for env, states_batch, actions_batch, _dt in zip(self._envs, *chunks):
             result = env.step_batch(
                 actions=actions_batch,
                 states=states_batch,
-                dt=dt,
+                dt=_dt,
                 blocking=self._blocking,
                 return_state=return_state,
             )
@@ -340,12 +340,11 @@ class BatchEnv:
         for env in self._envs:
             try:
                 env.set_state(state, blocking=blocking)
-            except EOFError:
+            except EOFError:  # noqa: PERF203
                 continue
 
     def reset(self, indices=None, return_states: bool = True):
-        """Reset the environment and return the resulting batch observations, \
-        or batch of observations and states.
+        """Reset the environment and return the resulting batch data.
 
         Args:
           indices: The batch indices of environments to reset; defaults to all.

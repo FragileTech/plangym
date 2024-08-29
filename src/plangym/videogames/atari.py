@@ -75,7 +75,7 @@ class AtariEnv(VideogameEnv):
         repeat_action_probability: float = 0.0,  # Sticky action probability
         full_action_space: bool = False,  # Use all actions
         render_mode: str | None = "rgb_array",  # None | human | rgb_array
-        possible_to_win: bool = False,
+        possible_to_win: bool = False,  # noqa: ARG002
         wrappers: Iterable[wrap_callable] | None = None,
         array_state: bool = True,
         clone_seeds: bool = False,
@@ -107,6 +107,7 @@ class AtariEnv(VideogameEnv):
             array_state: Whether to return the state of the environment as a numpy array.
             clone_seeds: Clone the random seed of the ALE emulator when reading/setting
                 the state. False makes the environment stochastic.
+            kwargs: Additional arguments to be passed to the ``gym.make`` function.
 
         Example::
 
@@ -286,7 +287,9 @@ class AtariEnv(VideogameEnv):
         self.gym_env.unwrapped.restore_state(state)
 
     def step_with_dt(self, action: numpy.ndarray | int | float, dt: int = 1):
-        """Take ``dt`` simulation steps and make the environment evolve in multiples \
+        """Step the environment ``dt`` times.
+
+        Take ``dt`` simulation steps and make the environment evolve in multiples \
         of ``self.frameskip`` for a total of ``dt`` * ``self.frameskip`` steps.
 
         Args:

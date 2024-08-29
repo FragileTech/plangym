@@ -110,27 +110,27 @@ class FastGymLunarLander(GymLunarLander):
         W = VIEWPORT_W / SCALE
         H = VIEWPORT_H / SCALE
         # terrain shape
-        CHUNKS = 11
+        chunks = 11
         height = (
-            numpy.ones(CHUNKS + 1) * H / 4
+            numpy.ones(chunks + 1) * H / 4
             if self.deterministic
-            else self.np_random.uniform(0, H / 2, size=(CHUNKS + 1,))
+            else self.np_random.uniform(0, H / 2, size=(chunks + 1,))
         )
         # Define helipad
-        chunk_x = [W / (CHUNKS - 1) * i for i in range(CHUNKS)]
-        self.helipad_x1 = chunk_x[CHUNKS // 2 - 1]
-        self.helipad_x2 = chunk_x[CHUNKS // 2 + 1]
+        chunk_x = [W / (chunks - 1) * i for i in range(chunks)]
+        self.helipad_x1 = chunk_x[chunks // 2 - 1]
+        self.helipad_x2 = chunk_x[chunks // 2 + 1]
         self.helipad_y = H / 4
-        height[CHUNKS // 2 - 2] = self.helipad_y
-        height[CHUNKS // 2 - 1] = self.helipad_y
-        height[CHUNKS // 2 + 0] = self.helipad_y
-        height[CHUNKS // 2 + 1] = self.helipad_y
-        height[CHUNKS // 2 + 2] = self.helipad_y
-        smooth_y = [0.33 * (height[i - 1] + height[i + 0] + height[i + 1]) for i in range(CHUNKS)]
+        height[chunks // 2 - 2] = self.helipad_y
+        height[chunks // 2 - 1] = self.helipad_y
+        height[chunks // 2 + 0] = self.helipad_y
+        height[chunks // 2 + 1] = self.helipad_y
+        height[chunks // 2 + 2] = self.helipad_y
+        smooth_y = [0.33 * (height[i - 1] + height[i + 0] + height[i + 1]) for i in range(chunks)]
         # Define moon
         self.moon = self.world.CreateStaticBody(shapes=edgeShape(vertices=[(0, 0), (W, 0)]))
         self.sky_polys = []
-        for i in range(CHUNKS - 1):
+        for i in range(chunks - 1):
             p1 = (chunk_x[i], smooth_y[i])
             p2 = (chunk_x[i + 1], smooth_y[i + 1])
             self.moon.CreateEdgeFixture(vertices=[p1, p2], density=0, friction=0.1)
@@ -311,7 +311,7 @@ class FastGymLunarLander(GymLunarLander):
 
     def render(self, mode="human"):
         """Render the environment."""
-        from gym.envs.classic_control import rendering
+        from gym.envs.classic_control import rendering  # noqa: PLC0415
 
         if self.viewer is None:
             self.viewer = rendering.Viewer(VIEWPORT_W, VIEWPORT_H)
@@ -349,7 +349,7 @@ class LunarLander(PlangymEnv):
 
     def __init__(
         self,
-        name: str | None = None,
+        name: str | None = None,  # noqa: ARG002
         frameskip: int = 1,
         episodic_life: bool = True,
         autoreset: bool = True,
@@ -358,7 +358,7 @@ class LunarLander(PlangymEnv):
         deterministic: bool = False,
         continuous: bool = False,
         render_mode: str | None = None,
-        remove_time_limit=None,
+        remove_time_limit=None,  # noqa: ARG002
         **kwargs,
     ):
         """Initialize a :class:`LunarLander`."""
@@ -431,7 +431,7 @@ class LunarLander(PlangymEnv):
         self.gym_env.legs[0].ground_contact = state[0][-2]
         self.gym_env.legs[1].ground_contact = state[0][-1]
 
-    def process_terminal(self, terminal, obs=None, **kwargs) -> bool:
+    def process_terminal(self, terminal, obs=None, **kwargs) -> bool:  # noqa: ARG002
         """Return the terminal condition considering the lunar lander state."""
         obs = [0] if obs is None else obs
         end = (

@@ -52,6 +52,7 @@ class VideogameEnv(PlangymEnv, ABC):
             wrappers: Wrappers that will be applied to the underlying OpenAI env.
                       Every element of the iterable can be either a :class:`gym.Wrapper`
                       or a tuple containing ``(gym.Wrapper, kwargs)``.
+            kwargs: Additional arguments to be passed to the ``gym.make`` function.
 
         """
         self.episodic_life = episodic_life

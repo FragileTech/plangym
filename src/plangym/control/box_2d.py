@@ -49,7 +49,7 @@ class Box2DState:
     @staticmethod
     def serialize_body_attribute(value):
         """Copy one body attribute."""
-        from Box2D.Box2D import b2Transform, b2Vec2
+        from Box2D.Box2D import b2Transform, b2Vec2  # noqa: PLC0415
 
         if isinstance(value, b2Vec2):
             return (*value.copy(),)
@@ -74,7 +74,7 @@ class Box2DState:
     @staticmethod
     def set_value_to_body(body, name, value):
         """Set the target value to a body attribute."""
-        from Box2D.Box2D import b2Transform, b2Vec2
+        from Box2D.Box2D import b2Transform, b2Vec2  # noqa: PLC0415
 
         body_object = getattr(body, name)
         if isinstance(body_object, b2Vec2):
@@ -119,8 +119,8 @@ class Box2DState:
         The method states the current environment by defining its world
         bodies' attributes.
         """
-        for body, state in zip(world.bodies, state):
-            cls.set_body_state(body, state)
+        for body, state_ in zip(world.bodies, state):
+            cls.set_body_state(body, state_)
 
     @classmethod
     def get_env_state(cls, env):
