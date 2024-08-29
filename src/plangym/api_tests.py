@@ -423,7 +423,8 @@ class TestPlangymEnv:
 
     def test_terminal(self, env):
         if env.autoreset:
-            env.setup()
+            if not env.SINGLETON:
+                env.setup()
             env.reset()
             if hasattr(env, "render_mode") and env.render_mode in {"human", "rgb_array"}:
                 return

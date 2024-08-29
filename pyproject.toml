@@ -41,6 +41,7 @@ dependencies = [
     "imageio>=2.35.1",
     "nes-py @ git+https://github.com/FragileTech/nes-py",
     "gym-super-mario-bros==7.3.2",
+    "pygame>=2.6.0",
     # Requires clang, build-essential
 ]
 [project.optional-dependencies]
