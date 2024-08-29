@@ -182,9 +182,9 @@ class PlanEnv(ABC):
             ``(state, obs)`` if ```return_state`` is ``True`` else return ``obs``.
 
         """
-        obs, *info = self.apply_reset()  # Returning info upon reset is not yet supported
+        obs, info = self.apply_reset()
         obs = self.process_obs(obs)
-        info = info[0] if info else {}
+        info = info if info else {}
         info = self.process_info(obs=obs, reward=0, terminal=False, info=info)
         return (self.get_state(), obs, info) if return_state else (obs, info)
 

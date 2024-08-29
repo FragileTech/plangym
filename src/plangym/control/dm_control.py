@@ -148,7 +148,7 @@ class DMControlEnv(PlangymEnv):
 
     def _init_obs_space_coords(self):
         """Define the observation space of the environment."""
-        obs = self.reset(return_state=False)
+        obs, _info = self.reset(return_state=False)
         shape = obs.shape
         self._obs_space = Box(low=-numpy.inf, high=numpy.inf, shape=shape, dtype=numpy.float32)
 

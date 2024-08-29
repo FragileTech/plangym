@@ -32,7 +32,7 @@ try:
 
     DMControlEnv(name="walker-run", frameskip=3)
     SKIP_DM_CONTROL_TESTS = False
-except (ImportError, AttributeError):
+except (ImportError, AttributeError, ValueError):
     SKIP_DM_CONTROL_TESTS = True
 
 

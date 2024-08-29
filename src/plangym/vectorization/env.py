@@ -136,22 +136,23 @@ class VectorizedEnv(PlangymEnv, ABC):
     @staticmethod
     def unpack_transitions(results: list, return_states: bool):
         """Aggregate the results of stepping across diferent workers."""
-        _states, observs, rewards, terminals, infos = [], [], [], [], []
+        _states, observs, rewards, terminals, truncateds, infos = [], [], [], [], [], []
         for result in results:
             if not return_states:
-                obs, rew, ends, info = result
+                obs, rew, ends, trunc, info = result
             else:
-                _sts, obs, rew, ends, info = result
+                _sts, obs, rew, ends, trunc, info = result
                 _states += _sts
 
             observs += obs
             rewards += rew
             terminals += ends
             infos += info
+            truncateds += trunc
         if not return_states:
-            transitions = observs, rewards, terminals, infos
+            transitions = observs, rewards, terminals, truncateds, infos
         else:
-            transitions = _states, observs, rewards, terminals, infos
+            transitions = _states, observs, rewards, terminals, truncateds, infos
         return transitions
 
     def create_env_callable(self, **kwargs) -> Callable[..., PlanEnv]:
@@ -220,9 +221,9 @@ class VectorizedEnv(PlangymEnv, ABC):
         """
         if self.plan_env is None and self.delay_setup:
             self.setup()
-        state, obs = self.plan_env.reset(return_state=True)
+        state, obs, info = self.plan_env.reset(return_state=True)
         self.sync_states(state)
-        return (state, obs) if return_state else obs
+        return (state, obs, info) if return_state else (obs, info)
 
     def get_state(self):
         """Recover the internal state of the simulation.
@@ -247,7 +248,7 @@ class VectorizedEnv(PlangymEnv, ABC):
 
     def render(self, mode="human"):
         """Render the environment using OpenGL. This wraps the OpenAI render method."""
-        return self.plan_env.render(mode)
+        return self.plan_env.render()
 
     def get_image(self) -> numpy.ndarray:
         """Return a numpy array containing the rendered view of the environment.

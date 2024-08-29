@@ -147,3 +147,22 @@ class RetroEnv(VideogameEnv):
 
             self._gym_env.close()
             gc.collect()
+
+    def reset(
+        self,
+        return_state: bool = True,
+    ) -> numpy.ndarray | tuple[numpy.ndarray, numpy.ndarray]:
+        """Restart the environment.
+
+        Args:
+            return_state: If ``True``, it will return the state of the environment.
+
+        Returns:
+            ``(state, obs)`` if ```return_state`` is ``True`` else return ``obs``.
+
+        """
+        obs, _info = self.apply_reset()
+        obs = self.process_obs(obs)
+        info = _info or {}
+        info = self.process_info(obs=obs, reward=0, terminal=False, info=info)
+        return (self.get_state(), obs, info) if return_state else (obs, info)

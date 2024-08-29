@@ -303,7 +303,10 @@ class BatchEnv:
         """Implement the logic for stepping the environment in parallel."""
         results = []
         no_states = states is None or states[0] is None
-        _return_state = return_state is None if not no_states else return_state
+        if return_state is None:
+            _return_state = not no_states
+        else:
+            _return_state = return_state
         chunks = ParallelEnv.batch_step_data(
             actions=actions,
             states=states,
@@ -362,10 +365,12 @@ class BatchEnv:
         if not self._blocking:
             trans = [trans() for trans in trans]
         if return_states:
-            states, obs = zip(*trans)
-            states, obs = numpy.array(states), numpy.stack(obs)
-            return states, obs
-        return numpy.stack(trans)
+            states, obs, infos = zip(*trans)
+            states, obs, infos = numpy.array(states), numpy.stack(obs), numpy.array(infos)
+            return states, obs, infos
+        obs, infos = zip(*trans)
+        obs, infos = numpy.stack(obs), numpy.array(infos)
+        return obs, infos
 
     def close(self):
         """Send close messages to the external process and join them."""

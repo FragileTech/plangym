@@ -1,6 +1,6 @@
 from typing import Union
 
-import gym
+import gymnasium as gym
 import pytest
 
 from plangym.vectorization.parallel import ParallelEnv

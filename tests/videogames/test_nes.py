@@ -1,6 +1,6 @@
 import pytest
 
-from src.plangym.api_tests import (
+from plangym.api_tests import (
     batch_size,
     display,
     generate_test_cases,

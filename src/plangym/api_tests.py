@@ -137,9 +137,9 @@ class TestPlanEnv:
             for val in env.obs_shape:
                 assert isinstance(val, int)
         obs, _info = env.reset(return_state=False)
-        assert obs.shape == env.obs_shape
+        assert obs.shape == env.obs_shape, (obs.shape, env.obs_shape)
         obs, *_ = env.step(env.sample_action())
-        assert obs.shape == env.obs_shape
+        assert obs.shape == env.obs_shape, (obs.shape, env.obs_shape)
 
     def test_action_shape(self, env):
         assert hasattr(env, "action_shape")
@@ -195,7 +195,7 @@ class TestPlanEnv:
         state, obs, info = env.reset(return_state=True)
         state_is_array = isinstance(state, numpy.ndarray)
         obs_is_array = isinstance(obs, numpy.ndarray)
-        assert isinstance(info, dict)
+        assert isinstance(info, dict), info
         assert state_is_array if env.STATE_IS_ARRAY else not state_is_array
         assert obs_is_array if env.OBS_IS_ARRAY else not obs_is_array
 
@@ -220,6 +220,7 @@ class TestPlanEnv:
                 assert _state.shape == new_state.shape
             if not env.SINGLETON and env.STATE_IS_ARRAY:
                 curr_state = env.get_state()
+                assert new_state.shape == curr_state.shape
                 assert (new_state == curr_state).all(), (
                     f"original: {new_state[new_state != curr_state]} "
                     f"env: {curr_state[new_state != curr_state]}"
@@ -371,7 +372,8 @@ class TestPlangymEnv:
         assert env.observation_space.shape == env.obs_shape
         if env.observation_space.shape:
             obs, *_info = env.reset(return_state=False)
-            assert env.observation_space.shape == obs.shape
+            obs_shape = env.observation_space.shape
+            assert obs_shape == obs.shape, (obs_shape, obs.shape)
 
     def test_action_space(self, env):
         assert hasattr(env, "action_space")

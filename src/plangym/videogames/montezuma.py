@@ -1,14 +1,13 @@
 """Implementation of the montezuma environment adapted for planning problems."""
 
-import pickle
-from typing import Iterable
+from typing import Iterable, Any
 
 import cv2
 import gymnasium as gym
-from gymnasium.envs.registration import registry as gym_registry
 import numpy
 
 from plangym.core import wrap_callable
+from plangym.utils import remove_time_limit
 from plangym.videogames.atari import AtariEnv
 
 
@@ -100,13 +99,16 @@ class CustomMontezuma:
         objects_remember_rooms: bool = False,
         only_keys: bool = False,
         death_room_8: bool = True,
+        render_mode: str = "rgb_array",
     ):  # TODO: version that also considers the room objects were found in
         """Initialize a :class:`CustomMontezuma`."""
-        spec = gym_registry.spec("MontezumaRevengeDeterministic-v4")
+        # spec = gym_registry.spec("MontezumaRevengeDeterministic-v4")
         # not actually needed, but we feel safer
-        spec.max_episode_steps = int(1e100)
-        spec.max_episode_time = int(1e100)
-        self.env = spec.make()
+        # spec.max_episode_steps = int(1e100)
+        # spec.max_episode_time = int(1e100)
+        self.render_mode = render_mode
+        env = gym.make("MontezumaRevengeDeterministic-v4", render_mode=self.render_mode)
+        self.env = remove_time_limit(env)
         self.env.reset()
         self.score_objects = score_objects
         self.ram = None
@@ -141,9 +143,9 @@ class CustomMontezuma:
         """Forward to gym environment."""
         return getattr(self.env, e)
 
-    def reset(self, seed=None, return_info: bool = False) -> numpy.ndarray:
+    def reset(self, seed=None, return_info: bool = False) -> tuple[numpy.ndarray, dict[str, Any]]:
         """Reset the environment."""
-        obs = self.env.reset()
+        obs, info = self.env.reset()
         self.cur_lives = 5
         for _ in range(3):
             obs, *_, _info = self.env.step(0)
@@ -164,11 +166,11 @@ class CustomMontezuma:
         self.room_time = (self.get_pos().room, 0)
         if self.coords_obs:
             return self.get_coords()
-        return obs
+        return obs, info
 
-    def step(self, action) -> tuple[numpy.ndarray, float, bool, dict]:
+    def step(self, action) -> tuple[numpy.ndarray, float, bool, bool, dict]:
         """Step the environment."""
-        obs, reward, done, info = self.env.step(action)
+        obs, reward, done, truncated, info = self.env.step(action)
         self.ram = self.env.unwrapped.ale.getRAM()
         self.cur_steps += 1
 
@@ -196,8 +198,8 @@ class CustomMontezuma:
         if self._death_room_8:
             done = done or self.pos.room == 8
         if self.coords_obs:
-            return self.get_coords(), reward, done, info
-        return obs, reward, done, info
+            return self.get_coords(), reward, done, truncated, info
+        return obs, reward, done, truncated, info
 
     def pos_from_obs(self, face_pixels, obs) -> MontezumaPosLevel:
         """Extract the information of the position of Panama Joe."""
@@ -279,12 +281,11 @@ class CustomMontezuma:
 
     def state_to_numpy(self) -> numpy.ndarray:
         """Return a numpy array containing the current state of the game."""
-        state = self.unwrapped.clone_state(include_rng=False)
-        return numpy.frombuffer(pickle.dumps(state), dtype=numpy.uint8)
+        state = self.unwrapped.clone_state()
+        return numpy.array((state, None), dtype=object)
 
     def _restore_state(self, state) -> None:
         """Restore the state of the game from the provided numpy array."""
-        state = pickle.loads(state.tobytes())
         self.unwrapped.restore_state(state)
 
     def get_restore(self) -> tuple:
@@ -403,7 +404,7 @@ class CustomMontezuma:
 
     def render(self, mode="human", **kwargs) -> None | numpy.ndarray:
         """Render the environment."""
-        return self.env.render(mode=mode)
+        return self.env.render()
 
 
 # ------------------------------------------------------------------------------
@@ -501,7 +502,7 @@ class MontezumaEnv(AtariEnv):
         assert len(metadata) == 7
         posarray = numpy.array(pos.tuple, dtype=float)
         assert len(posarray) == 5
-        return numpy.concatenate([full_state, metadata, posarray]).astype(numpy.float32)
+        return numpy.concatenate([full_state, metadata, posarray])
 
     def set_state(self, state: numpy.ndarray):
         """Set the internal state of the simulation.
@@ -523,7 +524,7 @@ class MontezumaEnv(AtariEnv):
         )
         score, steps, rt0, rt1, ram_death_state, score_objects, cur_lives = state[-12:-5].tolist()
         room_time = (rt0, rt1) if rt0 != -1 and rt1 != -1 else (None, None)
-        full_state = state[:-12].copy().astype(numpy.uint8)
+        full_state = state[0]
         data = (
             full_state,
             score,

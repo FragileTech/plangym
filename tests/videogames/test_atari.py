@@ -1,5 +1,5 @@
 import numpy as np
-from gym.wrappers import TimeLimit
+from gymnasium.wrappers import TimeLimit
 import numpy
 import pytest
 
