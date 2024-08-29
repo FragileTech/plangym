@@ -31,21 +31,22 @@ classifiers = [
 dependencies = [
     "numpy",
     "pillow",
-    "gym[accept-rom-license] @ git+https://github.com/FragileTech/gym.git",
     "opencv-python>=4.10.0.84",
     "pyglet==1.5.11",
     "pyvirtualdisplay>=3.0",
-    "dm-control>=1.0.22",
-    "ray>=2.35.0",
-    "gymnasium[accept-rom-license,atari]>=0.29.1",
     "imageio>=2.35.1",
-    "nes-py @ git+https://github.com/FragileTech/nes-py",
-    "gym-super-mario-bros==7.3.2",
-    "pygame>=2.6.0",
-    # Requires clang, build-essential
 ]
 [project.optional-dependencies]
-atari = ["ale-py>=0.7.0"]#, "autorom[accept-rom-license]>=0.4.2"]
+atari = ["ale-py>=0.7.0",
+    "gymnasium[accept-rom-license,atari]>=0.29.1",
+    ]#, "autorom[accept-rom-license]>=0.4.2"]
+nes = ["gym[accept-rom-license] @ git+https://github.com/FragileTech/gym.git",
+    "nes-py @ git+https://github.com/FragileTech/nes-py",  # Requires clang, build-essential
+    "gym-super-mario-bros==7.3.2",
+]
+classic-control = ["gymnasium[classic_control]>=0.29.1", "pygame>=2.6.0"]
+ray = ["ray>=2.35.0"]
+dm_control = ["dm-control>=1.0.22"]
 retro = ["stable-retro>=0.9.2"]
 jupyter = ["jupyterlab>=3.2.0"]
 test = [
