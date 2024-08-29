@@ -99,6 +99,7 @@ class NESWrapper:
 
         Returns:
             The modified observation
+
         """
         return observation
 

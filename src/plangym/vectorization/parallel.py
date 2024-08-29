@@ -58,14 +58,14 @@ class ExternalProcess:
     def observation_space(self):
         """Return the observation space of the internal environment."""
         if not self._observ_space:
-            self._observ_space = self.observation_space
+            self._observ_space = self.__getattr__("observation_space")  # noqa: PLC2801
         return self._observ_space
 
     @property
     def action_space(self):
         """Return the action space of the internal environment."""
         if not self._action_space:
-            self._action_space = self.action_space
+            self._action_space = self.__getattr__("action_space")  # noqa: PLC2801
         return self._action_space
 
     def __getattr__(self, name):

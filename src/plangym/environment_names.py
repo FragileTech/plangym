@@ -14,7 +14,7 @@ BOX_2D = [
     "LunarLanderContinuous-v2",
     "BipedalWalker-v3",
     "BipedalWalkerHardcore-v3",
-    "CarRacing-v0",
+    "CarRacing-v2",
     "FastLunarLander-v0",
 ]
 

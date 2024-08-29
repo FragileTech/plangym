@@ -11,7 +11,7 @@ from plangym.core import PlangymEnv, wrap_callable
 
 
 try:
-    from gymnasium.envs.classic_control import rendering
+    from gym.envs.classic_control import rendering
 
     novideo_mode = False
 except Exception:  # pragma: no cover
@@ -167,7 +167,7 @@ class DMControlEnv(PlangymEnv):
         """
         return self.gym_env.physics.render(camera_id=0)
 
-    def render(self, mode="human"):
+    def render(self, mode=None):
         """Render the environment.
 
         Store all the RGB images rendered to be shown when the `show_game`\
@@ -182,7 +182,11 @@ class DMControlEnv(PlangymEnv):
             numpy.ndarray when mode == `rgb_array`. True when mode == `human`
 
         """
+        curr_mode = self.render_mode
+        mode_ = mode or curr_mode
+        self._render_mode = mode_
         img = self.get_image()
+        self._render_mode = curr_mode
         if mode == "rgb_array":
             return img
         if mode == "human":
@@ -197,6 +201,8 @@ class DMControlEnv(PlangymEnv):
         attribute. This method calls the latter to visualize the collected
         images.
         """
+        if self._viewer is None:
+            self._viewer = rendering.SimpleImageViewer()
         for img in self.viewer:
             self._viewer.imshow(img)
             time.sleep(sleep)
@@ -251,7 +257,8 @@ class DMControlEnv(PlangymEnv):
         terminal = time_step.last()
         _reward = time_step.reward if time_step.reward is not None else 0.0
         reward = _reward + self._reward_step
-        return obs, reward, terminal, info
+        truncated = False
+        return obs, reward, terminal, truncated, info
 
     @staticmethod
     def _time_step_to_obs(time_step) -> numpy.ndarray:

@@ -177,8 +177,10 @@ class RayEnv(VectorizedEnv):
         return_state: bool | None = None,
     ):
         """Implement the logic for stepping the environment in parallel."""
-        no_states = states is None or states[0] is None
-        _return_state = return_state is None if not no_states else return_state
+        ret_states = not (
+            states is None or (isinstance(states, list | numpy.ndarray) and states[0] is None)
+        )
+        _return_state = ret_states if return_state is None else return_state
         chunks = self.batch_step_data(
             actions=actions,
             states=states,

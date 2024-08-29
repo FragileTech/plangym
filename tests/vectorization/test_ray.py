@@ -32,7 +32,7 @@ def ray_dm_control():
     return RayEnv(env_class=DMControlEnv, name="walker-walk", n_workers=2)
 
 
-environments = [(ray_cartpole, True), (ray_retro, False), (ray_dm_control, True)]
+environments = [(ray_cartpole, True), (ray_dm_control, True), (ray_retro, False)]
 
 
 @pytest.fixture(params=environments, scope="module")

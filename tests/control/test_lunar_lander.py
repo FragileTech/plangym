@@ -2,11 +2,11 @@ import pytest
 
 
 pytest.importorskip("Box2D")
-from src.plangym.api_tests import (
+from plangym import api_tests
+from plangym.api_tests import (
     batch_size,
     display,
     generate_test_cases,
-    TestPlanEnv,
     TestPlangymEnv,
 )
 from plangym.control.lunar_lander import FastGymLunarLander, LunarLander
@@ -53,3 +53,7 @@ class TestFastGymLunarLander:
             *_, end, _info = gym_env.step(gym_env.action_space.sample())
             if end:
                 break
+
+
+class TestLunarLander(api_tests.TestPlangymEnv):
+    pass

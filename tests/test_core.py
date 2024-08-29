@@ -40,7 +40,7 @@ class DummyPlanEnv(PlanEnv):
 
     def apply_reset(self, **kwargs):
         self._step_count = 0
-        return numpy.zeros(10)
+        return numpy.zeros(10), {}
 
     def apply_action(self, action) -> tuple:
         self._step_count += 1

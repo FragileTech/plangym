@@ -183,7 +183,7 @@ class PlanEnv(ABC):
         """
         obs, info = self.apply_reset()
         obs = self.process_obs(obs)
-        info = info if info else {}
+        info = info or {}
         info = self.process_info(obs=obs, reward=0, terminal=False, info=info)
         return (self.get_state(), obs, info) if return_state else (obs, info)
 
@@ -517,6 +517,7 @@ class PlangymEnv(PlanEnv):
             return_image: If ``True`` add a "rgb" key in the `info` dictionary returned by `step`
                 that contains an RGB representation of the environment state.
             kwargs: Additional arguments to be passed to the ``gym.make`` function.
+
         """
         render_mode = "rgb_array"
         kwargs["render_mode"] = kwargs.get("render_mode", render_mode)

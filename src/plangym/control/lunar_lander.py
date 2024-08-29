@@ -8,7 +8,7 @@ import numpy
 
 from plangym.control.box_2d import Box2DState
 from plangym.core import PlangymEnv, wrap_callable
-
+from plangym.utils import get_display
 
 try:
     from Box2D.b2 import edgeShape, fixtureDef, polygonShape, revoluteJointDef
@@ -96,7 +96,14 @@ class FastGymLunarLander(GymLunarLander):
         self.observation_space = None
         self.action_space = None
         self.continuous = continuous
+        self._display = None
         super().__init__()
+
+    def __del__(self):
+        """Close the environment."""
+        super().close()
+        if self._display is not None:
+            self._display.stop()
 
     def reset(self) -> tuple:
         """Reset the environment to its initial state."""
@@ -197,8 +204,8 @@ class FastGymLunarLander(GymLunarLander):
             leg.joint = self.world.CreateJoint(rjd)
             self.legs.append(leg)
         self.drawlist = [self.lander, *self.legs]
-
-        return self.step(numpy.array([0, 0]) if self.continuous else 0)[0]
+        info = {}
+        return self.step(numpy.array([0, 0]) if self.continuous else 0)[0], info
 
     def step(self, action: int) -> tuple:
         """Step the environment applying the provided action."""
@@ -307,13 +314,16 @@ class FastGymLunarLander(GymLunarLander):
             reward = +100
         self.prev_reward = reward
         self.game_over = done or self.game_over
-        return numpy.array(state, dtype=numpy.float32), reward, done, {}
+        truncated = False
+        return numpy.array(state, dtype=numpy.float32), reward, done, truncated, {}
 
-    def render(self, mode="human"):
+    def render(self, mode=None):
         """Render the environment."""
         from gym.envs.classic_control import rendering  # noqa: PLC0415
 
+        mode = mode or self.render_mode
         if self.viewer is None:
+            self._display = get_display()
             self.viewer = rendering.Viewer(VIEWPORT_W, VIEWPORT_H)
             self.viewer.set_bounds(0, VIEWPORT_W / SCALE, 0, VIEWPORT_H / SCALE)
 
@@ -357,7 +367,7 @@ class LunarLander(PlangymEnv):
         delay_setup: bool = False,
         deterministic: bool = False,
         continuous: bool = False,
-        render_mode: str | None = None,
+        render_mode: str | None = "rgb_array",
         remove_time_limit=None,  # noqa: ARG002
         **kwargs,
     ):
@@ -430,6 +440,19 @@ class LunarLander(PlangymEnv):
         self.gym_env.prev_reward = state[0][-3]
         self.gym_env.legs[0].ground_contact = state[0][-2]
         self.gym_env.legs[1].ground_contact = state[0][-1]
+
+    def get_image(self) -> numpy.ndarray:
+        """Return a numpy array containing the rendered view of the environment.
+
+        Square matrices are interpreted as a greyscale image. Three-dimensional arrays
+        are interpreted as RGB images with channels (Height, Width, RGB).
+        """
+        img = self.gym_env.render(mode="rgb_array")
+        if img is None and self.render_mode == "rgb_array":
+            raise ValueError(f"Rendering rgb_array but we are getting None: {self}")
+        if self.render_mode != "rgb_array":
+            raise ValueError(f"Rendering {self.render_mode} but we are getting an image: {self}")
+        return img
 
     def process_terminal(self, terminal, obs=None, **kwargs) -> bool:  # noqa: ARG002
         """Return the terminal condition considering the lunar lander state."""

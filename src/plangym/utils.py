@@ -1,10 +1,21 @@
 """Generic utilities for working with environments."""
 
+import os
+
 import gymnasium as gym
 from gymnasium.spaces import Box
 from gymnasium.wrappers.time_limit import TimeLimit
 import numpy
 from PIL import Image
+from pyvirtualdisplay import Display
+
+
+def get_display(visible=False, size=(400, 400), **kwargs):
+    """Start a virtual display."""
+    os.environ["PYVIRTUALDISPLAY_DISPLAYFD"] = "0"
+    display = Display(visible=visible, size=size, **kwargs)
+    display.start()
+    return display
 
 
 def remove_time_limit_from_spec(spec):
@@ -91,6 +102,7 @@ class GrayScaleObservation(gym.ObservationWrapper, gym.utils.RecordConstructorAr
         >>> env = GrayScaleObservation(gym.make("CarRacing-v2"), keep_dim=True)
         >>> env.observation_space
         Box(0, 255, (96, 96, 1), uint8)
+
     """
 
     def __init__(self, env: gym.Env, keep_dim: bool = False):
@@ -100,9 +112,10 @@ class GrayScaleObservation(gym.ObservationWrapper, gym.utils.RecordConstructorAr
             env (Env): The environment to apply the wrapper
             keep_dim (bool): If `True`, a singleton dimension will be added, i.e. \
                 observations are of the shape AxBx1. Otherwise, they are of shape AxB.
+
         """
         gym.utils.RecordConstructorArgs.__init__(self, keep_dim=keep_dim)
-        gym.ObservationWrapper.__init__(self, env)  # noqa: PLC2801
+        gym.ObservationWrapper.__init__(self, env)
 
         self.keep_dim = keep_dim
 
@@ -128,6 +141,7 @@ class GrayScaleObservation(gym.ObservationWrapper, gym.utils.RecordConstructorAr
 
         Returns:
             Grayscale observations
+
         """
         import cv2  # noqa: PLC0415
 
