@@ -39,7 +39,6 @@ endif
 
 .PHONY: install-envs
 install-envs:
-	python3 -m pip install -U pip wheel
 	make -f Makefile.docker install-env-deps
 	make install-mujoco
 

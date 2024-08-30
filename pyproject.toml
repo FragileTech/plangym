@@ -29,13 +29,13 @@ dependencies = [
     "imageio>=2.35.1",
 ]
 [project.optional-dependencies]
-atari = ["ale-py", "gymnasium[accept-rom-license,atari]>=0.29.1"]
+atari = ["ale-py", "gymnasium[accept-rom-license,atari]>=0.29.1, == 0.*"]
 nes = [
     "gym[accept-rom-license] @ git+https://github.com/FragileTech/gym.git",
     "nes-py @ git+https://github.com/FragileTech/nes-py",  # Requires clang, build-essential
     "gym-super-mario-bros==7.3.2",
 ]
-classic-control = ["gymnasium[classic_control]>=0.29.1", "pygame>=2.6.0"]
+classic-control = ["gymnasium[classic_control]>=0.29.1, == 0.*", "pygame>=2.6.0"]
 ray = ["ray>=2.35.0"]
 dm_control = ["dm-control>=1.0.22", "gym @ git+https://github.com/FragileTech/gym.git"]
 retro = ["stable_retro"]
@@ -68,10 +68,13 @@ universal = true
 style = { chain = ["ruff check --fix-only  --unsafe-fixes tests src", "ruff format tests src"] }
 check = { chain = ["ruff check --diff tests src", "ruff format --diff tests src"]}  #,"mypy src tests" ] }
 test = { chain = ["test:doctest", "test:parallel", "test:singlecore"] }
+codecov = { chain = ["codecov:parallel", "codecov:singlecore"] }
 import-roms = { cmd = "python3 import_retro_roms.py" }
 "test:parallel" = { cmd = "pytest -n auto -s -o log_cli=true -o log_cli_level=info tests", env-file = ".multicore.env" }
 "test:singlecore" = { cmd = "pytest -s -o log_cli=true -o log_cli_level=info tests/control/test_classic_control.py", env-file = ".onecore.env" }
 "test:doctest" = { cmd = "pytest --doctest-modules -n 0 -s -o log_cli=true -o log_cli_level=info src", env-file = ".multicore.env" }
+"codecov:parallel" = { cmd = "pytest -n auto -s -o log_cli=true -o log_cli_level=info --cov=./ --cov-report=xml --cov-config=pyproject.toml tests", env-file = ".multicore.env" }
+"codecov:singlecore" = { cmd = "pytest --doctest-modules -s -o log_cli=true -o log_cli_level=info --cov=./ --cov-report=xml --cov-config=pyproject.toml tests/control/test_classic_control.py", env-file = ".onecore.env" }
 
 [tool.ruff]
 # Assume Python 3.10

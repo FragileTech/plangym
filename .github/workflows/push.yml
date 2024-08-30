@@ -87,8 +87,14 @@ jobs:
         xvfb-run -s "-screen 0 1400x900x24" rye run test
 
     - name: Upload coverage report
-      if: ${{ matrix.python-version=='3.12' }}
-      uses: codecov/codecov-action@v1
+      if: ${{ matrix.python-version=='3.10' }}
+      uses: codecov/codecov-action@v4
+      with:
+        fail_ci_if_error: false # optional (default = false)
+        flags: unittests # optional
+        name: codecov-umbrella # optional
+        token: ${{ secrets.CODECOV_TOKEN }} # required
+        verbose: true # optional (default = false)
 
   test-docker:
     name: Test Docker container
