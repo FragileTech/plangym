@@ -10,8 +10,8 @@ on:
 
 env:
   PROJECT_NAME: plangym
-  PROJECT_DIR: plangym
-  VERSION_FILE: plangym/version.py
+  PROJECT_DIR: src/plangym
+  VERSION_FILE: src/plangym/version.py
   DEFAULT_BRANCH: master
   BOT_NAME: fragile-bot
   BOT_EMAIL: bot@fragile.tech
@@ -25,29 +25,26 @@ jobs:
   style-check:
     name: Style check
     if: "!contains(github.event.head_commit.message, 'Bump version')"
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
     - name: actions/checkout
-      uses: actions/checkout@v2
-    - name: Set up Python 3.8
+      uses: actions/checkout@v3
+    - name: Set up Python 3.10
       uses: actions/setup-python@v2
       with:
-        python-version: "3.8"
-    - name: actions/cache
-      uses: actions/cache@v2
+        python-version: "3.10"
+    - name: Enable caching and define a custom cache key prefix
+      id: setup-rye
+      uses: eifinger/setup-rye@v4
       with:
-        path: ${{ env.PIP_CACHE }}
-        key: ubuntu-20.04-pip-lint-${{ hashFiles('requirements-lint.txt') }}
-        restore-keys: ubuntu-20.04-pip-lint-
-    - name: Install lint dependencies
-      run: |
-        set -x
-        pip install -r requirements-lint.txt
+        enable-cache: true
+        cache-prefix: ubuntu-20.04-rye-check-${{ hashFiles('pyproject.toml') }}
 
     - name: Run style check and linter
       run: |
         set -x
-        make check
+        rye fmt --check
+        rye lint
 
   pytest:
     name: Run Pytest
@@ -55,7 +52,7 @@ jobs:
     if: "!contains(github.event.head_commit.message, 'Bump version')"
     strategy:
       matrix:
-        python-version: ['3.8']
+        python-version: ['3.10']
     steps:
     - name: actions/checkout
       uses: actions/checkout@v2
