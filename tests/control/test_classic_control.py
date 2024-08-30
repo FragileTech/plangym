@@ -6,8 +6,11 @@ from plangym.control.classic_control import ClassicControl
 from plangym.environment_names import CLASSIC_CONTROL
 
 
-if os.getenv("SKIP_RENDER", None) and str(os.getenv("SKIP_RENDER", "false")).lower() != "false":
-    pytest.skip("ClassicControl raises pyglet error on headless machines", allow_module_level=True)
+if (
+    os.getenv("SKIP_CLASSIC_CONTROL", None)
+    and str(os.getenv("SKIP_CLASSIC_CONTROL", "false")).lower() != "false"
+):
+    pytest.skip("Skipping classic control", allow_module_level=True)
 
 from plangym.api_tests import (
     batch_size,

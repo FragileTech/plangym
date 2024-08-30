@@ -392,13 +392,13 @@ class ParallelEnv(VectorizedEnv):
         ...                           autoreset=True,
         ...                           blocking=False)
         >>>
-        >>> state, obs = env.reset()
+        >>> state, obs, info = env.reset()
         >>>
         >>> states = [state.copy() for _ in range(10)]
         >>> actions = [env.sample_action() for _ in range(10)]
         >>>
         >>> data =  env.step_batch(states=states, actions=actions)
-        >>> new_states, observs, rewards, ends, infos = data
+        >>> new_states, observs, rewards, ends, truncateds, infos = data
 
     """
 
@@ -483,8 +483,8 @@ class ParallelEnv(VectorizedEnv):
                 If None, `step` will return the state if `state` was passed as a parameter.
 
         Returns:
-            if states is None returns ``(observs, rewards, ends, infos)`` else \
-            ``(new_states, observs, rewards, ends, infos)``
+            if states is None returns ``(observs, rewards, ends, truncateds, infos)`` else \
+            ``(new_states, observs, rewards, ends, truncateds, infos)``
 
         """
         return self._batch_env.make_transitions(

@@ -67,7 +67,11 @@ dev-dependencies = ["ruff"]
 [tool.rye.scripts]
 style = { chain = ["ruff check --fix-only  --unsafe-fixes tests src", "ruff format tests src"] }
 check = { chain = ["ruff check --diff tests src", "ruff format --diff tests src"]}  #,"mypy src tests" ] }
-test = { chain = ['/bin/find tests -name "*.pyc" -delete', "pytest -n 0 -s -o log_cli=true -o log_cli_level=info tests" ], env-file = ".dev.env" }
+test = { chain = ["test:doctest", "test:parallel", "test:singlecore"] }
+import-roms = { cmd = "python3 import_retro_roms.py" }
+"test:parallel" = { cmd = "pytest -n auto -s -o log_cli=true -o log_cli_level=info tests", env-file = ".multicore.env" }
+"test:singlecore" = { cmd = "pytest -s -o log_cli=true -o log_cli_level=info tests/control/test_classic_control.py", env-file = ".onecore.env" }
+"test:doctest" = { cmd = "pytest --doctest-modules -n 0 -s -o log_cli=true -o log_cli_level=info src", env-file = ".multicore.env" }
 
 [tool.ruff]
 # Assume Python 3.10

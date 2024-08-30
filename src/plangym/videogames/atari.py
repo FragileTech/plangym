@@ -49,13 +49,13 @@ class AtariEnv(VideogameEnv):
     Example::
 
         >>> env = plangym.make(name="ALE/MsPacman-v5", difficulty=2, mode=1)
-        >>> state, obs = env.reset()
+        >>> state, obs, info = env.reset()
         >>>
         >>> states = [state.copy() for _ in range(10)]
         >>> actions = [env.action_space.sample() for _ in range(10)]
         >>>
         >>> data = env.step_batch(states=states, actions=actions)
-        >>> new_states, observs, rewards, ends, infos = data
+        >>> new_states, observs, rewards, ends, truncateds,infos = data
 
     """
 
@@ -112,9 +112,9 @@ class AtariEnv(VideogameEnv):
         Example::
 
             >>> env = AtariEnv(name="ALE/MsPacman-v5", difficulty=2, mode=1)
-            >>> type(env.gym_env)
-            <class 'gym.envs.atari.environment.AtariEnv'>
-            >>> state, obs = env.reset()
+            >>> type(env.gym_env.unwrapped)
+            <class 'shimmy.atari_env.AtariEnv'>
+            >>> state, obs, info = env.reset()
             >>> type(state)
             <class 'numpy.ndarray'>
 
@@ -274,12 +274,12 @@ class AtariEnv(VideogameEnv):
         Example::
 
             >>> env = AtariEnv(name="Qbert-v0")
-            >>> state, obs = env.reset()
-            >>> new_state, obs, reward, end, info = env.step(env.sample_action(), state=state)
+            >>> state, obs, info = env.reset()
+            >>> new_state, obs, reward, end, tru, info = env.step(env.sample_action(), state=state)
             >>> assert not (state == new_state).all()
             >>> env.set_state(state)
             >>> (state == env.get_state()).all()
-            True
+            np.True_
 
         """
         if self.STATE_IS_ARRAY:
