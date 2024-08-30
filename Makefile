@@ -58,7 +58,9 @@ doctest:
 
 .PHONY: test
 test:
-	xvfb-run -s "-screen 0 1400x900x24" make test-parallel test-ray
+	find . -name "*.pyc" -delete
+	PYVIRTUALDISPLAY_DISPLAYFD=0 SKIP_CLASSIC_CONTROL=1 xvfb-run -s "-screen 0 1400x900x24" pytest -n auto -s -o log_cli=true -o log_cli_level=info tests
+	PYVIRTUALDISPLAY_DISPLAYFD=0 xvfb-run -s "-screen 0 1400x900x24" pytest -s -o log_cli=true -o log_cli_level=info tests/control/test_classic_control.py
 
 .PHONY: run-codecov-test
 run-codecov-test:

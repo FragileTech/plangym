@@ -37,7 +37,7 @@ nes = [
 ]
 classic-control = ["gymnasium[classic_control]>=0.29.1, == 0.*", "pygame>=2.6.0"]
 ray = ["ray>=2.35.0"]
-dm_control = ["dm-control>=1.0.22"]#, "gym @ git+https://github.com/FragileTech/gym.git"]
+dm_control = ["dm-control>=1.0.22", "gym @ git+https://github.com/FragileTech/gym.git"]
 retro = ["stable_retro"]
 jupyter = ["jupyterlab>=3.2.0"]
 box_2d = ["box2d-py==2.3.5"]
