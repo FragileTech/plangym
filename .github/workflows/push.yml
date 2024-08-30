@@ -17,7 +17,6 @@ env:
   BOT_EMAIL: bot@fragile.tech
   DOCKER_ORG: fragiletech
   LOCAL_CACHE: |
-    ~/.cache/pip
     ~/.local/bin
     ~/.local/lib/python3.*/site-packages
 
@@ -84,7 +83,7 @@ jobs:
     - name: Test with pytest
       run: |
         set -x
-        xvfb-run -s "-screen 0 1400x900x24" rye run test
+        xvfb-run -s "-screen 0 1400x900x24" rye run codecov
 
     - name: Upload coverage report
       if: ${{ matrix.python-version=='3.10' }}
@@ -96,44 +95,50 @@ jobs:
         token: ${{ secrets.CODECOV_TOKEN }} # required
         verbose: true # optional (default = false)
 
-  test-docker:
-    name: Test Docker container
-    runs-on: ubuntu-20.04
-    if: "!contains(github.event.head_commit.message, 'Bump version')"
-    steps:
-    - uses: actions/checkout@v2
-    - name: Build container
-      run: |
-        set -x
-        ROM_PASSWORD=${{ secrets.ROM_PASSWORD }} make docker-build
-    - name: Run tests
-      run: |
-        set -x
-        make docker-test
+#  test-docker:
+#    name: Test Docker container
+#    runs-on: ubuntu-20.04
+#    if: "!contains(github.event.head_commit.message, 'Bump version')"
+#    steps:
+#    - uses: actions/checkout@v2
+#    - name: Build container
+#      run: |
+#        set -x
+#        ROM_PASSWORD=${{ secrets.ROM_PASSWORD }} make docker-build
+#    - name: Run tests
+#      run: |
+#        set -x
+#        make docker-test
 
   build-test-package:
     name: Build and test the package
     needs: style-check
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     if: "!contains(github.event.head_commit.message, 'Bump version')"
     steps:
       - name: actions/checkout
-        uses: actions/checkout@v2
-      - name: Set up Python 3.8
+        uses: actions/checkout@v3
+      - name: Set up Python 3.10
         uses: actions/setup-python@v2
         with:
-          python-version: 3.8
-      - name: actions/cache
-        uses: actions/cache@v2
+          python-version: '3.10'
+      - name: Setup Rye
+        id: setup-rye
+        uses: eifinger/setup-rye@v4
         with:
-          path: ${{ env.PIP_CACHE }}
-          key: ubuntu-20.04-pip-test-3.8-${{ hashFiles('requirements.txt', 'requirements-test.txt') }}
-          restore-keys: ubuntu-20.04-pip-test-
-      - name: Install dependencies
+          enable-cache: true
+          cache-prefix: ubuntu-latest-rye-build-3.10-${{ hashFiles('pyproject.toml') }}
+      - name: actions/cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.LOCAL_CACHE }}
+          key: ubuntu-latest-system-build-3.10-${{ hashFiles('pyproject.toml') }}
+          restore-keys: ubuntu-latest-system-test
+      - name: Install build dependencies
         run: |
           set -x
-          python -m pip install -U pip
-          python -m pip install -U setuptools twine wheel bump2version
+          rye install bump2version
+          rye install twine
 
       - name: Create unique version for test.pypi
         run: |
@@ -146,49 +151,49 @@ jobs:
       - name: Build package
         run: |
           set -x
-          python setup.py --version
-          python setup.py bdist_wheel sdist --format=gztar
+          rye build --clean
           twine check dist/*
 
       - name: Publish package to TestPyPI
         env:
           TEST_PYPI_PASS: ${{ secrets.TEST_PYPI_PASS }}
         if: "'$TEST_PYPI_PASS' != ''"
-        uses: pypa/gh-action-pypi-publish@master
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          user: __token__
           password: ${{ secrets.TEST_PYPI_PASS }}
-          repository_url: https://test.pypi.org/legacy/
-          skip_existing: true
+          repository-url: https://test.pypi.org/legacy/
+          skip-existing: true
 
-        # apt-get install -y xvfb python-opengl ffmpeg
       - name: Install dependencies
         run: |
           set -x
+          sudo apt-get install -y xvfb python-opengl ffmpeg
           sudo MUJOCO_PATH=/home/runner/.mujoco/ make install-envs
-          pip install -r requirements-test.txt -r requirements.txt
+          rye lock
+          pip install uv
           ROM_PASSWORD=${{ secrets.ROM_PASSWORD }} make import-roms
-          python -m pip install dist/*.whl
+          uv pip install --no-cache --system -r requirements.lock
+          uv pip install dist/*.whl
 
       - name: Test package
         run: |
           set -x
           rm -rf $PROJECT_DIR
-          make test
+          xvfb-run -s "-screen 0 1400x900x24" rye run test
 
   bump-version:
     name: Bump package version
     env:
       BOT_AUTH_TOKEN: ${{ secrets.BOT_AUTH_TOKEN }}
     if: "!contains(github.event.head_commit.message, 'Bump version') && github.ref == 'refs/heads/master' && '$BOT_AUTH_TOKEN' != ''"
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     needs:
       - pytest
       - build-test-package
-      - test-docker
+      # - test-docker
     steps:
       - name: actions/checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           persist-credentials: false
           fetch-depth: 100
@@ -209,42 +214,17 @@ jobs:
           login: "${{ env.bot_name }}"
           token: "${{ secrets.BOT_AUTH_TOKEN }}"
 
-  push-docker:
-    name: Push Docker container
-    runs-on: ubuntu-20.04
-    env:
-      DOCKERHUB_PASS: ${{ secrets.DOCKERHUB_PASS }}
-    if: "contains(github.event.head_commit.message, 'Bump version') && github.ref == 'refs/heads/master' && '$DOCKERHUB_PASS' != ''"
-    steps:
-      - uses: actions/checkout@v2
-      - name: Login to DockerHub
-        run: |
-          set -x
-          docker login -u "${{ secrets.DOCKERHUB_LOGIN }}" -p "${{ secrets.DOCKERHUB_PASS }}" docker.io
-
-      - name: Build container
-        run: |
-          set -x
-          CONTAINER_VERSION=v$(grep __version__ $VERSION_FILE | cut -d\" -f2)
-          ROM_PASSWORD=${{ secrets.ROM_PASSWORD }} make docker-build VERSION=$CONTAINER_VERSION PROJECT=$PROJECT_NAME DOCKER_ORG=$DOCKER_ORG
-      - name: Push images
-
-        run: |
-          set -x
-          CONTAINER_VERSION=v$(grep __version__ $VERSION_FILE | cut -d\" -f2)
-          make docker-push VERSION=$CONTAINER_VERSION PROJECT=$PROJECT_NAME DOCKER_ORG=$DOCKER_ORG
-
   release-package:
     name: Release PyPI package
     env:
       PYPI_PASS: ${{ secrets.PYPI_PASS }}
-    if: "contains(github.event.head_commit.message, 'Bump version') && github.ref == 'refs/heads/master'  && '$PYPI_PASS' != ''"
+    if: "contains(github.event.head_commit.message, 'Bump version') && github.ref == 'refs/heads/master' && '$PYPI_PASS' != ''"
     runs-on: ubuntu-20.04
     steps:
       - name: actions/checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Set up Python 3.8
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         with:
           python-version: 3.8
       - name: Install dependencies
