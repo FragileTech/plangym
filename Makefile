@@ -24,7 +24,7 @@ check:
 .PHONY: install-mujoco
 install-mujoco:
 	mkdir ${MUJOCO_PATH}
-	wget https://github.com/google-deepmind/mujoco/releases/download/2.1.0/mujoco210-linux-x86_64.tar.gz
+	wget https://mujoco.org/download/mujoco210-linux-x86_64.tar.gz
 	tar -xvzf mujoco210-linux-x86_64.tar.gz -C ${MUJOCO_PATH}
 	rm mujoco210-linux-x86_64.tar.gz
 
@@ -39,7 +39,6 @@ endif
 
 .PHONY: install-envs
 install-envs:
-	python3 -m pip install -U pip wheel
 	make -f Makefile.docker install-env-deps
 	make install-mujoco
 
@@ -59,7 +58,9 @@ doctest:
 
 .PHONY: test
 test:
-	xvfb-run -s "-screen 0 1400x900x24" make test-parallel test-ray
+	find . -name "*.pyc" -delete
+	PYVIRTUALDISPLAY_DISPLAYFD=0 SKIP_CLASSIC_CONTROL=1 xvfb-run -s "-screen 0 1400x900x24" pytest -n auto -s -o log_cli=true -o log_cli_level=info tests
+	PYVIRTUALDISPLAY_DISPLAYFD=0 xvfb-run -s "-screen 0 1400x900x24" pytest -s -o log_cli=true -o log_cli_level=info tests/control/test_classic_control.py
 
 .PHONY: run-codecov-test
 run-codecov-test:

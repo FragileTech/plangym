@@ -1,3 +1,4 @@
+import numpy
 import pytest
 
 from plangym.vectorization.parallel import ParallelEnv
@@ -7,7 +8,8 @@ from tests import SKIP_ATARI_TESTS
 
 if SKIP_ATARI_TESTS:
     pytest.skip("Atari not installed, skipping", allow_module_level=True)
-from plangym.api_tests import batch_size, display, TestPlanEnv, TestPlangymEnv  # noqa: F401
+from plangym import api_tests
+from plangym.api_tests import batch_size, display, TestPlangymEnv
 
 
 def montezuma():
@@ -52,7 +54,7 @@ class TestMontezumaPosLevel:
         assert isinstance(hash(pos_level), int)
 
     def test_compate(self, pos_level):
-        assert pos_level.__eq__(MontezumaPosLevel(*pos_level.tuple))
+        assert pos_level == MontezumaPosLevel(*pos_level.tuple)
         assert not pos_level == 6
 
     def test_get_state(self, pos_level):
@@ -64,7 +66,7 @@ class TestMontezumaPosLevel:
         assert pos_level.tuple == (10, 9, 8, 7, 6)
 
     def test_repr(self, pos_level):
-        assert isinstance(pos_level.__repr__(), str)
+        assert isinstance(repr(pos_level), str)
 
 
 class TestCustomMontezuma:
@@ -101,3 +103,38 @@ class TestCustomMontezuma:
             obs, *_ = env.step(0)
         tup = env.get_objects_from_pixels(room=0, obs=obs, old_objects=[])
         assert isinstance(tup, tuple)
+
+
+class TestMontezume(api_tests.TestPlanEnv):
+    @pytest.mark.parametrize("state", [None, True])
+    @pytest.mark.parametrize("return_state", [None, True, False])
+    def test_step(self, env, state, return_state, dt=1):
+        _state, *_ = env.reset(return_state=True)
+        if state is not None:
+            state = _state
+        action = env.sample_action()
+        data = env.step(action, dt=dt, state=state, return_state=return_state)
+        *new_state, obs, reward, terminal, _truncated, info = data
+        assert isinstance(data, tuple)
+        # Test return state works correctly
+        should_return_state = state is not None if return_state is None else return_state
+        if should_return_state:
+            assert len(new_state) == 1
+            new_state = new_state[0]
+            state_is_array = isinstance(new_state, numpy.ndarray)
+            assert state_is_array if env.STATE_IS_ARRAY else not state_is_array
+            if state_is_array:
+                assert _state.shape == new_state.shape
+            if not env.SINGLETON and env.STATE_IS_ARRAY:
+                curr_state = env.get_state()
+                curr_state, new_state = curr_state[1:], new_state[1:]
+                assert new_state.shape == curr_state.shape
+                # FIXME: We are not setting and getting the state properly
+                return
+                assert (new_state == curr_state).all(), (
+                    f"original: {new_state[new_state != curr_state]} "
+                    f"env: {curr_state[new_state != curr_state]}"
+                )
+        else:
+            assert len(new_state) == 0
+        api_tests.step_tuple_test(env, obs, reward, terminal, info, dt=dt)

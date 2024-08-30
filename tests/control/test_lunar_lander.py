@@ -2,11 +2,11 @@ import pytest
 
 
 pytest.importorskip("Box2D")
-from plangym.api_tests import (  # noqa: F401
+from plangym import api_tests
+from plangym.api_tests import (
     batch_size,
     display,
     generate_test_cases,
-    TestPlanEnv,
     TestPlangymEnv,
 )
 from plangym.control.lunar_lander import FastGymLunarLander, LunarLander
@@ -50,6 +50,10 @@ class TestFastGymLunarLander:
         gym_env = FastGymLunarLander()
         gym_env.reset()
         for _ in range(1000):
-            *_, end, info = gym_env.step(gym_env.action_space.sample())
+            *_, end, _info = gym_env.step(gym_env.action_space.sample())
             if end:
                 break
+
+
+class TestLunarLander(api_tests.TestPlangymEnv):
+    pass

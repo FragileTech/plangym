@@ -1,7 +1,7 @@
 import numpy
 import pytest
 
-from plangym.api_tests import batch_size, display, TestPlanEnv, TestPlangymEnv  # noqa: F401
+from plangym.api_tests import batch_size, display, TestPlanEnv, TestPlangymEnv
 from plangym.control.classic_control import ClassicControl
 from plangym.vectorization.parallel import BatchEnv, ExternalProcess, ParallelEnv
 from plangym.videogames.atari import AtariEnv
@@ -35,10 +35,10 @@ class TestBatchEnv:
         assert isinstance(env._batch_env[0], ExternalProcess)
 
     def test_reset(self, env):
-        obs = env._batch_env.reset(return_states=False)
+        obs, _ = env._batch_env.reset(return_states=False)
         assert isinstance(obs, numpy.ndarray)
         indices = numpy.arange(len(env._batch_env._envs))
-        state, obs = env._batch_env.reset(return_states=True, indices=indices)
+        state, obs, _ = env._batch_env.reset(return_states=True, indices=indices)
         if env.STATE_IS_ARRAY:
             assert isinstance(state, numpy.ndarray)
 
@@ -46,21 +46,21 @@ class TestBatchEnv:
 class TestExternalProcess:
     def test_reset(self, env):
         ep = env._batch_env[0]
-        obs = ep.reset(return_states=False, blocking=True)
+        obs, *_ = ep.reset(return_states=False, blocking=True)
         assert isinstance(obs, numpy.ndarray)
-        state, obs = ep.reset(return_states=True, blocking=True)
+        state, obs, _ = ep.reset(return_states=True, blocking=True)
         if env.STATE_IS_ARRAY:
             assert isinstance(state, numpy.ndarray)
 
-        obs = ep.reset(return_states=False, blocking=False)()
+        obs, *_ = ep.reset(return_states=False, blocking=False)()
         assert isinstance(obs, numpy.ndarray)
-        state, obs = ep.reset(return_states=True, blocking=False)()
+        state, obs, _ = ep.reset(return_states=True, blocking=False)()
         if env.STATE_IS_ARRAY:
             assert isinstance(state, numpy.ndarray)
 
     def test_step(self, env):
         ep = env._batch_env[0]
-        state, _ = ep.reset(return_states=True, blocking=True)
+        state, *_ = ep.reset(return_states=True, blocking=True)
         ep.set_state(state, blocking=False)()
         action = env.sample_action()
         data = ep.step(action, dt=2, blocking=True)
@@ -70,7 +70,7 @@ class TestExternalProcess:
         if env.STATE_IS_ARRAY:
             assert isinstance(state, numpy.ndarray)
 
-        state, _ = ep.reset(return_states=True, blocking=False)()
+        state, *_ = ep.reset(return_states=True, blocking=False)()
         action = env.sample_action()
         data = ep.step(action, dt=2, blocking=False)()
         assert isinstance(data, tuple)
@@ -81,5 +81,4 @@ class TestExternalProcess:
         ep = env._batch_env[0]
         ep.observation_space
         ep.action_space.sample()
-        ep.__getattr__("unwrapped")
         ep.unwrapped

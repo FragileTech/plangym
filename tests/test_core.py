@@ -3,7 +3,7 @@ from typing import Tuple
 import numpy
 import pytest
 
-from plangym.api_tests import batch_size, display, TestPlanEnv  # noqa: F401
+from plangym.api_tests import batch_size, display, TestPlanEnv
 from plangym.core import PlanEnv
 
 
@@ -12,14 +12,14 @@ class DummyPlanEnv(PlanEnv):
     _state = None
 
     @property
-    def obs_shape(self) -> Tuple[int]:
+    def obs_shape(self) -> tuple[int]:
         """Tuple containing the shape of the observations returned by the Environment."""
         return (10,)
 
     @property
-    def action_shape(self) -> Tuple[int]:
+    def action_shape(self) -> tuple[int]:
         """Tuple containing the shape of the actions applied to the Environment."""
-        return tuple()
+        return ()
 
     def get_image(self):
         return numpy.zeros((10, 10, 3))
@@ -40,12 +40,12 @@ class DummyPlanEnv(PlanEnv):
 
     def apply_reset(self, **kwargs):
         self._step_count = 0
-        return numpy.zeros(10)
+        return numpy.zeros(10), {}
 
     def apply_action(self, action) -> tuple:
         self._step_count += 1
-        obs, reward, end, info = numpy.ones(10), 1, False, {}
-        return obs, reward, end, info
+        obs, reward, end, truncated, info = numpy.ones(10), 1, False, False, {}
+        return obs, reward, end, truncated, info
 
     def clone(self):
         return self

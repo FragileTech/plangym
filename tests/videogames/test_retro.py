@@ -1,6 +1,6 @@
 from typing import Union
 
-import gym
+import gymnasium as gym
 import pytest
 
 from plangym.vectorization.parallel import ParallelEnv
@@ -8,7 +8,9 @@ from plangym.videogames.retro import ActionDiscretizer, RetroEnv
 
 
 pytest.importorskip("retro")
-from plangym.api_tests import batch_size, display, TestPlanEnv, TestPlangymEnv  # noqa: F401
+
+from plangym import api_tests
+from plangym.api_tests import batch_size, display, TestPlanEnv
 
 
 def retro_airstrike():
@@ -17,7 +19,6 @@ def retro_airstrike():
 
 
 def retro_sonic():
-
     return RetroEnv(
         name="SonicTheHedgehog-Genesis",
         state="GreenHillZone.Act3",
@@ -40,7 +41,7 @@ environments = [retro_airstrike, retro_sonic, parallel_retro]
 
 
 @pytest.fixture(params=environments, scope="class")
-def env(request) -> Union[RetroEnv, ParallelEnv]:
+def env(request) -> RetroEnv | ParallelEnv:
     env_ = request.param()
     if env_.delay_setup and env_.gym_env is None:
         env_.setup()
@@ -63,3 +64,7 @@ class TestRetro:
         new_env = env.clone()
         del env
         new_env.reset()
+
+
+class TestPlangymRetro(api_tests.TestPlangymEnv):
+    pass

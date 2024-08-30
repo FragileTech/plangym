@@ -1,4 +1,5 @@
-from gym.wrappers import TimeLimit
+import numpy as np
+from gymnasium.wrappers import TimeLimit
 import numpy
 import pytest
 
@@ -9,7 +10,7 @@ from tests import SKIP_ATARI_TESTS
 
 if SKIP_ATARI_TESTS:
     pytest.skip("Atari not installed, skipping", allow_module_level=True)
-from plangym.api_tests import (  # noqa: F401
+from plangym.api_tests import (
     batch_size,
     display,
     generate_test_cases,
@@ -34,9 +35,12 @@ def env(request) -> AtariEnv:
 
 class TestAtariEnv:
     def test_ale_to_ram(self, env):
+        _ = env.reset()
         ram = ale_to_ram(env.ale)
+        env_ram = env.get_ram()
         assert isinstance(ram, numpy.ndarray)
-        assert (ram == env.get_ram()).all()
+        assert ram.shape == env_ram.shape
+        assert (ram == env_ram).all()
 
     def test_get_image(self):
         env = qbert_ram()
@@ -45,4 +49,4 @@ class TestAtariEnv:
 
     def test_n_actions(self, env):
         n_actions = env.n_actions
-        assert isinstance(n_actions, int)
+        assert isinstance(n_actions, int | np.int64)

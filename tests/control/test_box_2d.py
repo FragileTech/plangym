@@ -1,9 +1,9 @@
-from gym.wrappers import TimeLimit
+from gymnasium.wrappers import TimeLimit
 import pytest
 
 
 pytest.importorskip("Box2D")
-from plangym.api_tests import (  # noqa: F401
+from src.plangym.api_tests import (
     batch_size,
     display,
     generate_test_cases,
