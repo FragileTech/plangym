@@ -51,6 +51,23 @@ test = [
     "tomli>=1.2.3",
     "hypothesis>=6.24.6"
 ]
+docs = [
+    "sphinx",
+    "linkify-it-py",
+    "myst-parser",
+    "myst-nb",
+    "ruyaml",
+    "sphinx-autoapi",
+    "pydata-sphinx-theme",
+    "sphinx-autodoc2",
+    "sphinxcontrib-mermaid",
+    "sphinx_book_theme",
+    "sphinx_rtd_theme",
+    "jupyter-cache",
+    "sphinx-copybutton",
+    "sphinxext-opengraph",
+    "sphinxcontrib-bibtex",
+]
 
 [build-system]
 requires = ["hatchling"]
