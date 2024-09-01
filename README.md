@@ -32,7 +32,7 @@ Plangym currently supports all the following environments:
 ```python
 import plangym
 env = plangym.make(name="CartPole-v0")
-state, obs = env.reset()
+state, obs, info = env.reset()
 
 state = state.copy()
 action = env.action_space.sample()
@@ -46,7 +46,7 @@ new_state, observ, reward, end, truncated, info = data
 ```python
 import plangym
 env = plangym.make(name="CartPole-v0")
-state, obs = env.reset()
+state, obs, info = env.reset()
 
 states = [state.copy() for _ in range(10)]
 actions = [env.action_space.sample() for _ in range(10)]
@@ -62,7 +62,7 @@ new_states, observs, rewards, ends, truncateds, infos = data
 import plangym
 env = plangym.make(name="MsPacman-v0", n_workers=2)
 
-state, obs = env.reset()
+state, obs, info = env.reset()
 
 states = [state.copy() for _ in range(10)]
 actions = [env.action_space.sample() for _ in range(10)]
