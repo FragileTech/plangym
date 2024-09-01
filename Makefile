@@ -4,22 +4,10 @@ PROJECT = plangym
 n ?= auto
 DOCKER_ORG = fragiletech
 DOCKER_TAG ?= ${PROJECT}
-ROM_FILE ?= "uncompressed ROMs.zip"
+ROM_FILE ?= "uncompressed_ROMs.zip"
 ROM_PASSWORD ?= "NO_PASSWORD"
 VERSION ?= latest
 MUJOCO_PATH?=~/.mujoco
-
-.POSIX:
-style:
-	black .
-	isort .
-
-.POSIX:
-check:
-	!(grep -R /tmp tests)
-	flakehell lint ${PROJECT}
-	pylint ${PROJECT}
-	black --check ${PROJECT}
 
 .PHONY: install-mujoco
 install-mujoco:
@@ -41,51 +29,6 @@ endif
 install-envs:
 	make -f Makefile.docker install-env-deps
 	make install-mujoco
-
-.PHONY: test-parallel
-test-parallel:
-	find . -name "*.pyc" -delete
-	DISABLE_RAY=True pytest --doctest-modules -n $n -s -o log_cli=true -o log_cli_level=info
-
-.PHONY: test-ray
-test-ray:
-	find . -name "*.pyc" -delete
-	pytest tests/vectorization/test_ray.py -n 1 -s -o log_cli=true -o log_cli_level=info
-
-.PHONY: doctest
-doctest:
-	DISABLE_RAY=True xvfb-run -s "-screen 0 1400x900x24" pytest plangym --doctest-modules -n $n -s -o log_cli=true -o log_cli_level=info
-
-.PHONY: test
-test:
-	find . -name "*.pyc" -delete
-	PYVIRTUALDISPLAY_DISPLAYFD=0 SKIP_CLASSIC_CONTROL=1 xvfb-run -s "-screen 0 1400x900x24" pytest -n auto -s -o log_cli=true -o log_cli_level=info tests
-	PYVIRTUALDISPLAY_DISPLAYFD=0 xvfb-run -s "-screen 0 1400x900x24" pytest -s -o log_cli=true -o log_cli_level=info tests/control/test_classic_control.py
-
-.PHONY: run-codecov-test
-run-codecov-test:
-	find . -name "*.pyc" -delete
-	DISABLE_RAY=True pytest --doctest-modules -n $n -s -o log_cli=true -o log_cli_level=info --cov=./ --cov-report=xml --cov-config=pyproject.toml
-	pytest tests/vectorization/test_ray.py -n 1 -s -o log_cli=true -o log_cli_level=info --cov-append --cov=./ --cov-report=xml --cov-config=pyproject.toml
-
-.PHONY: test-codecov
-test-codecov:
-	xvfb-run -s "-screen 0 1400x900x24" make run-codecov-test
-
-.PHONY: pipenv-install
-pipenv-install:
-	rm -rf *.egg-info && rm -rf build && rm -rf __pycache__
-	rm -f Pipfile && rm -f Pipfile.lock
-	pipenv install --dev -r requirements-test.txt
-	pipenv install --pre --dev -r requirements-lint.txt
-	pipenv install -r requirements.txt
-	pipenv install -e .
-	pipenv lock
-
-.PHONY: pipenv-test
-pipenv-test:
-	find -name "*.pyc" -delete
-	pipenv run pytest -s
 
 .PHONY: docker-shell
 docker-shell:
