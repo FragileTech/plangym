@@ -2,10 +2,12 @@ import os
 import sys
 import zipfile
 import logging
+import flogging
 
 import retro.data
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+flogging.setup()
+logger = logging.getLogger("import-roms")
 
 
 def _check_zipfile(f, process_f):
@@ -38,11 +40,11 @@ def main():
         ".pce": "PCEngine",
     }
     EMU_EXTENSIONS.update(emu_extensions)
-    paths = sys.argv[1:] or ["."]
-    logging.info(f"Importing ROMs from: {paths}")
-    logging.info("Fetching known hashes")
+    paths = sys.argv[1:] or [os.getcwd()]
+    logger.info(f"Importing ROMs from: {paths}")
+    logger.info("Fetching known hashes")
     known_hashes = retro.data.get_known_hashes()
-    logging.info(f"Found {len(known_hashes)} known hashes")
+    logger.info(f"Found {len(known_hashes)} known hashes")
     imported_games = 0
 
     def save_if_matches(filename, f):
@@ -60,12 +62,14 @@ def main():
             with open(rompath, "wb") as file:  # noqa: FURB103
                 file.write(data)
             imported_games += 1
-            logging.info(f"Imported game: {game} to {rompath}")
+            logger.info(f"Imported game: {game}")
+            logger.debug(f"to {rompath}")
 
     for path in paths:  # noqa: PLR1702
+        logger.info(f"Processing path: {path}")
         for root, dirs, files in os.walk(path):
             for filename in files:
-                logging.info(f"Processing file: {root}/{filename}")
+                logger.debug(f"Processing file: {root}/{filename}")
                 filepath = os.path.join(root, filename)  # noqa: PTH118
                 with open(filepath, "rb") as f:
                     _root, ext = os.path.splitext(filename)  # noqa: PTH122
@@ -73,10 +77,10 @@ def main():
                         try:
                             _check_zipfile(f, save_if_matches)
                         except (zipfile.BadZipFile, RuntimeError, OSError):
-                            logging.error(f"Failed to process zip file: {filepath}")
+                            logger.warning(f"Failed to process zip file: {filepath}")
                     else:
                         save_if_matches(filename, f)
-    logging.info(f"Total imported games: {imported_games}")
+    logger.info(f"Total imported games: {imported_games}")
 
 
 if __name__ == "__main__":

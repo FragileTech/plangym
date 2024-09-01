@@ -129,6 +129,8 @@ fastjsonschema==2.20.0
     # via nbformat
 filelock==3.15.4
     # via ray
+flogging==0.0.22
+    # via plangym
 fqdn==1.5.1
     # via jsonschema
 frozenlist==1.4.1
@@ -576,6 +578,8 @@ websocket-client==1.8.0
     # via jupyter-server
 wheel==0.44.0
     # via sphinx-togglebutton
+xxhash==3.5.0
+    # via flogging
 zipp==3.20.1
     # via etils
     # via importlib-metadata
