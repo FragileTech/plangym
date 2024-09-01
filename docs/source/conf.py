@@ -69,10 +69,10 @@ autodoc_typehints = "description"
 autodoc_mock_imports = ["ray"]
 # Autoapi settings
 autoapi_type = "python"
-autoapi_dirs = ["../../plangym"]
+autoapi_dirs = ["../../src/plangym"]
 autoapi_add_toctree_entry = True
 # Make use of custom templates
-autoapi_template_dir = "_autoapi_templates"
+# autoapi_template_dir = "_autoapi_templates"
 exclude_patterns.append("_autoapi_templates/index.rst")
 
 # Ignore sphinx-autoapi warnings on multiple target description
