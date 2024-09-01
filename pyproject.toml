@@ -65,6 +65,7 @@ docs = [
     "sphinx_rtd_theme",
     "jupyter-cache",
     "sphinx-copybutton",
+    "sphinx-togglebutton",
     "sphinxext-opengraph",
     "sphinxcontrib-bibtex",
 ]
@@ -90,8 +91,10 @@ import-roms = { cmd = "python3 src/plangym/scripts/import_retro_roms.py" }
 "test:parallel" = { cmd = "pytest -n auto -s -o log_cli=true -o log_cli_level=info tests", env-file = ".multicore.env" }
 "test:singlecore" = { cmd = "pytest -s -o log_cli=true -o log_cli_level=info tests/control/test_classic_control.py", env-file = ".onecore.env" }
 "test:doctest" = { cmd = "pytest --doctest-modules -n 0 -s -o log_cli=true -o log_cli_level=info src", env-file = ".multicore.env" }
-"codecov:parallel" = { cmd = "pytest -n auto -s -o log_cli=true -o log_cli_level=info --cov=./ --cov-report=xml --cov-config=pyproject.toml tests", env-file = ".multicore.env" }
+"codecov:parallel" = { cmd = "pytest -n auto -s -o log_cli=true -o log_cli_level=info --cov=./ --cov-report=xml:coverage_parallel.xml --cov-config=pyproject.toml tests", env-file = ".multicore.env" }
 "codecov:singlecore" = { cmd = "pytest --doctest-modules -s -o log_cli=true -o log_cli_level=info --cov=./ --cov-report=xml --cov-config=pyproject.toml tests/control/test_classic_control.py", env-file = ".onecore.env" }
+build-docs = { cmd = "sphinx-build -b html docs/source docs/build"}
+serve-docs = { cmd = "python3 -m http.server --directory docs/build" }
 
 [tool.ruff]
 # Assume Python 3.10

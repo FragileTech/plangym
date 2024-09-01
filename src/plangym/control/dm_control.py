@@ -47,6 +47,7 @@ class DMControlEnv(PlangymEnv):
         render_mode="rgb_array",
         obs_type: str | None = None,
         remove_time_limit=None,  # noqa: ARG002
+        return_image: bool = False,
     ):
         """Initialize a :class:`DMControlEnv`.
 
@@ -69,6 +70,7 @@ class DMControlEnv(PlangymEnv):
             render_mode: None|human|rgb_array.
             remove_time_limit: Ignored.
             obs_type: One of {"coords", "rgb", "grayscale"}.
+            return_image: If ``True``, add a "rgb" key to the observation dict.
 
         """
         self._visualize_reward = visualize_reward
@@ -84,6 +86,7 @@ class DMControlEnv(PlangymEnv):
             autoreset=autoreset,
             render_mode=render_mode,
             obs_type=obs_type,
+            return_image=return_image,
         )
 
     @property
