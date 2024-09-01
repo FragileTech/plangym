@@ -35,7 +35,7 @@ ifeq (${ROM_PASSWORD}, "NO_PASSWORD")
 else
 	unzip -o -P ${ROM_PASSWORD} ${ROM_FILE}
 endif
-	python3 import_retro_roms.py
+	python3 src/plangym/scripts/import_retro_roms.py
 
 .PHONY: install-envs
 install-envs:

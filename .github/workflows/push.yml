@@ -175,7 +175,7 @@ jobs:
           rye lock --all-features
           uv pip install -r requirements.lock
           uv pip install dist/*.whl
-          ROM_PASSWORD=${{ secrets.ROM_PASSWORD }} python import_retro_roms.py
+          ROM_PASSWORD=${{ secrets.ROM_PASSWORD }} python -m plangym.scripts.import_retro_roms
           
 
       - name: Test package
