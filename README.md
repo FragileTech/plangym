@@ -141,6 +141,7 @@ an [issue](https://github.com/FragileTech/plangym/issues).
 #### Step 1: Install necessary development tools and libraries
 sudo apt-get update
 sudo apt-get install build-essential clang
+sudo apt-get install libstdc++-10-dev
 
 #### Step 2: Verify the compiler and include paths
 #### Ensure you are using g++ instead of clang++ if clang++ is not properly configured
