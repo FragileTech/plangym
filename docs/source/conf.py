@@ -59,20 +59,21 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.autosectionlabel",
     "sphinx.ext.autodoc.typehints",
+    "sphinx_book_theme",
     "myst_nb",
-    # "myst_parser",
-    # "sphinx.ext.githubpages",
-    # "m2r",
+    "sphinxcontrib.mermaid",
+    "sphinx.ext.githubpages",
+    "sphinx_copybutton",
+    "sphinx_togglebutton",
 ]
 suppress_warnings = ["image.nonlocal_uri"]
 autodoc_typehints = "description"
-autodoc_mock_imports = ["ray"]
 # Autoapi settings
 autoapi_type = "python"
 autoapi_dirs = ["../../src/plangym"]
 autoapi_add_toctree_entry = True
 # Make use of custom templates
-# autoapi_template_dir = "_autoapi_templates"
+autoapi_template_dir = "_autoapi_templates"
 exclude_patterns.append("_autoapi_templates/index.rst")
 
 # Ignore sphinx-autoapi warnings on multiple target description
@@ -105,7 +106,25 @@ exclude_patterns = []
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = "sphinx_rtd_theme"
+html_title = ""
+html_theme = "sphinx_book_theme"
+# html_logo = "_static/logo-wide.svg"
+# html_favicon = "_static/logo-square.svg"
+html_theme_options = {
+    "github_url": "https://github.com/poolsideai/fragile",
+    "repository_url": "https://github.com/poolsideai/fragile",
+    "repository_branch": "gh-pages",
+    "home_page_in_toc": True,
+    "path_to_docs": "docs",
+    "show_navbar_depth": 1,
+    "use_edit_page_button": True,
+    "use_repository_button": True,
+    "use_download_button": True,
+    "launch_buttons": {
+        "binderhub_url": "https://mybinder.org",
+        "notebook_interface": "classic",
+    },
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -113,10 +132,8 @@ html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
 
 # myst_parser options
+nb_execution_mode = "off"
 myst_heading_anchors = 2
-myst_number_code_blocks = ["python"]
-# myst_update_mathjax = False
-autosectionlabel_prefix_document = True
 myst_enable_extensions = [
     "amsmath",
     "colon_fence",
