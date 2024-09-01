@@ -137,9 +137,9 @@ jobs:
       - name: Install build dependencies
         run: |
           set -x
+          pip install uv
           rye install bump2version
           rye install twine
-          rye install uv
 
       - name: Create unique version for test.pypi
         run: |
@@ -166,6 +166,8 @@ jobs:
 #          skip-existing: true
 
       - name: Install dependencies
+        env:
+          UV_SYSTEM_PYTHON: 1
         run: |
           set -x
           sudo apt-get install -y xvfb
@@ -173,16 +175,17 @@ jobs:
           rye lock --all-features
           uv pip install -r requirements.lock
           uv pip install dist/*.whl
-          ROM_PASSWORD=${{ secrets.ROM_PASSWORD }} uv run import_retro_roms.py
+          ROM_PASSWORD=${{ secrets.ROM_PASSWORD }} python -m plangym.scripts.import_retro_roms
           
 
       - name: Test package
+        env:
+          UV_SYSTEM_PYTHON: 1
         run: |
           set -x
           rm -rf $PROJECT_DIR
           find . -name "*.pyc" -delete
-          PYVIRTUALDISPLAY_DISPLAYFD=0 SKIP_CLASSIC_CONTROL=1 xvfb-run -s "-screen 0 1400x900x24" uv run pytest -n auto -s -o log_cli=true -o log_cli_level=info tests
-          PYVIRTUALDISPLAY_DISPLAYFD=0 xvfb-run -s "-screen 0 1400x900x24" uv run pytest -s -o log_cli=true -o log_cli_level=info tests/control/test_classic_control.py
+          make test
 
   bump-version:
     name: Bump package version
