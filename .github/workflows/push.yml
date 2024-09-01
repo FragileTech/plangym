@@ -90,6 +90,7 @@ jobs:
       uses: codecov/codecov-action@v4
       with:
         fail_ci_if_error: false # optional (default = false)
+        files: ./coverage.xml,./coverage_parallel.xml
         flags: unittests # optional
         name: codecov-umbrella # optional
         token: ${{ secrets.CODECOV_TOKEN }} # required
