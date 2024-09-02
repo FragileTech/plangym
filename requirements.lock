@@ -79,7 +79,6 @@ click==8.1.7
     # via ray
 cloudpickle==3.0.0
     # via fragile-gym
-    # via gym
     # via gymnasium
 colorama==0.4.6 ; sys_platform == 'win32' or platform_system == 'Windows'
     # via click
@@ -122,7 +121,7 @@ exceptiongroup==1.2.2 ; python_full_version < '3.11'
     # via pytest
 execnet==2.1.1
     # via pytest-xdist
-executing==2.0.1
+executing==2.1.0
     # via stack-data
 farama-notifications==0.0.4
     # via gymnasium
@@ -134,7 +133,12 @@ flogging==0.0.22
     # via plangym
 fqdn==1.5.1
     # via jsonschema
-fragile-gym==1.21.0
+fragile-gym==1.21.1
+    # via fragile-nes-py
+    # via plangym
+fragile-gym-super-mario-bros==7.4.0
+    # via plangym
+fragile-nes-py==10.0.1
     # via plangym
 frozenlist==1.4.1
     # via aiosignal
@@ -146,12 +150,6 @@ glfw==2.7.0
     # via mujoco
 greenlet==3.0.3 ; (python_full_version < '3.13' and platform_machine == 'AMD64') or (python_full_version < '3.13' and platform_machine == 'WIN32') or (python_full_version < '3.13' and platform_machine == 'aarch64') or (python_full_version < '3.13' and platform_machine == 'amd64') or (python_full_version < '3.13' and platform_machine == 'ppc64le') or (python_full_version < '3.13' and platform_machine == 'win32') or (python_full_version < '3.13' and platform_machine == 'x86_64')
     # via sqlalchemy
-# gym==0.26.2 (excluded)
-    # via nes-py
-gym-notices==0.0.8
-    # via gym
-gym-super-mario-bros==7.3.2
-    # via plangym
 gymnasium==0.29.1
     # via plangym
     # via shimmy
@@ -185,6 +183,7 @@ ipykernel==6.29.5
     # via jupyterlab
     # via myst-nb
 ipython==8.27.0
+    # via fragile-gym
     # via ipykernel
     # via myst-nb
 isoduration==20.11.0
@@ -287,9 +286,6 @@ nbformat==5.10.4
     # via myst-nb
     # via nbclient
     # via nbconvert
-nes-py @ git+https://github.com/FragileTech/nes-py@1ca4da5a97ac8987874f214054ccbd08e102a899
-    # via gym-super-mario-bros
-    # via plangym
 nest-asyncio==1.6.0
     # via ipykernel
 notebook-shim==0.2.4
@@ -299,12 +295,11 @@ numpy==2.1.0
     # via dm-control
     # via dm-env
     # via fragile-gym
-    # via gym
+    # via fragile-nes-py
     # via gymnasium
     # via imageio
     # via labmaze
     # via mujoco
-    # via nes-py
     # via opencv-python
     # via plangym
     # via scipy
@@ -366,7 +361,7 @@ pygame==2.6.0
     # via gymnasium
     # via plangym
 pyglet==1.5.11
-    # via nes-py
+    # via fragile-nes-py
     # via plangym
     # via stable-retro
 pygments==2.18.0
@@ -444,7 +439,7 @@ scipy==1.14.1
     # via dm-control
 send2trash==1.8.3
     # via jupyter-server
-setuptools==74.0.0
+setuptools==74.1.0
     # via dm-control
     # via jupyterlab
     # via labmaze
@@ -479,7 +474,7 @@ sphinx==8.0.2
     # via sphinx-togglebutton
     # via sphinxcontrib-bibtex
     # via sphinxext-opengraph
-sphinx-autoapi==3.3.0
+sphinx-autoapi==3.3.1
     # via plangym
 sphinx-autodoc2==0.5.0
     # via plangym
@@ -538,7 +533,7 @@ tornado==6.4.1
 tqdm==4.66.5
     # via autorom
     # via dm-control
-    # via nes-py
+    # via fragile-nes-py
 traitlets==5.14.3
     # via comm
     # via ipykernel

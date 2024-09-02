@@ -33,16 +33,15 @@ dependencies = [
 [project.optional-dependencies]
 atari = ["ale-py", "gymnasium[accept-rom-license,atari]>=0.29.1, == 0.*"]
 nes = [
-    # "gym[accept-rom-license] @ git+https://github.com/FragileTech/gym.git",
     "fragile-gym[accept-rom-license]",
-    "nes-py @ git+https://github.com/FragileTech/nes-py",  # Requires clang, build-essential
-    "gym-super-mario-bros==7.3.2",
+    "fragile-nes-py>=10.0.1",  # Requires clang, build-essential
+    "fragile-gym-super-mario-bros",
 ]
 classic-control = ["gymnasium[classic_control]>=0.29.1, == 0.*", "pygame>=2.6.0"]
 ray = ["ray>=2.35.0"]
 dm_control = ["mujoco>=3.2.2", "dm-control>=1.0.22"]
 retro = [
-    "stable-retro; sys_platform != 'darwin'",
+    "stable-retro==0.9.2; sys_platform != 'darwin'",
     "stable-retro==0.9.1; sys_platform == 'darwin'"
 ]
 jupyter = ["jupyterlab>=3.2.0"]
@@ -86,14 +85,14 @@ path = "src/plangym/version.py"
 
 [tool.rye]
 dev-dependencies = ["ruff"]
-excluded-dependencies = ["gym"]
+#excluded-dependencies = ["gym"]
 universal = true
 
 [tool.rye.scripts]
 style = { chain = ["ruff check --fix-only  --unsafe-fixes tests src", "ruff format tests src"] }
 check = { chain = ["ruff check --diff tests src", "ruff format --diff tests src"]}  #,"mypy src tests" ] }
 test = { chain = ["test:doctest", "test:parallel", "test:singlecore"] }
-codecov = { chain = ["codecov:parallel", "codecov:singlecore"] }
+codecov = { chain = ["codecov:singlecore", "codecov:parallel"] }
 import-roms = { cmd = "python3 src/plangym/scripts/import_retro_roms.py" }
 "test:parallel" = { cmd = "pytest -n auto -s -o log_cli=true -o log_cli_level=info tests", env-file = ".multicore.env" }
 "test:singlecore" = { cmd = "pytest -s -o log_cli=true -o log_cli_level=info tests/control/test_classic_control.py", env-file = ".onecore.env" }
