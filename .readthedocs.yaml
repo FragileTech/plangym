@@ -15,6 +15,7 @@ build:
     # golang: "1.20"
   apt_packages:
     - build-essential
+    - libglu1-mesa
     - xvfb
     - clang
     - swig

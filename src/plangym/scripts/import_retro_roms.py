@@ -3,6 +3,7 @@ import sys
 import zipfile
 import logging
 import flogging
+from pathlib import Path
 
 import retro.data
 
@@ -40,7 +41,7 @@ def main():
         ".pce": "PCEngine",
     }
     EMU_EXTENSIONS.update(emu_extensions)
-    paths = sys.argv[1:] or [os.getcwd()]
+    paths = sys.argv[1:] or [Path.cwd()]
     logger.info(f"Importing ROMs from: {paths}")
     logger.info("Fetching known hashes")
     known_hashes = retro.data.get_known_hashes()

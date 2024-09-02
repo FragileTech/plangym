@@ -47,11 +47,12 @@ jobs:
 
   pytest:
     name: Run Pytest
-    runs-on: ubuntu-latest
     if: "!contains(github.event.head_commit.message, 'Bump version')"
     strategy:
       matrix:
-        python-version: ['3.10']
+        python-version: [ '3.10' ]
+        os: [ 'ubuntu-latest', 'macos-latest' ]
+    runs-on: ${{ matrix.os }}
     steps:
     - name: actions/checkout
       uses: actions/checkout@v3
@@ -64,29 +65,64 @@ jobs:
       uses: eifinger/setup-rye@v4
       with:
         enable-cache: true
-        cache-prefix: ubuntu-latest-rye-test-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
+        cache-prefix: ${{ matrix.os }}-latest-rye-test-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
     - name: actions/cache
       uses: actions/cache@v3
       with:
         path: ${{ env.LOCAL_CACHE }}
-        key: ubuntu-latest-system-test-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
-        restore-keys: ubuntu-latest-system-test
-    - name: Install test and package dependencies
+        key: ${{ matrix.os }}-latest-system-test-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
+        restore-keys: ${{ matrix.os }}-latest-system-test-${{ matrix.python-version }}
+
+    - name: Install Ubuntu test and package dependencies
+      if: ${{ matrix.os == 'ubuntu-latest' }}
       run: |
         set -x
-        sudo apt-get install -y xvfb -y
-        sudo MUJOCO_PATH=/home/runner/.mujoco/ make install-envs
+        sudo apt-get install -y xvfb libglu1-mesa
         rye pin --relaxed cpython@${{ matrix.python-version }}
         rye sync --all-features
-        ROM_PASSWORD=${{ secrets.ROM_PASSWORD }} make import-roms
+        ROM_PASSWORD=${{ secrets.ROM_PASSWORD }} rye run import-roms
 
-    - name: Test with pytest
+    - name: Install MacOS test and package dependencies
+      if: ${{ matrix.os == 'macos-latest' }}
+      run: |
+        set -x
+        brew install --cask xquartz
+        brew install swig libzip qt5 capnp
+        chmod +x install-lua-macos.sh
+        sudo ./install-lua-macos.sh
+        # https://docs.github.com/en/actions/learn-github-actions/workflow-commands-for-github-actions#adding-a-system-path
+        echo "/opt/X11/bin" >> $GITHUB_PATH  
+        # https://github.com/ponty/PyVirtualDisplay/issues/42
+        if [ ! -d /tmp/.X11-unix ]; then
+          mkdir /tmp/.X11-unix
+        fi
+        sudo chmod 1777 /tmp/.X11-unix
+        sudo chown root /tmp/.X11-unix
+        echo 'export PATH="/opt/homebrew/opt/qt@5/bin:$PATH"' >> ~/.zshrc
+        export SDKROOT=$(xcrun --sdk macosx --show-sdk-path)
+        rye pin --relaxed cpython@${{ matrix.python-version }}
+        rye sync --all-features
+        # rye sync --features=ray,box_2d,atari,classic-control,test
+        # Fix a bug in retro
+        sed -i '' 's/VERSION\.txt/VERSION/g' /Users/runner/work/plangym/plangym/.venv/lib/python3.10/site-packages/retro/__init__.py
+        echo "0.9.1" > /Users/runner/work/plangym/plangym/.venv/lib/python3.10/site-packages/retro/VERSION
+        ROM_PASSWORD=${{ secrets.ROM_PASSWORD }} rye run import-roms
+
+    - name: Run Pytest on MacOS
+      if: ${{ matrix.os == 'macos-latest' }}
+      run: |
+        set -x
+        SKIP_RENDER=True rye run pytest tests/control tests/test_core.py
+
+    - name: Run code coverage on Ubuntu
+      if: ${{ matrix.os == 'ubuntu-latest' }}
       run: |
         set -x
         xvfb-run -s "-screen 0 1400x900x24" rye run codecov
 
     - name: Upload coverage report
-      if: ${{ matrix.python-version=='3.10' }}
+ #     if: ${{ matrix.python-version == '3.10' && matrix.os == 'ubuntu-latest' }}
+      if: ${{ matrix.os == 'ubuntu-latest' }}
       uses: codecov/codecov-action@v4
       with:
         fail_ci_if_error: false # optional (default = false)
