@@ -23,6 +23,7 @@ classifiers = [
 dependencies = [
     "numpy",
     "pillow",
+    "fragile-gym",
     "opencv-python>=4.10.0.84",
     "pyglet==1.5.11",
     "pyvirtualdisplay>=3.0",
@@ -32,14 +33,18 @@ dependencies = [
 [project.optional-dependencies]
 atari = ["ale-py", "gymnasium[accept-rom-license,atari]>=0.29.1, == 0.*"]
 nes = [
-    "gym[accept-rom-license] @ git+https://github.com/FragileTech/gym.git",
+    # "gym[accept-rom-license] @ git+https://github.com/FragileTech/gym.git",
+    "fragile-gym[accept-rom-license]",
     "nes-py @ git+https://github.com/FragileTech/nes-py",  # Requires clang, build-essential
     "gym-super-mario-bros==7.3.2",
 ]
 classic-control = ["gymnasium[classic_control]>=0.29.1, == 0.*", "pygame>=2.6.0"]
 ray = ["ray>=2.35.0"]
-dm_control = ["dm-control>=1.0.22", "gym @ git+https://github.com/FragileTech/gym.git"]
-retro = ["stable_retro"]
+dm_control = ["mujoco>=3.2.2", "dm-control>=1.0.22"]
+retro = [
+    "stable-retro; sys_platform != 'darwin'",
+    "stable-retro==0.9.1; sys_platform == 'darwin'"
+]
 jupyter = ["jupyterlab>=3.2.0"]
 box_2d = ["box2d-py==2.3.5"]
 test = [
@@ -81,6 +86,7 @@ path = "src/plangym/version.py"
 
 [tool.rye]
 dev-dependencies = ["ruff"]
+excluded-dependencies = ["gym"]
 universal = true
 
 [tool.rye.scripts]
