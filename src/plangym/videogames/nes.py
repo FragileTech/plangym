@@ -66,11 +66,11 @@ class NESWrapper:
         if name == "_wrapped":
             super().__setattr__(name, value)
         else:
-            setattr(self._wrapped, name, value)
+            setattr(self._wrapped, name, value)  # pragma: no cover
 
     def __delattr__(self, name):
         """Delete an attribute from the wrapped object."""
-        delattr(self._wrapped, name)
+        delattr(self._wrapped, name)  # pragma: no cover
 
     def step(
         self, action: ActType
@@ -299,7 +299,7 @@ class MarioEnv(NesEnv):
 
     def init_gym_env(self) -> gym.Env:
         """Initialize the :class:`NESEnv`` instance that the current class is wrapping."""
-        from plangym.videogames.super_mario_gym.registration import make  # noqa: PLC0415
+        from gym_super_mario_bros import make  # noqa: PLC0415
         from gym_super_mario_bros.actions import COMPLEX_MOVEMENT  # noqa: PLC0415
 
         env = make(self.name)

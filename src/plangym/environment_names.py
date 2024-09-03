@@ -29,7 +29,7 @@ try:
     from dm_control import suite
 
     DM_CONTROL = list(suite.ALL_TASKS)
-except (ImportError, OSError):
+except (ImportError, OSError):  # pragma: no cover
     DM_CONTROL = []
 
 
