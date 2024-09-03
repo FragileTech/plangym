@@ -507,7 +507,9 @@ sphinxext-opengraph==0.9.1
     # via plangym
 sqlalchemy==2.0.32
     # via jupyter-cache
-stable-retro==0.9.1
+stable-retro==0.9.1 ; sys_platform == 'darwin'
+    # via plangym
+stable-retro==0.9.2 ; sys_platform != 'darwin'
     # via plangym
 stack-data==0.6.3
     # via ipython
