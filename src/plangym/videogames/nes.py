@@ -299,7 +299,7 @@ class MarioEnv(NesEnv):
 
     def init_gym_env(self) -> gym.Env:
         """Initialize the :class:`NESEnv`` instance that the current class is wrapping."""
-        from plangym.videogames.super_mario_gym.registration import make  # noqa: PLC0415
+        from gym_super_mario_bros import make  # noqa: PLC0415
         from gym_super_mario_bros.actions import COMPLEX_MOVEMENT  # noqa: PLC0415
 
         env = make(self.name)

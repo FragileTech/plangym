@@ -35,7 +35,7 @@ atari = ["ale-py", "gymnasium[accept-rom-license,atari]>=0.29.1, == 0.*"]
 nes = [
     "fragile-gym[accept-rom-license]",
     "fragile-nes-py>=10.0.1",  # Requires clang, build-essential
-    "fragile-gym-super-mario-bros",
+    "fragile-gym-super-mario-bros>=7.4.1",
 ]
 classic-control = ["gymnasium[classic_control]>=0.29.1, == 0.*", "pygame>=2.6.0"]
 ray = ["ray>=2.35.0"]
@@ -237,4 +237,4 @@ exclude_lines =["no cover",
     'raise NotImplementedError',
     'if __name__ == "__main__":']
 ignore_errors = true
-omit = ["tests/*"]
+omit = ["tests/*", "src/plangym/scripts/*"]
