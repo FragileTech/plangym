@@ -66,11 +66,11 @@ class NESWrapper:
         if name == "_wrapped":
             super().__setattr__(name, value)
         else:
-            setattr(self._wrapped, name, value)
+            setattr(self._wrapped, name, value)  # pragma: no cover
 
     def __delattr__(self, name):
         """Delete an attribute from the wrapped object."""
-        delattr(self._wrapped, name)
+        delattr(self._wrapped, name)  # pragma: no cover
 
     def step(
         self, action: ActType
