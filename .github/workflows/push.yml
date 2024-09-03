@@ -263,34 +263,41 @@ jobs:
           login: "${{ env.bot_name }}"
           token: "${{ secrets.BOT_AUTH_TOKEN }}"
 
-#  release-package:
-#    name: Release PyPI package
-#    env:
-#      PYPI_PASS: ${{ secrets.PYPI_PASS }}
-#    if: "contains(github.event.head_commit.message, 'Bump version') && github.ref == 'refs/heads/master' && '$PYPI_PASS' != ''"
-#    runs-on: ubuntu-20.04
-#    steps:
-#      - name: actions/checkout
-#        uses: actions/checkout@v3
-#      - name: Set up Python 3.8
-#        uses: actions/setup-python@v3
-#        with:
-#          python-version: 3.8
-#      - name: Install dependencies
-#        run: |
-#          set -x
-#          python -m pip install -U pip
-#          python -m pip install -U setuptools twine wheel
-#
-#      - name: Build package
-#        run: |
-#          set -x
-#          python setup.py --version
-#          python setup.py bdist_wheel sdist --format=gztar
-#          twine check dist/*
-#
-#      - name: Publish package to PyPI
-#        uses: pypa/gh-action-pypi-publish@master
-#        with:
-#          user: __token__
-#          password: ${{ secrets.PYPI_PASS }}
+  release-package:
+    name: Release PyPI package
+    env:
+      PYPI_PASS: ${{ secrets.PYPI_PASS }}
+    if: "contains(github.event.head_commit.message, 'Bump version') && github.ref == 'refs/heads/master' && '$PYPI_PASS' != ''"
+    runs-on: ubuntu-latest
+    steps:
+      - name: actions/checkout
+        uses: actions/checkout@v3
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.10'
+      - name: Setup Rye
+        id: setup-rye
+        uses: eifinger/setup-rye@v4
+        with:
+          enable-cache: true
+          cache-prefix: ubuntu-latest-rye-release-3.10-${{ hashFiles('pyproject.toml') }}
+      - name: Install dependencies
+        run: |
+          set -x
+          rye install twine
+
+      - name: Build package
+        run: |
+          set -x
+          rye build --clean
+          twine check dist/*
+
+      - name: Publish package to PyPI
+        env:
+          PYPI_PASS: ${{ secrets.PYPI_PASS }}
+        if: "'$PYPI_PASS' != ''"
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_PASS }}
+          skip-existing: true
