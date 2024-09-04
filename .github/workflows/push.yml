@@ -78,7 +78,7 @@ jobs:
       if: ${{ matrix.os == 'ubuntu-latest' }}
       run: |
         set -x
-        sudo apt-get install -y xvfb libglu1-mesa
+        sudo apt-get install -y xvfb libglu1-mesa x11-utils
         rye pin --relaxed cpython@${{ matrix.python-version }}
         rye sync --all-features
         ROM_PASSWORD=${{ secrets.ROM_PASSWORD }} rye run import-roms
@@ -134,7 +134,7 @@ jobs:
       uses: codecov/codecov-action@v4
       with:
         fail_ci_if_error: false # optional (default = false)
-        files: ./coverage.xml,./coverage_parallel.xml
+        files: ./coverage.xml,./coverage_parallel_1.xml,./coverage_parallel_2.xml,./coverage_parallel_3.xml,./coverage_vectorization.xml
         flags: unittests # optional
         name: codecov-umbrella # optional
         token: ${{ secrets.CODECOV_TOKEN }} # required
@@ -215,7 +215,7 @@ jobs:
           UV_SYSTEM_PYTHON: 1
         run: |
           set -x
-          sudo apt-get install -y xvfb libglu1-mesa
+          sudo apt-get install -y xvfb libglu1-mesa x11-utils
           rye lock --all-features
           uv pip install -r requirements.lock
           uv pip install dist/*.whl
