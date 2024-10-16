@@ -70,16 +70,6 @@ class TestMontezumaPosLevel:
 
 
 class TestCustomMontezuma:
-    def test_make_pos(self, env):
-        assert isinstance(env.gym_env.make_pos(1000, env.gym_env.pos), MontezumaPosLevel)
-
-    def test_get_room(self):
-        env = CustomMontezuma()
-        env.get_room_xy(3)
-        env.get_room_from_xy(0, 3)
-        assert env.get_room_out_of_bounds(99, 99)
-        assert not env.get_room_out_of_bounds(0, 0)
-
     def test_pos_from_unproc_state(self):
         env = CustomMontezuma(obs_type="rgb")
         obs = env.reset()
@@ -104,8 +94,18 @@ class TestCustomMontezuma:
         tup = env.get_objects_from_pixels(room=0, obs=obs, old_objects=[])
         assert isinstance(tup, tuple)
 
+    def test_get_room_xy(self):
+        # Test cases for known rooms
+        assert CustomMontezuma.get_room_xy(0) == (3, 0)
+        assert CustomMontezuma.get_room_xy(23) == (8, 3)
+        assert CustomMontezuma.get_room_xy(10) == (3, 2)
 
-class TestMontezume(api_tests.TestPlanEnv):
+        # Test case for a room not in the pyramid
+        assert CustomMontezuma.get_room_xy(24) is None
+        assert CustomMontezuma.get_room_xy(-2) is None
+
+
+class TestMontezuma(api_tests.TestPlanEnv):
     @pytest.mark.parametrize("state", [None, True])
     @pytest.mark.parametrize("return_state", [None, True, False])
     def test_step(self, env, state, return_state, dt=1):
@@ -129,8 +129,6 @@ class TestMontezume(api_tests.TestPlanEnv):
                 curr_state = env.get_state()
                 curr_state, new_state = curr_state[1:], new_state[1:]
                 assert new_state.shape == curr_state.shape
-                # FIXME: We are not setting and getting the state properly
-                return
                 assert (new_state == curr_state).all(), (
                     f"original: {new_state[new_state != curr_state]} "
                     f"env: {curr_state[new_state != curr_state]}"
