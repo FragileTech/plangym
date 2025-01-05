@@ -6,8 +6,15 @@ import gymnasium as gym
 from gymnasium.spaces import Box
 from gymnasium.wrappers.time_limit import TimeLimit
 import numpy
-from PIL import Image
 from pyvirtualdisplay import Display
+import cv2
+
+try:
+    from PIL import Image
+
+    USE_PIL = True
+except ImportError:  # pragma: no cover
+    USE_PIL = False
 
 
 def get_display(visible=False, size=(400, 400), **kwargs):
@@ -59,7 +66,7 @@ def remove_time_limit(gym_env: gym.Env) -> gym.Env:
     return gym_env
 
 
-def process_frame(
+def process_frame_pil(
     frame: numpy.ndarray,
     width: int | None = None,
     height: int | None = None,
@@ -80,11 +87,68 @@ def process_frame(
         The resized frame that matches the provided width and height.
 
     """
+    mode = "L" if mode == "GRAY" else mode
     height = height or frame.shape[0]
     width = width or frame.shape[1]
     frame = Image.fromarray(frame)
     frame = frame.convert(mode).resize(size=(width, height))
     return numpy.array(frame)
+
+
+def process_frame_opencv(
+    frame: numpy.ndarray,
+    width: int | None = None,
+    height: int | None = None,
+    mode: str = "RGB",
+) -> numpy.ndarray:
+    """Resize an RGB frame to a specified shape and mode.
+
+    Use OpenCV to resize an RGB frame to a specified height and width \
+    or changing it to a different mode.
+
+    Args:
+        frame: Target numpy array representing the image that will be resized.
+        width: Width of the resized image.
+        height: Height of the resized image.
+        mode: Passed to cv2.cvtColor.
+
+    Returns:
+        The resized frame that matches the provided width and height.
+
+    """
+    height = height or frame.shape[0]
+    width = width or frame.shape[1]
+    frame = cv2.resize(frame, (width, height))
+    if mode in {"GRAY", "L"}:
+        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
+    elif mode == "BGR":
+        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+    return frame
+
+
+def process_frame(
+    frame: numpy.ndarray,
+    width: int | None = None,
+    height: int | None = None,
+    mode: str = "RGB",
+) -> numpy.ndarray:
+    """Resize an RGB frame to a specified shape and mode.
+
+    Use either PIL or OpenCV to resize an RGB frame to a specified height and width \
+    or changing it to a different mode.
+
+    Args:
+        frame: Target numpy array representing the image that will be resized.
+        width: Width of the resized image.
+        height: Height of the resized image.
+        mode: Passed to either Image.convert or cv2.cvtColor.
+
+    Returns:
+        The resized frame that matches the provided width and height.
+
+    """
+    func = process_frame_pil if USE_PIL else process_frame_opencv  # pragma: no cover
+    return func(frame, width, height, mode)
 
 
 class GrayScaleObservation(gym.ObservationWrapper, gym.utils.RecordConstructorArgs):

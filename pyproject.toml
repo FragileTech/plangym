@@ -22,7 +22,7 @@ classifiers = [
     ]
 dependencies = [
     "numpy",
-    "pillow",
+    "pillow; sys_platform != 'darwin'",
     "fragile-gym",
     "opencv-python>=4.10.0.84",
     "pyglet==1.5.11",
