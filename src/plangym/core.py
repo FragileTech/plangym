@@ -1,6 +1,7 @@
 """Plangym API implementation."""
 
 from abc import ABC
+from functools import cached_property
 from typing import Any, Callable, Iterable
 
 import gymnasium as gym
@@ -613,6 +614,11 @@ class PlangymEnv(PlanEnv):
         """Return True if the Environment can only be stepped for a limited number of times."""
         return self._remove_time_limit
 
+    @cached_property
+    def img_shape(self):
+        img = self.get_image()
+        return img.shape
+
     def setup(self):
         """Initialize the target :class:`gym.Env` instance.
 
@@ -701,15 +707,12 @@ class PlangymEnv(PlanEnv):
 
     def apply_reset(
         self,
-        return_state: bool = True,
-    ) -> numpy.ndarray | tuple[numpy.ndarray, numpy.ndarray]:
+    ) -> tuple[numpy.ndarray, dict[str, Any]]:
         """Restart the environment.
 
-        Args:
-            return_state: If ``True`` it will return the state of the environment.
-
-        Returns:
-            ``(state, obs)`` if ```return_state`` is ``True`` else return ``obs``.
+        Returns
+            ``(obs, info)``. If ```return_image`` is ``True``, the info dictionary contains an
+            ``'rgb'`` key with the corresponding image.
 
         """
         # FIXME: WTF this return_state thing?
@@ -720,6 +723,8 @@ class PlangymEnv(PlanEnv):
             obs, info = data
         else:
             obs, info = data, {}
+        if self.return_image:
+            info["rgb"] = self.get_image()
         return obs, info
 
     def apply_action(self, action):
