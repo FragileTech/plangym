@@ -107,6 +107,20 @@ class PlanEnv(ABC):
         """
         return self._return_image
 
+    @cached_property
+    def img_shape(self) -> tuple[int, ...] | None:
+        """Return the shape of the image returned by the environment.
+
+        If the environment does not return an image, it will return None. This also applies
+        to environments that throw an error when trying to get the image
+        (like when running in headless machines without a virtual display).
+        """
+        try:
+            img = self.get_image()
+            return img.shape
+        except Exception:
+            return None
+
     def get_image(self) -> None | numpy.ndarray:
         """Return a numpy array containing the rendered view of the environment.
 
@@ -564,7 +578,7 @@ class PlangymEnv(PlanEnv):
         return self._gym_env
 
     @property
-    def obs_shape(self) -> tuple[int, ...]:
+    def obs_shape(self) -> tuple[int, ...] | None:
         """Tuple containing the shape of the *observations* returned by the Environment."""
         if self.observation_space is None:
             return None
@@ -613,11 +627,6 @@ class PlangymEnv(PlanEnv):
     def remove_time_limit(self) -> bool:
         """Return True if the Environment can only be stepped for a limited number of times."""
         return self._remove_time_limit
-
-    @cached_property
-    def img_shape(self):
-        img = self.get_image()
-        return img.shape
 
     def setup(self):
         """Initialize the target :class:`gym.Env` instance.
