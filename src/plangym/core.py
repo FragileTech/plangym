@@ -1,6 +1,7 @@
 """Plangym API implementation."""
 
 from abc import ABC
+from functools import cached_property
 from typing import Any, Callable, Iterable
 
 import gymnasium as gym
@@ -105,6 +106,20 @@ class PlanEnv(ABC):
         that contains an RGB representation of the environment state.
         """
         return self._return_image
+
+    @cached_property
+    def img_shape(self) -> tuple[int, ...] | None:
+        """Return the shape of the image returned by the environment.
+
+        If the environment does not return an image, it will return None. This also applies
+        to environments that throw an error when trying to get the image
+        (like when running in headless machines without a virtual display).
+        """
+        try:
+            img = self.get_image()
+            return img.shape
+        except Exception:
+            return None
 
     def get_image(self) -> None | numpy.ndarray:
         """Return a numpy array containing the rendered view of the environment.
@@ -563,7 +578,7 @@ class PlangymEnv(PlanEnv):
         return self._gym_env
 
     @property
-    def obs_shape(self) -> tuple[int, ...]:
+    def obs_shape(self) -> tuple[int, ...] | None:
         """Tuple containing the shape of the *observations* returned by the Environment."""
         if self.observation_space is None:
             return None
@@ -701,15 +716,12 @@ class PlangymEnv(PlanEnv):
 
     def apply_reset(
         self,
-        return_state: bool = True,
-    ) -> numpy.ndarray | tuple[numpy.ndarray, numpy.ndarray]:
+    ) -> tuple[numpy.ndarray, dict[str, Any]]:
         """Restart the environment.
 
-        Args:
-            return_state: If ``True`` it will return the state of the environment.
-
-        Returns:
-            ``(state, obs)`` if ```return_state`` is ``True`` else return ``obs``.
+        Returns
+            ``(obs, info)``. If ```return_image`` is ``True``, the info dictionary contains an
+            ``'rgb'`` key with the corresponding image.
 
         """
         # FIXME: WTF this return_state thing?
@@ -720,6 +732,8 @@ class PlangymEnv(PlanEnv):
             obs, info = data
         else:
             obs, info = data, {}
+        if self.return_image:
+            info["rgb"] = self.get_image()
         return obs, info
 
     def apply_action(self, action):

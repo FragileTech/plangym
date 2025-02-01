@@ -108,6 +108,7 @@ class TestPlanEnv:
         "autoreset",
         "delay_setup",
         "return_image",
+        "img_shape",
     )
 
     def test_init(self, env):
@@ -140,6 +141,15 @@ class TestPlanEnv:
         assert obs.shape == env.obs_shape, (obs.shape, env.obs_shape)
         obs, *_ = env.step(env.sample_action())
         assert obs.shape == env.obs_shape, (obs.shape, env.obs_shape)
+
+    def test_img_shape(self, env):
+        assert hasattr(env, "img_shape")
+        if env.img_shape is None:
+            return
+        assert isinstance(env.img_shape, tuple)
+        if env.img_shape:
+            for val in env.img_shape:
+                assert isinstance(val, int)
 
     def test_action_shape(self, env):
         assert hasattr(env, "action_shape")
@@ -193,6 +203,10 @@ class TestPlanEnv:
     def test_reset(self, env):
         _ = env.reset(return_state=False)
         state, obs, info = env.reset(return_state=True)
+        if env.return_image:
+            assert "rgb" in info
+            assert isinstance(info["rgb"], numpy.ndarray)
+            assert info["rgb"].shape == env.img_shape
         state_is_array = isinstance(state, numpy.ndarray)
         obs_is_array = isinstance(obs, numpy.ndarray)
         assert isinstance(info, dict), info
