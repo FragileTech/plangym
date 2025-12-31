@@ -18,6 +18,31 @@ BOX_2D = [
     "FastLunarLander-v0",
 ]
 
+MUJOCO = [
+    "Ant-v4",
+    "Ant-v5",
+    "HalfCheetah-v4",
+    "HalfCheetah-v5",
+    "Hopper-v4",
+    "Hopper-v5",
+    "Humanoid-v4",
+    "Humanoid-v5",
+    "HumanoidStandup-v4",
+    "HumanoidStandup-v5",
+    "InvertedDoublePendulum-v4",
+    "InvertedDoublePendulum-v5",
+    "InvertedPendulum-v4",
+    "InvertedPendulum-v5",
+    "Pusher-v4",
+    "Pusher-v5",
+    "Reacher-v4",
+    "Reacher-v5",
+    "Swimmer-v4",
+    "Swimmer-v5",
+    "Walker2d-v4",
+    "Walker2d-v5",
+]
+
 try:
     import retro.data
 

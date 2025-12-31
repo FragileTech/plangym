@@ -165,6 +165,9 @@ class TestPlanEnv:
     @pytest.mark.parametrize("return_image", [True, False])
     def test_return_image(self, env, return_image):
         assert isinstance(env.return_image, bool)
+        # Skip if trying to test return_image=True with render_mode=None
+        if return_image and env.render_mode is None:
+            pytest.skip("return_image=True requires render_mode='rgb_array'")
         if isinstance(env, VectorizedEnv):
             env.plan_env._return_image = return_image
         else:
@@ -335,6 +338,8 @@ class TestPlanEnv:
 
     @pytest.mark.skipif(os.getenv("SKIP_RENDER", False), reason="No display in CI.")
     def test_get_image(self, env):
+        if env.render_mode is None:
+            pytest.skip("get_image requires render_mode='rgb_array'")
         img = env.get_image()
         if img is not None:
             assert isinstance(img, numpy.ndarray)
@@ -446,6 +451,8 @@ class TestPlangymEnv:
 
     @pytest.mark.skipif(os.getenv("SKIP_RENDER", False), reason="No display in CI.")
     def test_render(self, env, display):
+        if env.render_mode is None:
+            pytest.skip("render requires render_mode != None")
         with warnings.catch_warnings():
             # warnings.simplefilter("ignore")
             env.render()

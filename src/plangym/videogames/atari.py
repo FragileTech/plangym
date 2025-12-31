@@ -60,6 +60,7 @@ class AtariEnv(VideogameEnv):
     """
 
     STATE_IS_ARRAY = True
+    AVAILABLE_RENDER_MODES = {"human", "rgb_array"}  # Atari doesn't support render_mode=None
 
     def __init__(
         self,

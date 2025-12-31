@@ -534,9 +534,19 @@ class PlangymEnv(PlanEnv):
             kwargs: Additional arguments to be passed to the ``gym.make`` function.
 
         """
-        render_mode = "rgb_array"
-        kwargs["render_mode"] = kwargs.get("render_mode", render_mode)
+        # Validate render_mode
+        if render_mode is not None and render_mode not in self.AVAILABLE_RENDER_MODES:
+            raise ValueError(
+                f"Invalid render_mode: {render_mode}. "
+                f"Must be one of {self.AVAILABLE_RENDER_MODES}"
+            )
+        if return_image and render_mode is None:
+            raise ValueError(
+                "return_image=True requires render_mode='rgb_array', "
+                "but render_mode=None was specified."
+            )
         self._render_mode = render_mode
+        kwargs["render_mode"] = kwargs.get("render_mode", render_mode)
         self._gym_env = None
         self._gym_env_kwargs = kwargs or {}  # Dictionary containing the gym.make arguments
         self._remove_time_limit = remove_time_limit
@@ -703,14 +713,15 @@ class PlangymEnv(PlanEnv):
         Square matrices are interpreted as a greyscale image. Three-dimensional arrays
         are interpreted as RGB images with channels (Height, Width, RGB).
         """
+        if self.render_mode is None:
+            raise RuntimeError(
+                "Cannot get image when render_mode=None. "
+                "Create the environment with render_mode='rgb_array' to enable image capture."
+            )
         if hasattr(self.gym_env, "render"):
             img = self.gym_env.render()
             if img is None and self.render_mode == "rgb_array":
                 raise ValueError(f"Rendering rgb_array but we are getting None: {self}")
-            if self.render_mode != "rgb_array":
-                raise ValueError(
-                    f"Rendering {self.render_mode} but we are getting an image: {self}"
-                )
             return img
         raise NotImplementedError()
 

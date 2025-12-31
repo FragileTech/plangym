@@ -8,7 +8,6 @@ import numpy
 
 from plangym.control.box_2d import Box2DState
 from plangym.core import PlangymEnv, wrap_callable
-from plangym.utils import get_display
 
 try:
     from Box2D.b2 import edgeShape, fixtureDef, polygonShape, revoluteJointDef
@@ -75,35 +74,16 @@ class FastGymLunarLander(GymLunarLander):
 
     FPS = FPS
 
-    def __init__(self, deterministic: bool = False, continuous: bool = False):
+    def __init__(self, deterministic: bool = False, continuous: bool = False, render_mode: str | None = "rgb_array"):
         """Initialize a :class:`FastGymLunarLander``."""
         self.deterministic = deterministic
         self.game_over = False
         self.prev_shaping = None
-        self.helipad_x1 = None
-        self.helipad_x2 = None
-        self.helipad_y = None
-        self.moon = None
-        self.sky_polys = None
-        self.lander = None
-        self.legs = None
-        self.drawlist = None
-        self.viewer = None
-        self.moon = None
-        self.lander = None
-        self.particles = None
-        self.prev_reward = None
-        self.observation_space = None
-        self.action_space = None
-        self.continuous = continuous
-        self._display = None
-        super().__init__()
+        super().__init__(continuous=continuous, render_mode=render_mode)
 
     def __del__(self):
         """Close the environment."""
         super().close()
-        if self._display is not None:
-            self._display.stop()
 
     def reset(self) -> tuple:
         """Reset the environment to its initial state."""
@@ -317,42 +297,6 @@ class FastGymLunarLander(GymLunarLander):
         truncated = False
         return numpy.array(state, dtype=numpy.float32), reward, done, truncated, {}
 
-    def render(self, mode=None):
-        """Render the environment."""
-        from gym.envs.classic_control import rendering  # noqa: PLC0415
-
-        mode = mode or self.render_mode
-        if self.viewer is None:
-            self._display = get_display()
-            self.viewer = rendering.Viewer(VIEWPORT_W, VIEWPORT_H)
-            self.viewer.set_bounds(0, VIEWPORT_W / SCALE, 0, VIEWPORT_H / SCALE)
-
-        for p in self.sky_polys:
-            self.viewer.draw_polygon(p, color=(0, 0, 0))
-
-        for obj in self.drawlist:
-            for f in obj.fixtures:
-                trans = f.body.transform
-                path = [trans * v for v in f.shape.vertices]
-                self.viewer.draw_polygon(path, color=obj.color1)
-                path.append(path[0])
-                self.viewer.draw_polyline(path, color=obj.color2, linewidth=2)
-
-        for x in [self.helipad_x1, self.helipad_x2]:
-            flagy1 = self.helipad_y
-            flagy2 = flagy1 + 50 / SCALE
-            self.viewer.draw_polyline([(x, flagy1), (x, flagy2)], color=(1, 1, 1))
-            self.viewer.draw_polygon(
-                [
-                    (x, flagy2),
-                    (x, flagy2 - 10 / SCALE),
-                    (x + 25 / SCALE, flagy2 - 5 / SCALE),
-                ],
-                color=(0.8, 0.8, 0),
-            )
-
-        return self.viewer.render(return_rgb_array=mode == "rgb_array")
-
 
 class LunarLander(PlangymEnv):
     """Fast LunarLander that follows the plangym API."""
@@ -402,6 +346,7 @@ class LunarLander(PlangymEnv):
         gym_env = FastGymLunarLander(
             deterministic=self.deterministic,
             continuous=self.continuous,
+            render_mode=self.render_mode,
         )
         gym_env.reset()
         return gym_env
@@ -447,7 +392,7 @@ class LunarLander(PlangymEnv):
         Square matrices are interpreted as a greyscale image. Three-dimensional arrays
         are interpreted as RGB images with channels (Height, Width, RGB).
         """
-        img = self.gym_env.render(mode="rgb_array")
+        img = self.gym_env.render()
         if img is None and self.render_mode == "rgb_array":
             raise ValueError(f"Rendering rgb_array but we are getting None: {self}")
         if self.render_mode != "rgb_array":

@@ -1,7 +1,7 @@
 current_dir = $(shell pwd)
 
 PROJECT = plangym
-n ?= auto
+n ?= 2
 DOCKER_ORG = fragiletech
 DOCKER_TAG ?= ${PROJECT}
 ROM_FILE ?= "uncompressed_ROMs.zip"
@@ -53,3 +53,91 @@ docker-push:
 	docker push ${DOCKER_ORG}/${DOCKER_TAG}:${VERSION}
 	docker tag ${DOCKER_ORG}/${DOCKER_TAG}:${VERSION} ${DOCKER_ORG}/${DOCKER_TAG}:latest
 	docker push ${DOCKER_ORG}/${DOCKER_TAG}:latest
+
+# ============ Development Commands ============
+
+.PHONY: style
+style:
+	uv run ruff check --fix-only --unsafe-fixes tests src
+	uv run ruff format tests src
+
+.PHONY: check
+check:
+	uv run ruff check --diff tests src
+	uv run ruff format --diff tests src
+
+# ============ Test Commands ============
+
+.PHONY: test
+test: test-doctest test-parallel test-singlecore
+
+.PHONY: test-parallel
+test-parallel:
+	MUJOCO_GL=egl PYVIRTUALDISPLAY_DISPLAYFD=0 SKIP_CLASSIC_CONTROL=1 \
+	uv run pytest -n $n -s -o log_cli=true -o log_cli_level=info tests
+
+.PHONY: test-singlecore
+test-singlecore:
+	PYTEST_XDIST_AUTO_NUM_WORKERS=1 PYVIRTUALDISPLAY_DISPLAYFD=0 \
+	uv run pytest -s -o log_cli=true -o log_cli_level=info tests/control/test_classic_control.py
+
+.PHONY: test-doctest
+test-doctest:
+	PYVIRTUALDISPLAY_DISPLAYFD=0 SKIP_CLASSIC_CONTROL=1 \
+	uv run pytest --doctest-modules -n $n -s -o log_cli=true -o log_cli_level=info src
+
+# ============ Code Coverage ============
+
+.PHONY: codecov
+codecov: codecov-singlecore codecov-parallel
+
+.PHONY: codecov-parallel
+codecov-parallel: codecov-parallel-1 codecov-parallel-2 codecov-parallel-3 codecov-vectorization
+
+.PHONY: codecov-parallel-1
+codecov-parallel-1:
+	PYVIRTUALDISPLAY_DISPLAYFD=0 SKIP_CLASSIC_CONTROL=1 \
+	uv run pytest -n $n -s -o log_cli=true -o log_cli_level=info \
+	--cov=./ --cov-report=xml:coverage_parallel_1.xml --cov-config=pyproject.toml \
+	tests/test_core.py tests/test_registry.py tests/test_utils.py
+
+.PHONY: codecov-parallel-2
+codecov-parallel-2:
+	PYVIRTUALDISPLAY_DISPLAYFD=0 SKIP_CLASSIC_CONTROL=1 \
+	uv run pytest -n $n -s -o log_cli=true -o log_cli_level=info \
+	--cov=./ --cov-report=xml:coverage_parallel_2.xml --cov-config=pyproject.toml \
+	tests/videogames
+
+.PHONY: codecov-parallel-3
+codecov-parallel-3:
+	MUJOCO_GL=egl PYVIRTUALDISPLAY_DISPLAYFD=0 SKIP_CLASSIC_CONTROL=1 \
+	uv run pytest -n $n -s -o log_cli=true -o log_cli_level=info \
+	--cov=./ --cov-report=xml:coverage_parallel_3.xml --cov-config=pyproject.toml \
+	tests/control
+
+.PHONY: codecov-vectorization
+codecov-vectorization:
+	PYVIRTUALDISPLAY_DISPLAYFD=0 SKIP_CLASSIC_CONTROL=1 \
+	uv run pytest -n 0 -s -o log_cli=true -o log_cli_level=info \
+	--cov=./ --cov-report=xml:coverage_vectorization.xml --cov-config=pyproject.toml \
+	tests/vectorization
+
+.PHONY: codecov-singlecore
+codecov-singlecore:
+	PYTEST_XDIST_AUTO_NUM_WORKERS=1 PYVIRTUALDISPLAY_DISPLAYFD=0 \
+	uv run pytest --doctest-modules -s -o log_cli=true -o log_cli_level=info \
+	--cov=./ --cov-report=xml --cov-config=pyproject.toml \
+	tests/control/test_classic_control.py
+
+# ============ Documentation ============
+
+.PHONY: docs
+docs: build-docs serve-docs
+
+.PHONY: build-docs
+build-docs:
+	uv run sphinx-build -b html docs/source docs/build
+
+.PHONY: serve-docs
+serve-docs:
+	uv run python3 -m http.server --directory docs/build

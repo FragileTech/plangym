@@ -1,6 +1,6 @@
 """Functionality for instantiating the environment by passing the environment id."""
 
-from plangym.environment_names import ATARI, BOX_2D, CLASSIC_CONTROL, DM_CONTROL, RETRO
+from plangym.environment_names import ATARI, BOX_2D, CLASSIC_CONTROL, DM_CONTROL, MUJOCO, RETRO
 
 
 def get_planenv_class(name, domain_name, state):
@@ -33,6 +33,10 @@ def get_planenv_class(name, domain_name, state):
         from plangym.videogames import AtariEnv
 
         return AtariEnv
+    if name in set(MUJOCO):
+        from plangym.control import MujocoEnv
+
+        return MujocoEnv
     if domain_name is not None or any(x[0] in name for x in DM_CONTROL):
         from plangym.control import DMControlEnv
 

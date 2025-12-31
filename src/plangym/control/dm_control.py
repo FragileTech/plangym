@@ -204,6 +204,8 @@ class DMControlEnv(PlangymEnv):
         attribute. This method calls the latter to visualize the collected
         images.
         """
+        if novideo_mode:
+            return
         if self._viewer is None:
             self._viewer = rendering.SimpleImageViewer()
         for img in self.viewer:
