@@ -124,7 +124,7 @@ codecov-vectorization:
 
 .PHONY: codecov-singlecore
 codecov-singlecore:
-	PYTEST_XDIST_AUTO_NUM_WORKERS=1 PYVIRTUALDISPLAY_DISPLAYFD=0 \
+	PYTEST_XDIST_AUTO_NUM_WORKERS=1 PYVIRTUALDISPLAY_DISPLAYFD=0 SKIP_RENDER=True \
 	uv run pytest --doctest-modules -s -o log_cli=true -o log_cli_level=info \
 	--cov=./ --cov-report=xml --cov-config=pyproject.toml \
 	tests/control/test_classic_control.py

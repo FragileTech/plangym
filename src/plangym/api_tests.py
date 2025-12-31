@@ -42,9 +42,10 @@ def generate_test_cases(
         obs_types,
         render_modes,
     ):
-        # Skip invalid combinations: render_mode=None with obs_type requiring images
+        # Skip invalid combinations: render_mode that doesn't provide RGB arrays with obs_type requiring images
         # Only for environments that need gymnasium render for images
-        if needs_render_for_images and render_mode is None and obs_type in {"rgb", "grayscale"}:
+        # In gymnasium 1.x, render_mode="human" returns None, only "rgb_array" returns images
+        if needs_render_for_images and render_mode != "rgb_array" and obs_type in {"rgb", "grayscale"}:
             continue
         name = names[i % len(names)]
         i += 1
@@ -470,9 +471,9 @@ class TestPlangymEnv:
     def test_wrap_environment(self, env):
         if isinstance(env, VectorizedEnv):
             return
-        from gym.wrappers.transform_reward import TransformReward  # noqa: PLC0415
+        from gymnasium.wrappers import TransformReward  # noqa: PLC0415
 
-        wrappers = [(TransformReward, {"f": lambda x: x})]
+        wrappers = [(TransformReward, {"func": lambda x: x})]
         env.apply_wrappers(wrappers)
         assert isinstance(env.gym_env, TransformReward)
         env._gym_env = env.gym_env.env

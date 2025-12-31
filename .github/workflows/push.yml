@@ -79,29 +79,15 @@ jobs:
       if: ${{ matrix.os == 'macos-latest' }}
       run: |
         set -x
-        brew install --cask xquartz
+        # XQuartz not needed - rendering tests are skipped on macOS (SKIP_RENDER=True)
+        # macOS doesn't support headless rendering (osmesa/egl) - only Linux does
         brew install swig libzip
-        # When building retro from source we may need the deprecated version of lua 5.1.
-        # brew install qt5 capnp
-        # Retro does not build in MacOS due to ancient requirements, so we will be installing retro==0.9.1 from pypi
-        # because it contains pre-build wheels for MacOS.
-        # chmod +x install-lua-macos.sh
-        # sudo ./install-lua-macos.sh
-        # echo 'export PATH="/opt/homebrew/opt/qt@5/bin:$PATH"' >> ~/.zshrc
-        # export SDKROOT=$(xcrun --sdk macosx --show-sdk-path)
-        # https://docs.github.com/en/actions/learn-github-actions/workflow-commands-for-github-actions#adding-a-system-path
-        echo "/opt/X11/bin" >> $GITHUB_PATH
-        # https://github.com/ponty/PyVirtualDisplay/issues/42
-        if [ ! -d /tmp/.X11-unix ]; then
-          mkdir /tmp/.X11-unix
-        fi
-        sudo chmod 1777 /tmp/.X11-unix
-        sudo chown root /tmp/.X11-unix
         uv sync --all-extras
         # Fix a bug in retro.data where it tries to load an inexistent version file
-        # sed -i '' 's/VERSION\.txt/VERSION/g' /Users/runner/work/plangym/plangym/.venv/lib/python3.10/site-packages/retro/__init__.py
-        if [ ! -d /Users/runner/work/plangym/plangym/.venv/lib/python${{ matrix.python-version }}/site-packages/retro/VERSION ]; then
-          echo "0.9.1" > /Users/runner/work/plangym/plangym/.venv/lib/python${{ matrix.python-version }}/site-packages/retro/VERSION.txt
+        # Only applies to Python 3.10 where stable-retro is installed
+        RETRO_DIR="/Users/runner/work/plangym/plangym/.venv/lib/python${{ matrix.python-version }}/site-packages/retro"
+        if [ -d "$RETRO_DIR" ] && [ ! -f "$RETRO_DIR/VERSION.txt" ]; then
+          echo "0.9.1" > "$RETRO_DIR/VERSION.txt"
         fi
         ROM_PASSWORD=${{ secrets.ROM_PASSWORD }} uv run python -m plangym.scripts.import_retro_roms
 
