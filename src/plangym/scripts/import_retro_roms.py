@@ -5,7 +5,11 @@ import logging
 import flogging
 from pathlib import Path
 
-import retro.data
+try:
+    import retro.data
+except ImportError:
+    print("stable-retro is not available (only supported on Python 3.10). Skipping ROM import.")
+    sys.exit(0)
 
 flogging.setup()
 logger = logging.getLogger("import-roms")

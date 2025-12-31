@@ -5,16 +5,16 @@ standard API to communicate between algorithms and environments, as well as a st
 compliant with that API.
 
 Furthermore, it provides additional functionality for stepping the environments in parallel, delayed environment
-initialization for dealing with environments that are difficult to serialize, compatibility with `gym.Wrappers`, 
+initialization for dealing with environments that are difficult to serialize, compatibility with `gymnasium.Wrappers`,
 and more.
 
 ## API for reinforcement learning
 
-OpenAI's `gym` has become the de-facto standard in the research community, `plangym`'s API 
-is designed to be as similar as possible to `gym`'s API while allowing to modify the environment state.
+Farama's `gymnasium` has become the de-facto standard in the research community, `plangym`'s API
+is designed to be as similar as possible to `gymnasium`'s API while allowing to modify the environment state.
 `plangym` offers a standard API for reinforcement learning problems with a simple, intuitive interface.\
-Users with general knowledge of `gym` syntax will feel comfortable using `plangym`; it uses the
-same schema and philosophy of the former, yet `plangym` provides new advanced functionalities beyond `gym`
+Users with general knowledge of `gymnasium` syntax will feel comfortable using `plangym`; it uses the
+same schema and philosophy of the former, yet `plangym` provides new advanced functionalities beyond `gymnasium`
 capabilities. 
 
 ## Plangym states 
@@ -29,60 +29,60 @@ precise state.
 
 ### Stepping an environment
 
-We initialize the environment using the command `plangym.make`, similarly to `gym` syntax. By resetting 
-the environment, we get our initial _state_ and _observation_. As mentioned, the fact that the environment
+We initialize the environment using the command `plangym.make`, similarly to `gymnasium` syntax. By resetting
+the environment, we get our initial _state_, _observation_, and _info_. As mentioned, the fact that the environment
 is returning its current state is one of the main `plangym` features; we are able to __get__ and __set__
 the precise configuration of the environment in each step as if we were loading and saving the
 data of a game. This option allows the user to apply a specific action to an explicit state:
 
 ```python
 import plangym
-env = plangym.make(name="CartPole-v0")
-state, obs = env.reset()
+env = plangym.make(name="CartPole-v1")
+state, obs, info = env.reset()
 
 state = state.copy()
 action = env.action_space.sample()
 
 data = env.step(state=state, action=action)
-new_state, observ, reward, end, info = data
+new_state, observ, reward, terminated, truncated, info = data
 ```
 
 We interact with the environment by applying an action to a specific environment state via `plangym.PlanEnv.step`.
-We can define the exact environment state over which we apply our action. 
+We can define the exact environment state over which we apply our action.
 
 As expected, this function returns the evolution of the environment,
-the observed results, the reward of the performed action, if the agent enters
-a terminal state, and additional information about the process.
+the observed results, the reward of the performed action, whether the episode
+terminated or was truncated, and additional information about the process.
 
 If we are not interested in getting the current state of the environment, we simply define the argument
 `return_state = False` inside the methods `plangym.PlanEnv.reset` and `plangym.PlanEnv.step`: 
 
 ```python
 import plangym
-env = plangym.make(name="CartPole-v0")  
-obs = env.reset(return_state=False)  
+env = plangym.make(name="CartPole-v1")
+obs, info = env.reset(return_state=False)
 
 action = env.action_space.sample()
 
 data = env.step(action=action, return_state=False)
-observ, reward, end, info = data
+observ, reward, terminated, truncated, info = data
 ```
 
 By setting `return_state=False`, neither `reset()` nor `step()` will return the state of the simulation. In this way,
-we are obtaining the exact same answers as if we were working in a plain `gym` interface. Thus, `plangym`
+we are obtaining the exact same answers as if we were working in a plain `gymnasium` interface. Thus, `plangym`
 provides a complete tool for developing planning projects __as well as__ a general, standard API for reinforcement learning problems.  
 
 ### Stepping a batch of states and actions
 ```python
 import plangym
-env = plangym.make(name="CartPole-v0")
-state, obs = env.reset()
+env = plangym.make(name="CartPole-v1")
+state, obs, info = env.reset()
 
 states = [state.copy() for _ in range(10)]
 actions = [env.action_space.sample() for _ in range(10)]
 
 data = env.step_batch(states=states, actions=actions)
-new_states, observs, rewards, ends, infos = data
+new_states, observs, rewards, terminateds, truncateds, infos = data
 ```
 
 `plangym` allows applying multiple actions in a single call via the command `plangym.PlanEnv.step_batch`.
@@ -93,8 +93,8 @@ of such actions.
 
 ### Making environments
 
-To initialize an environment, `plangym` uses the same syntax as `gym` via the `plangym.make` command. However, 
-this command offers more advanced options than the `gym` standard; it controls the general behavior of the API and
+To initialize an environment, `plangym` uses the same syntax as `gymnasium` via the `plangym.make` command. However,
+this command offers more advanced options than the `gymnasium` standard; it controls the general behavior of the API and
 its different environments, and it serves as a command center between the user and the library. 
 
 Instead of using a specific syntax for each environment (with distinct arguments and parameters),
@@ -149,31 +149,31 @@ As mentioned, users dispose of several parameters to configure the environment c
 and the attributes of the class itself. Instance parameters are passed as _kwargs_ to the environment class.
 
 Inside these instance attributes, we should differentiate between the attributes managed by `plangym`, and
-those that are specific to the `gym` library. `plangym` attributes characterize the envelope that wraps
-the original `gym` environment, offering a standard interface among all the processes. `gym` attributes are
-those not managed by `plangym` and are passed __directly__ to the `gym.make` method. 
+those that are specific to the `gymnasium` library. `plangym` attributes characterize the envelope that wraps
+the original `gymnasium` environment, offering a standard interface among all the processes. `gymnasium` attributes are
+those not managed by `plangym` and are passed __directly__ to the `gymnasium.make` method.
 
-The instance attributes (managed by `plangym`) common to all environment classes are: 
-* `name`: Name of the environment. Follows standard gym syntax conventions.
+The instance attributes (managed by `plangym`) common to all environment classes are:
+* `name`: Name of the environment. Follows standard gymnasium syntax conventions.
 * `frameskip`: Number of times an action will be applied for each ``dt``. When we __step__ the environment,
 we take `dt` simulation steps, i.e., we evolve _dt_-times the environment (by applying an action) __in each__
 step. Within __each__ simulation step `dt`, we apply the same action `frameskip` times. At the end
-of the day, the environment will have evolved `dt * frameskip` times. 
-* `autoreset`: Automatically reset the `plangym.environment` when the OpenAI environment returns ``end = True``.
-* `wrappers`: Wrappers that will be applied to the underlying OpenAI environment. Every element
-of the iterable can be either a class `gym.Wrapper` or a tuple containing ``(gym.Wrapper, kwargs)``.
-* `delay_setup`: If ``True``, `plangym` does not initialize the class `gym.environment`and
+of the day, the environment will have evolved `dt * frameskip` times.
+* `autoreset`: Automatically reset the `plangym.environment` when the gymnasium environment returns ``terminated = True``.
+* `wrappers`: Wrappers that will be applied to the underlying gymnasium environment. Every element
+of the iterable can be either a class `gymnasium.Wrapper` or a tuple containing ``(gymnasium.Wrapper, kwargs)``.
+* `delay_setup`: If ``True``, `plangym` does not initialize the `gymnasium.Env` and
 waits for ``setup`` to be called later. Deferring the environment instantiation gives the users
 the option to create it in external processes or when demanded. This fact allows sending `plangym.environment`
 as serializable objects, leaving all the settings already defined and prepared for the user to
-instantiate the environment when needed. 
+instantiate the environment when needed.
 * `remove_time_limit`: If `True`, remove the time limit from the environment.
 * `render_mode`: Select how the environment and the observations are represented. Options to be
-selected are `[None, "human", "rgb_aray"]`.
-* `episodic_life`: If `True`, `plangym` sends a terminal signal after loosing a life.
+selected are `[None, "human", "rgb_array"]`.
+* `episodic_life`: If `True`, `plangym` sends a terminal signal after losing a life.
 * `obs_type`: Define how `plangym` calculates the observations. Options to be selected
 are `["coords", "rgb", "grayscale", None]`.
-* `return_image`: If ``True``, 'plangym' adds an "rgb" key in the `info` dictionary returned by
+* `return_image`: If ``True``, `plangym` adds an "rgb" key in the `info` dictionary returned by
 `plangym.env.step` method. This key contains an RGB representation of the environment state.
 
 

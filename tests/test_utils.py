@@ -1,7 +1,5 @@
 import gymnasium as gym
-from gymnasium.wrappers.atari_preprocessing import AtariPreprocessing
-from gymnasium.wrappers.time_limit import TimeLimit
-from gymnasium.wrappers.transform_reward import TransformReward
+from gymnasium.wrappers import AtariPreprocessing, TimeLimit, TransformReward
 import numpy
 from numpy.random import default_rng
 

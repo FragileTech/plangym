@@ -3,16 +3,14 @@ import warnings
 
 import numpy
 import pytest
-import ray
+
+ray = pytest.importorskip("ray")
+if os.getenv("DISABLE_RAY") and str(os.getenv("DISABLE_RAY", "False")).lower() != "false":
+    pytest.skip("Ray not installed or disabled", allow_module_level=True)
 
 from plangym.control.classic_control import ClassicControl
 from plangym.vectorization.ray import RayEnv, RemoteEnv
 from plangym.videogames.atari import AtariEnv
-
-
-pytest.importorskip("ray")
-if os.getenv("DISABLE_RAY") and str(os.getenv("DISABLE_RAY", "False")).lower() != "false":
-    pytest.skip("Ray not installed or disabled", allow_module_level=True)
 from src.plangym.api_tests import batch_size, display, TestPlanEnv, TestPlangymEnv
 
 

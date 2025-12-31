@@ -1,6 +1,36 @@
 """Various environments for plangym."""
 
+import logging
+import os
 import warnings
+
+# Global flag to disable plangym warnings (set via environment variable)
+PLANGYM_DISABLE_WARNINGS = os.environ.get("PLANGYM_DISABLE_WARNINGS", "").lower() in {
+    "true",
+    "1",
+    "yes",
+}
+
+_logger = logging.getLogger(__name__)
+
+
+def warn_import_error(module_name: str, reason: str = "") -> None:
+    """Log a warning when an optional package fails to import.
+
+    Args:
+        module_name: Name of the module that failed to import.
+        reason: Optional explanation of why the import failed.
+
+    Note:
+        Warnings can be disabled by setting the environment variable
+        ``PLANGYM_DISABLE_WARNINGS=true``.
+
+    """
+    if not PLANGYM_DISABLE_WARNINGS:
+        msg = f"Could not import {module_name}."
+        if reason:
+            msg += f" {reason}"
+        _logger.warning(msg)
 
 
 warnings.filterwarnings(

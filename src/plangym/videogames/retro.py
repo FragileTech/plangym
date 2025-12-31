@@ -1,4 +1,10 @@
-"""Implement the ``plangym`` API for retro environments."""
+"""Implement the ``plangym`` API for retro environments.
+
+.. note::
+    **Python Version Compatibility**: The ``stable-retro`` package is only
+    supported on Python 3.10 due to native extension build issues.
+    Retro environments will not be available on Python 3.11+.
+"""
 
 from typing import Any, Iterable
 
@@ -44,7 +50,16 @@ class ActionDiscretizer(gym.ActionWrapper):
 
 
 class RetroEnv(VideogameEnv):
-    """Environment for playing ``gym-retro`` games."""
+    """Environment for playing ``gym-retro`` games.
+
+    .. warning::
+        This environment requires the ``stable-retro`` package, which is only
+        available on Python 3.10. On Python 3.11+, this module cannot be imported
+        due to native extension build issues.
+
+    For more information about supported games and setup, see:
+    https://github.com/Farama-Foundation/stable-retro
+    """
 
     AVAILABLE_OBS_TYPES = {"coords", "rgb", "grayscale", "ram"}
     SINGLETON = True

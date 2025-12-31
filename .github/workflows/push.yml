@@ -172,7 +172,7 @@ jobs:
       - name: Install build dependencies
         run: |
           set -x
-          uv tool install bump2version
+          uv tool install bump2version --force
 
       - name: Create unique version for test.pypi
         run: |
@@ -201,7 +201,7 @@ jobs:
         run: |
           set -x
           sudo apt-get install -y xvfb libglu1-mesa x11-utils
-          uv lock --all-extras
+          uv lock
           uv pip install -r pyproject.toml --all-extras
           uv pip install dist/*.whl
 #          ROM_PASSWORD=${{ secrets.ROM_PASSWORD }} python -m plangym.scripts.import_retro_roms

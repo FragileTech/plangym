@@ -214,7 +214,7 @@ class AtariEnv(VideogameEnv):
             >>> img.shape
             (210, 160, 3)
         """
-        return self.gym_env.ale.getScreenRGB()
+        return self.ale.getScreenRGB()
 
     def get_ram(self) -> numpy.ndarray:
         """Return a numpy array containing the content of the emulator's RAM.

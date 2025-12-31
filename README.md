@@ -146,15 +146,14 @@ uv sync --all-extras
 
 ### ROM Installation
 
-For Atari and Retro environments, you need to import ROM files:
+For Retro environments, you need to import ROM files:
 
 ```bash
-# Atari ROMs (automatically accepted via gymnasium)
-pip install "gymnasium[accept-rom-license]"
-
 # Retro ROMs (requires ROM files)
 python -m plangym.scripts.import_retro_roms
 ```
+
+Note: Atari ROMs are now bundled with `ale-py` >= 0.9, so no additional installation is needed for Atari environments.
 
 ---
 

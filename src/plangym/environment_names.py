@@ -10,8 +10,8 @@ CLASSIC_CONTROL = [
 ]
 
 BOX_2D = [
-    "LunarLander-v2",
-    "LunarLanderContinuous-v2",
+    "LunarLander-v3",
+    "LunarLanderContinuous-v3",
     "BipedalWalker-v3",
     "BipedalWalkerHardcore-v3",
     "CarRacing-v2",
