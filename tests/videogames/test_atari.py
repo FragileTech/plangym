@@ -20,7 +20,7 @@ from plangym.api_tests import (
 
 
 def qbert_ram():
-    return AtariEnv(name="Qbert-ram-v4", clone_seeds=False, autoreset=False)
+    return AtariEnv(name="ALE/Qbert-v5", obs_type="ram", clone_seeds=False, autoreset=False)
 
 
 @pytest.fixture(

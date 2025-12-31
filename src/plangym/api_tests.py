@@ -45,7 +45,11 @@ def generate_test_cases(
         # Skip invalid combinations: render_mode that doesn't provide RGB arrays with obs_type requiring images
         # Only for environments that need gymnasium render for images
         # In gymnasium 1.x, render_mode="human" returns None, only "rgb_array" returns images
-        if needs_render_for_images and render_mode != "rgb_array" and obs_type in {"rgb", "grayscale"}:
+        if (
+            needs_render_for_images
+            and render_mode != "rgb_array"
+            and obs_type in {"rgb", "grayscale"}
+        ):
             continue
         name = names[i % len(names)]
         i += 1
@@ -440,6 +444,9 @@ class TestPlangymEnv:
         assert hasattr(env, "render_mode")
         if env.render_mode is not None:
             assert isinstance(env.render_mode, str)
+        # Skip assertion when SKIP_RENDER forces render_mode=None on envs that don't support it
+        if os.getenv("SKIP_RENDER", False) and env.render_mode is None:
+            return
         assert env.render_mode in env.AVAILABLE_RENDER_MODES
 
     def test_remove_time_limit(self, env):
@@ -470,6 +477,9 @@ class TestPlangymEnv:
 
     def test_wrap_environment(self, env):
         if isinstance(env, VectorizedEnv):
+            return
+        # Skip for envs that don't wrap gymnasium.Env (e.g., DMControlEnv wraps dm_control)
+        if not isinstance(env.gym_env, gym.Env):
             return
         from gymnasium.wrappers import TransformReward  # noqa: PLC0415
 

@@ -1,4 +1,5 @@
 import operator
+import sys
 
 import numpy
 import pytest
@@ -68,6 +69,10 @@ class TestMujoco(TestPlangymEnv):
 class TestMujocoParallel:
     """Test MujocoEnv parallel execution for planning reliability."""
 
+    @pytest.mark.skipif(
+        sys.platform == "darwin",
+        reason="macOS uses 'spawn' multiprocessing which can't pickle nested functions",
+    )
     def test_parallel_state_restoration(self):
         """Test that parallel execution with state restoration is deterministic."""
         import plangym

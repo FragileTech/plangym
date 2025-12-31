@@ -42,3 +42,11 @@ try:
     SKIP_BOX2D_TESTS = False
 except ImportError:
     SKIP_BOX2D_TESTS = True
+
+try:
+    import gym_super_mario_bros
+
+    SKIP_MARIO_TESTS = False
+except (ImportError, AttributeError):
+    # AttributeError: nes_py depends on old gym which fails on Python 3.12+
+    SKIP_MARIO_TESTS = True
