@@ -136,13 +136,13 @@ class VectorizedEnv(PlangymEnv, ABC):  # noqa: PLR0904
     @staticmethod
     def unpack_transitions(results: list, return_states: bool):
         """Aggregate the results of stepping across diferent workers."""
-        _states, observs, rewards, terminals, truncateds, infos = [], [], [], [], [], []
+        states, observs, rewards, terminals, truncateds, infos = [], [], [], [], [], []
         for result in results:
             if not return_states:
                 obs, rew, ends, trunc, info = result
             else:
-                _sts, obs, rew, ends, trunc, info = result
-                _states += _sts
+                sts, obs, rew, ends, trunc, info = result
+                states += sts
 
             observs += obs
             rewards += rew
@@ -152,7 +152,7 @@ class VectorizedEnv(PlangymEnv, ABC):  # noqa: PLR0904
         if not return_states:
             transitions = observs, rewards, terminals, truncateds, infos
         else:
-            transitions = _states, observs, rewards, terminals, truncateds, infos
+            transitions = states, observs, rewards, terminals, truncateds, infos
         return transitions
 
     def create_env_callable(self, **kwargs) -> Callable[..., PlanEnv]:

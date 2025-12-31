@@ -74,7 +74,12 @@ class FastGymLunarLander(GymLunarLander):
 
     FPS = FPS
 
-    def __init__(self, deterministic: bool = False, continuous: bool = False, render_mode: str | None = "rgb_array"):
+    def __init__(
+        self,
+        deterministic: bool = False,
+        continuous: bool = False,
+        render_mode: str | None = "rgb_array",
+    ):
         """Initialize a :class:`FastGymLunarLander``."""
         self.deterministic = deterministic
         self.game_over = False

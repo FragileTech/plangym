@@ -180,7 +180,7 @@ class RayEnv(VectorizedEnv):
         ret_states = not (
             states is None or (isinstance(states, list | numpy.ndarray) and states[0] is None)
         )
-        _return_state = ret_states if return_state is None else return_state
+        return_state_ = ret_states if return_state is None else return_state
         chunks = self.batch_step_data(
             actions=actions,
             states=states,
@@ -188,16 +188,16 @@ class RayEnv(VectorizedEnv):
             batch_size=len(self.workers),
         )
         results_ids = []
-        for env, states_batch, actions_batch, _dt in zip(self.workers, *chunks):
+        for env, states_batch, actions_batch, dt_ in zip(self.workers, *chunks):
             result = env.step_batch.remote(
                 actions=actions_batch,
                 states=states_batch,
-                dt=_dt,
+                dt=dt_,
                 return_state=return_state,
             )
             results_ids.append(result)
         results = ray.get(results_ids)
-        return self.unpack_transitions(results=results, return_states=_return_state)
+        return self.unpack_transitions(results=results, return_states=return_state_)
 
     def reset(self, return_state: bool = True) -> [numpy.ndarray, tuple]:
         """Restart the environment."""

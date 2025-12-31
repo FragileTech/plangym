@@ -51,7 +51,9 @@ def generate_test_cases(
         if isinstance(name, tuple):
             name = "-".join(name)
 
-        def _make_env(_name=name, _n_workers=n_workers, _obs_type=obs_type, _render_mode=render_mode):
+        def _make_env(
+            _name=name, _n_workers=n_workers, _obs_type=obs_type, _render_mode=render_mode
+        ):
             return plangym.make(
                 _name,
                 n_workers=_n_workers,
@@ -227,9 +229,9 @@ class TestPlanEnv:
     @pytest.mark.parametrize("state", [None, True])
     @pytest.mark.parametrize("return_state", [None, True, False])
     def test_step(self, env, state, return_state, dt=1):
-        _state, *_ = env.reset(return_state=True)
+        state_, *_ = env.reset(return_state=True)
         if state is not None:
-            state = _state
+            state = state_
         action = env.sample_action()
         data = env.step(action, dt=dt, state=state, return_state=return_state)
         *new_state, obs, reward, terminal, _truncated, info = data
@@ -242,7 +244,7 @@ class TestPlanEnv:
             state_is_array = isinstance(new_state, numpy.ndarray)
             assert state_is_array if env.STATE_IS_ARRAY else not state_is_array
             if state_is_array:
-                assert _state.shape == new_state.shape
+                assert state_.shape == new_state.shape
             if not env.SINGLETON and env.STATE_IS_ARRAY:
                 curr_state = env.get_state()
                 assert new_state.shape == curr_state.shape

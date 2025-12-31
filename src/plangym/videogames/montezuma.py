@@ -208,9 +208,9 @@ class CustomMontezuma:
                     room = 1
                     level += 1
                 else:
-                    assert (
-                        direction_x == 0 or direction_y == 0
-                    ), f"Room change in more than two directions : ({direction_y}, {direction_x})"
+                    assert direction_x == 0 or direction_y == 0, (
+                        f"Room change in more than two directions : ({direction_y}, {direction_x})"
+                    )
                     room = PYRAMID[room_y + direction_y][room_x + direction_x]
                     assert room != -1, f"Impossible room change: ({direction_y}, {direction_x})"
 

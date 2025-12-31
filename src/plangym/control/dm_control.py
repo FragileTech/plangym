@@ -260,8 +260,8 @@ class DMControlEnv(PlangymEnv):
         time_step = self.gym_env.step(action)
         obs = time_step
         terminal = time_step.last()
-        _reward = time_step.reward if time_step.reward is not None else 0.0
-        reward = _reward + self._reward_step
+        reward_ = time_step.reward if time_step.reward is not None else 0.0
+        reward = reward_ + self._reward_step
         truncated = False
         return obs, reward, terminal, truncated, info
 

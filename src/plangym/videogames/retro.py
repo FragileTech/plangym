@@ -162,8 +162,8 @@ class RetroEnv(VideogameEnv):
             ``(state, obs)`` if ```return_state`` is ``True`` else return ``obs``.
 
         """
-        obs, _info = self.apply_reset()
+        obs, info_ = self.apply_reset()
         obs = self.process_obs(obs)
-        info = _info or {}
+        info = info_ or {}
         info = self.process_info(obs=obs, reward=0, terminal=False, info=info)
         return (self.get_state(), obs, info) if return_state else (obs, info)

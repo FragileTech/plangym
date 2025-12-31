@@ -304,26 +304,26 @@ class BatchEnv:
         results = []
         no_states = states is None or states[0] is None
         if return_state is None:
-            _return_state = not no_states
+            return_state_ = not no_states
         else:
-            _return_state = return_state
+            return_state_ = return_state
         chunks = ParallelEnv.batch_step_data(
             actions=actions,
             states=states,
             dt=dt,
             batch_size=len(self._envs),
         )
-        for env, states_batch, actions_batch, _dt in zip(self._envs, *chunks):
+        for env, states_batch, actions_batch, dt_ in zip(self._envs, *chunks):
             result = env.step_batch(
                 actions=actions_batch,
                 states=states_batch,
-                dt=_dt,
+                dt=dt_,
                 blocking=self._blocking,
                 return_state=return_state,
             )
             results.append(result)
         results = [res if self._blocking else res() for res in results]
-        return ParallelEnv.unpack_transitions(results=results, return_states=_return_state)
+        return ParallelEnv.unpack_transitions(results=results, return_states=return_state_)
 
     def sync_states(self, state, blocking: bool = True) -> None:
         """Set the same state to all the environments that are inside an external process.

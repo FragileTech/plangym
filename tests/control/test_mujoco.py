@@ -73,21 +73,21 @@ class TestMujocoParallel:
         import plangym
 
         env = plangym.make("Ant-v4", n_workers=2, render_mode="rgb_array")
-        state, obs, info = env.reset()
+        state, _obs, _info = env.reset()
 
         # Same state + same action should produce identical results across workers
         action = env.sample_action()
         states = [state.copy() for _ in range(4)]
         actions = [action.copy() for _ in range(4)]
 
-        new_states, observs, rewards, _, _, _ = env.step_batch(
+        new_states, _observs, rewards, _, _, _ = env.step_batch(
             actions, states=states, return_state=True
         )
 
         assert all(r == rewards[0] for r in rewards), "Rewards should be identical"
-        assert all(
-            numpy.allclose(s, new_states[0]) for s in new_states
-        ), "States should be identical"
+        assert all(numpy.allclose(s, new_states[0]) for s in new_states), (
+            "States should be identical"
+        )
         env.close()
 
     def test_state_includes_time(self):
@@ -115,7 +115,7 @@ class TestMujocoParallel:
         env.set_state(state)
         time_restored = env.gym_env.unwrapped.data.time
 
-        assert numpy.isclose(
-            time_before, time_restored
-        ), f"Time should be restored: {time_before} != {time_restored}"
+        assert numpy.isclose(time_before, time_restored), (
+            f"Time should be restored: {time_before} != {time_restored}"
+        )
         env.close()

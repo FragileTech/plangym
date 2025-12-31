@@ -537,14 +537,14 @@ class PlangymEnv(PlanEnv):
         # Validate render_mode
         if render_mode is not None and render_mode not in self.AVAILABLE_RENDER_MODES:
             raise ValueError(
-                f"Invalid render_mode: {render_mode}. "
-                f"Must be one of {self.AVAILABLE_RENDER_MODES}"
+                f"Invalid render_mode: {render_mode}. Must be one of {self.AVAILABLE_RENDER_MODES}"
             )
         if return_image and render_mode is None:
-            raise ValueError(
+            msg = (
                 "return_image=True requires render_mode='rgb_array', "
                 "but render_mode=None was specified."
             )
+            raise ValueError(msg)
         self._render_mode = render_mode
         kwargs["render_mode"] = kwargs.get("render_mode", render_mode)
         self._gym_env = None
@@ -714,10 +714,11 @@ class PlangymEnv(PlanEnv):
         are interpreted as RGB images with channels (Height, Width, RGB).
         """
         if self.render_mode is None:
-            raise RuntimeError(
+            msg = (
                 "Cannot get image when render_mode=None. "
                 "Create the environment with render_mode='rgb_array' to enable image capture."
             )
+            raise RuntimeError(msg)
         if hasattr(self.gym_env, "render"):
             img = self.gym_env.render()
             if img is None and self.render_mode == "rgb_array":
