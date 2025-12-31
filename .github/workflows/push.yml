@@ -45,7 +45,7 @@ jobs:
     if: "!contains(github.event.head_commit.message, 'Bump version')"
     strategy:
       matrix:
-        python-version: [ '3.10' ]
+        python-version: [ '3.10', '3.11', '3.12' ]
         os: [ 'ubuntu-latest', 'macos-latest' ]
     runs-on: ${{ matrix.os }}
     steps:
@@ -100,8 +100,8 @@ jobs:
         uv sync --all-extras
         # Fix a bug in retro.data where it tries to load an inexistent version file
         # sed -i '' 's/VERSION\.txt/VERSION/g' /Users/runner/work/plangym/plangym/.venv/lib/python3.10/site-packages/retro/__init__.py
-        if [ ! -d /Users/runner/work/plangym/plangym/.venv/lib/python3.10/site-packages/retro/VERSION ]; then
-          echo "0.9.1" > /Users/runner/work/plangym/plangym/.venv/lib/python3.10/site-packages/retro/VERSION.txt
+        if [ ! -d /Users/runner/work/plangym/plangym/.venv/lib/python${{ matrix.python-version }}/site-packages/retro/VERSION ]; then
+          echo "0.9.1" > /Users/runner/work/plangym/plangym/.venv/lib/python${{ matrix.python-version }}/site-packages/retro/VERSION.txt
         fi
         ROM_PASSWORD=${{ secrets.ROM_PASSWORD }} uv run python -m plangym.scripts.import_retro_roms
 
