@@ -42,8 +42,8 @@ ray = ["ray>=2.35.0"]
 dm_control = ["mujoco>=3.2.2", "dm-control>=1.0.22"]
 mujoco = ["gymnasium[mujoco]>=1.0", "mujoco>=3.2.2"]
 retro = [
-    "stable-retro>=0.9.2,<1.0; sys_platform != 'darwin' and python_version < '3.13'",
-    "stable-retro>=0.9.1,<1.0; sys_platform == 'darwin' and python_version < '3.13'"
+    "stable-retro>=0.9.2,<1.0; sys_platform != 'darwin' and python_version < '3.12'",
+    "stable-retro>=0.9.1,<1.0; sys_platform == 'darwin' and python_version < '3.12'"
 ]
 jupyter = ["jupyterlab>=3.2.0"]
 box_2d = ["box2d-py==2.3.5", "gymnasium[box2d]>=1.0"]

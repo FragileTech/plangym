@@ -5,14 +5,24 @@ import numpy
 
 try:
     import ray
+
+    RAY_AVAILABLE = True
 except ImportError:
-    pass
+    ray = None
+    RAY_AVAILABLE = False
 
 from plangym.core import PlanEnv
 from plangym.vectorization.env import VectorizedEnv
 
 
-@ray.remote
+def _ray_remote_decorator(cls):
+    """Apply ray.remote decorator only if ray is available."""
+    if RAY_AVAILABLE:
+        return ray.remote(cls)
+    return cls
+
+
+@_ray_remote_decorator
 class RemoteEnv(PlanEnv):
     """Remote ray Actor interface for a plangym.PlanEnv."""
 

@@ -47,7 +47,7 @@ try:
     import retro.data
 
     RETRO = retro.data.list_games()
-except ImportError:
+except (ImportError, AttributeError):
     RETRO = []
 
 try:

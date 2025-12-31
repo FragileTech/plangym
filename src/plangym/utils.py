@@ -4,7 +4,7 @@ import os
 
 import gymnasium as gym
 from gymnasium.spaces import Box
-from gymnasium.wrappers.time_limit import TimeLimit
+from gymnasium.wrappers import TimeLimit
 import numpy
 from pyvirtualdisplay import Display
 import cv2

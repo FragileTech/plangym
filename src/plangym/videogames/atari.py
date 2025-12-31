@@ -9,6 +9,14 @@ import numpy
 from plangym.core import wrap_callable
 from plangym.videogames.env import VideogameEnv
 
+# Register ALE environments with gymnasium (required for gymnasium >= 1.0)
+try:
+    import ale_py
+
+    gym.register_envs(ale_py)
+except ImportError:
+    pass  # ale-py not installed, Atari environments won't be available
+
 
 def ale_to_ram(ale) -> numpy.ndarray:
     """Return the ram of the ale emulator."""
