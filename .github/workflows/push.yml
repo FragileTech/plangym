@@ -55,12 +55,11 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Setup Rye
-      id: setup-rye
-      uses: eifinger/setup-rye@v4
+    - name: Setup UV
+      uses: astral-sh/setup-uv@v4
       with:
         enable-cache: true
-        cache-prefix: ${{ matrix.os }}-latest-rye-test-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
+        cache-suffix: ${{ matrix.os }}-${{ matrix.python-version }}
     - name: actions/cache
       uses: actions/cache@v3
       with:
@@ -73,9 +72,8 @@ jobs:
       run: |
         set -x
         sudo apt-get install -y xvfb libglu1-mesa x11-utils
-        rye pin --relaxed cpython@${{ matrix.python-version }}
-        rye sync --all-features
-        ROM_PASSWORD=${{ secrets.ROM_PASSWORD }} rye run import-roms
+        uv sync --all-extras
+        ROM_PASSWORD=${{ secrets.ROM_PASSWORD }} uv run python -m plangym.scripts.import_retro_roms
 
     - name: Install MacOS test and package dependencies
       if: ${{ matrix.os == 'macos-latest' }}
@@ -83,7 +81,7 @@ jobs:
         set -x
         brew install --cask xquartz
         brew install swig libzip
-        # When building retro from source we may need the deprecated version of lua 5.1. 
+        # When building retro from source we may need the deprecated version of lua 5.1.
         # brew install qt5 capnp
         # Retro does not build in MacOS due to ancient requirements, so we will be installing retro==0.9.1 from pypi
         # because it contains pre-build wheels for MacOS.
@@ -92,38 +90,37 @@ jobs:
         # echo 'export PATH="/opt/homebrew/opt/qt@5/bin:$PATH"' >> ~/.zshrc
         # export SDKROOT=$(xcrun --sdk macosx --show-sdk-path)
         # https://docs.github.com/en/actions/learn-github-actions/workflow-commands-for-github-actions#adding-a-system-path
-        echo "/opt/X11/bin" >> $GITHUB_PATH  
+        echo "/opt/X11/bin" >> $GITHUB_PATH
         # https://github.com/ponty/PyVirtualDisplay/issues/42
         if [ ! -d /tmp/.X11-unix ]; then
           mkdir /tmp/.X11-unix
         fi
         sudo chmod 1777 /tmp/.X11-unix
         sudo chown root /tmp/.X11-unix
-        rye pin --relaxed cpython@${{ matrix.python-version }}
-        rye sync --all-features
+        uv sync --all-extras
         # Fix a bug in retro.data where it tries to load an inexistent version file
         # sed -i '' 's/VERSION\.txt/VERSION/g' /Users/runner/work/plangym/plangym/.venv/lib/python3.10/site-packages/retro/__init__.py
         if [ ! -d /Users/runner/work/plangym/plangym/.venv/lib/python3.10/site-packages/retro/VERSION ]; then
           echo "0.9.1" > /Users/runner/work/plangym/plangym/.venv/lib/python3.10/site-packages/retro/VERSION.txt
         fi
-        ROM_PASSWORD=${{ secrets.ROM_PASSWORD }} rye run import-roms
+        ROM_PASSWORD=${{ secrets.ROM_PASSWORD }} uv run python -m plangym.scripts.import_retro_roms
 
     - name: Run Pytest on MacOS
       if: ${{ matrix.os == 'macos-latest' }}
       run: |
         set -x
         # TODO: Figure out how to emulate a display in headless machines, and figure out why the commented files fail
-        # SKIP_RENDER=True rye run pytest tests/test_registry.py tests/videogames/test_retro.py 
-        SKIP_RENDER=True rye run pytest tests/control tests/videogames/test_atari.py tests/videogames/test_nes.py tests/test_core.py tests/test_utils.py
+        # SKIP_RENDER=True uv run pytest tests/test_registry.py tests/videogames/test_retro.py
+        SKIP_RENDER=True uv run pytest tests/control tests/videogames/test_atari.py tests/videogames/test_nes.py tests/test_core.py tests/test_utils.py
 
     - name: Run code coverage on Ubuntu
       if: ${{ matrix.os == 'ubuntu-latest' }}
       run: |
         set -x
-        xvfb-run -s "-screen 0 1400x900x24" rye run codecov
+        xvfb-run -s "-screen 0 1400x900x24" make codecov
 
     - name: Upload coverage report
- #     if: ${{ matrix.python-version == '3.10' && matrix.os == 'ubuntu-latest' }}
+#     if: ${{ matrix.python-version == '3.10' && matrix.os == 'ubuntu-latest' }}
       if: ${{ matrix.os == 'ubuntu-latest' }}
       uses: codecov/codecov-action@v4
       with:
@@ -161,12 +158,11 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: '3.10'
-      - name: Setup Rye
-        id: setup-rye
-        uses: eifinger/setup-rye@v4
+      - name: Setup UV
+        uses: astral-sh/setup-uv@v4
         with:
           enable-cache: true
-          cache-prefix: ubuntu-latest-rye-build-3.10-${{ hashFiles('pyproject.toml') }}
+          cache-suffix: ubuntu-build
       - name: actions/cache
         uses: actions/cache@v3
         with:
@@ -176,9 +172,7 @@ jobs:
       - name: Install build dependencies
         run: |
           set -x
-          pip install uv
-          rye install bump2version
-          rye install twine
+          uv tool install bump2version
 
       - name: Create unique version for test.pypi
         run: |
@@ -191,18 +185,15 @@ jobs:
       - name: Build package
         run: |
           set -x
-          rye build --clean
-          twine check dist/*
+          uv build
 
       - name: Publish package to TestPyPI
         env:
           TEST_PYPI_PASS: ${{ secrets.TEST_PYPI_PASS }}
         if: "'$TEST_PYPI_PASS' != ''"
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          password: ${{ secrets.TEST_PYPI_PASS }}
-          repository-url: https://test.pypi.org/legacy/
-          skip-existing: true
+        run: |
+          set -x
+          uv publish --publish-url https://test.pypi.org/legacy/ --token $TEST_PYPI_PASS || true
 
       - name: Install dependencies
         env:
@@ -210,8 +201,8 @@ jobs:
         run: |
           set -x
           sudo apt-get install -y xvfb libglu1-mesa x11-utils
-          rye lock --all-features
-          uv pip install -r requirements.lock
+          uv lock --all-extras
+          uv pip install -r pyproject.toml --all-extras
           uv pip install dist/*.whl
 #          ROM_PASSWORD=${{ secrets.ROM_PASSWORD }} python -m plangym.scripts.import_retro_roms
 
@@ -270,28 +261,21 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: '3.10'
-      - name: Setup Rye
-        id: setup-rye
-        uses: eifinger/setup-rye@v4
+      - name: Setup UV
+        uses: astral-sh/setup-uv@v4
         with:
           enable-cache: true
-          cache-prefix: ubuntu-latest-rye-release-3.10-${{ hashFiles('pyproject.toml') }}
-      - name: Install dependencies
-        run: |
-          set -x
-          rye install twine
+          cache-suffix: ubuntu-release
 
       - name: Build package
         run: |
           set -x
-          rye build --clean
-          twine check dist/*
+          uv build
 
       - name: Publish package to PyPI
         env:
           PYPI_PASS: ${{ secrets.PYPI_PASS }}
         if: "'$PYPI_PASS' != ''"
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          password: ${{ secrets.PYPI_PASS }}
-          skip-existing: true
+        run: |
+          set -x
+          uv publish --token $PYPI_PASS
