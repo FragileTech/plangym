@@ -20,6 +20,7 @@ class MujocoEnv(PlangymEnv):
     """
 
     DEFAULT_OBS_TYPE = "coords"
+    AVAILABLE_RENDER_MODES = {"human", "rgb_array"}  # MuJoCo doesn't support render_mode=None
 
     def __init__(
         self,

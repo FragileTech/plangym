@@ -32,23 +32,31 @@ def generate_test_cases(
     )
     render_modes = available_render_modes if render_modes is None else render_modes
     obs_types = available_obs_types if obs_types is None else obs_types
-    for i, (n_workers, obs_type, render_mode) in enumerate(
-        product(
-            n_workers_vals,
-            obs_types,
-            render_modes,
-        ),
+    # Check if this env class needs render for image observations
+    # Environments with DEFAULT_OBS_TYPE in {"rgb", "grayscale"} can get images without render
+    needs_render_for_images = env_class.DEFAULT_OBS_TYPE not in {"rgb", "grayscale"}
+
+    i = 0
+    for n_workers, obs_type, render_mode in product(
+        n_workers_vals,
+        obs_types,
+        render_modes,
     ):
+        # Skip invalid combinations: render_mode=None with obs_type requiring images
+        # Only for environments that need gymnasium render for images
+        if needs_render_for_images and render_mode is None and obs_type in {"rgb", "grayscale"}:
+            continue
         name = names[i % len(names)]
+        i += 1
         if isinstance(name, tuple):
             name = "-".join(name)
 
-        def _make_env():
+        def _make_env(_name=name, _n_workers=n_workers, _obs_type=obs_type, _render_mode=render_mode):
             return plangym.make(
-                name,
-                n_workers=n_workers,
-                obs_type=obs_type,
-                render_mode=render_mode,
+                _name,
+                n_workers=_n_workers,
+                obs_type=_obs_type,
+                render_mode=_render_mode,
             )
 
         yield _make_env
@@ -166,7 +174,7 @@ class TestPlanEnv:
     def test_return_image(self, env, return_image):
         assert isinstance(env.return_image, bool)
         # Skip if trying to test return_image=True with render_mode=None
-        if return_image and env.render_mode is None:
+        if return_image and getattr(env, "render_mode", "rgb_array") is None:
             pytest.skip("return_image=True requires render_mode='rgb_array'")
         if isinstance(env, VectorizedEnv):
             env.plan_env._return_image = return_image
@@ -338,7 +346,7 @@ class TestPlanEnv:
 
     @pytest.mark.skipif(os.getenv("SKIP_RENDER", False), reason="No display in CI.")
     def test_get_image(self, env):
-        if env.render_mode is None:
+        if getattr(env, "render_mode", "rgb_array") is None:
             pytest.skip("get_image requires render_mode='rgb_array'")
         img = env.get_image()
         if img is not None:
@@ -451,7 +459,7 @@ class TestPlangymEnv:
 
     @pytest.mark.skipif(os.getenv("SKIP_RENDER", False), reason="No display in CI.")
     def test_render(self, env, display):
-        if env.render_mode is None:
+        if getattr(env, "render_mode", "rgb_array") is None:
             pytest.skip("render requires render_mode != None")
         with warnings.catch_warnings():
             # warnings.simplefilter("ignore")
