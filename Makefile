@@ -69,12 +69,19 @@ check:
 # ============ Test Commands ============
 
 .PHONY: test
-test: test-doctest test-parallel test-singlecore
+test: test-doctest test-parallel test-singlecore test-ray
 
 .PHONY: test-parallel
 test-parallel:
 	MUJOCO_GL=egl PYVIRTUALDISPLAY_DISPLAYFD=0 SKIP_CLASSIC_CONTROL=1 \
-	uv run pytest -n $n -s -o log_cli=true -o log_cli_level=info tests
+	RAY_ENABLE_UV_RUN_RUNTIME_ENV=0 RAY_RUNTIME_ENV_CREATE_WORKING_DIR=0 \
+	uv run pytest -n $n -s -o log_cli=true -o log_cli_level=info \
+	--ignore=tests/vectorization/test_ray.py tests
+
+.PHONY: test-ray
+test-ray:
+	RAY_ENABLE_UV_RUN_RUNTIME_ENV=0 RAY_RUNTIME_ENV_CREATE_WORKING_DIR=0 MUJOCO_GL=egl \
+	uv run pytest -s -o log_cli=true -o log_cli_level=info tests/vectorization/test_ray.py
 
 .PHONY: test-singlecore
 test-singlecore:

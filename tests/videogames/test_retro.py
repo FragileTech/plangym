@@ -14,7 +14,7 @@ from plangym.api_tests import batch_size, display, TestPlanEnv
 
 
 def retro_airstrike():
-    res_obs = gym.wrappers.resize_observation.ResizeObservation
+    res_obs = gym.wrappers.ResizeObservation
     return RetroEnv(name="Airstriker-Genesis", wrappers=[(res_obs, {"shape": (90, 90)})])
 
 

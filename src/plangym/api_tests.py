@@ -1,6 +1,7 @@
 import copy
 from itertools import product
 import os
+import platform
 import warnings
 
 import gymnasium as gym
@@ -11,6 +12,28 @@ from pyvirtualdisplay import Display
 import plangym
 from plangym.core import PlanEnv, PlangymEnv
 from plangym.vectorization.env import VectorizedEnv
+
+
+def is_wsl() -> bool:
+    """Detect if running inside Windows Subsystem for Linux."""
+    if platform.system() != "Linux":
+        return False
+    try:
+        with open("/proc/version", encoding="utf-8") as f:
+            return "microsoft" in f.read().lower()
+    except OSError:
+        return False
+
+
+def skip_render() -> bool:
+    """Return True if rendering tests should be skipped."""
+    env_skip = os.getenv("SKIP_RENDER", "").lower()
+    if env_skip in {"1", "true", "yes"}:
+        return True
+    if env_skip in {"0", "false", "no"}:
+        return False
+    # Auto-detect: skip rendering in WSL environments
+    return is_wsl()
 
 
 def generate_test_cases(
@@ -24,12 +47,9 @@ def generate_test_cases(
     custom_tests = custom_tests or []
     n_workers_vals = [None] if n_workers_values is None else n_workers_values
     names = [names] if isinstance(names, str) else names
-    available_render_modes = (
-        [None] if os.getenv("SKIP_RENDER", False) else env_class.AVAILABLE_RENDER_MODES
-    )
-    available_obs_types = (
-        [None] if os.getenv("SKIP_RENDER", False) else env_class.AVAILABLE_OBS_TYPES
-    )
+    skip_render_ = skip_render()
+    available_render_modes = [None] if skip_render_ else env_class.AVAILABLE_RENDER_MODES
+    available_obs_types = [None] if skip_render_ else env_class.AVAILABLE_OBS_TYPES
     render_modes = available_render_modes if render_modes is None else render_modes
     obs_types = available_obs_types if obs_types is None else obs_types
     # Check if this env class needs render for image observations
@@ -444,8 +464,8 @@ class TestPlangymEnv:
         assert hasattr(env, "render_mode")
         if env.render_mode is not None:
             assert isinstance(env.render_mode, str)
-        # Skip assertion when SKIP_RENDER forces render_mode=None on envs that don't support it
-        if os.getenv("SKIP_RENDER", False) and env.render_mode is None:
+        # Skip assertion when skip_render() forces render_mode=None on envs that don't support it
+        if skip_render() and env.render_mode is None:
             return
         assert env.render_mode in env.AVAILABLE_RENDER_MODES
 
@@ -467,8 +487,11 @@ class TestPlangymEnv:
                 return
             env.step_with_dt(env.sample_action(), dt=1000)
 
-    @pytest.mark.skipif(os.getenv("SKIP_RENDER", False), reason="No display in CI.")
     def test_render(self, env, display):
+        # Use imperative skip (not decorator) so it's evaluated at runtime, not collection time
+        # This is needed for pytest-xdist where collection happens in worker subprocesses
+        if skip_render():
+            pytest.skip("No display available (WSL or CI).")
         if getattr(env, "render_mode", "rgb_array") is None:
             pytest.skip("render requires render_mode != None")
         with warnings.catch_warnings():

@@ -1,6 +1,13 @@
 import os
 import warnings
 
+# Disable Ray's uv run runtime_env hook which causes:
+# 1. "not a valid URI" errors when passing working_dir to actors
+# 2. Python version mismatch when uv selects a different Python for workers
+# See: https://github.com/ray-project/ray/issues/59639
+os.environ["RAY_ENABLE_UV_RUN_RUNTIME_ENV"] = "0"
+os.environ["RAY_RUNTIME_ENV_CREATE_WORKING_DIR"] = "0"
+
 import numpy
 import pytest
 
@@ -11,7 +18,7 @@ if os.getenv("DISABLE_RAY") and str(os.getenv("DISABLE_RAY", "False")).lower() !
 from plangym.control.classic_control import ClassicControl
 from plangym.vectorization.ray import RayEnv, RemoteEnv
 from plangym.videogames.atari import AtariEnv
-from src.plangym.api_tests import batch_size, display, TestPlanEnv, TestPlangymEnv
+from plangym.api_tests import batch_size, display, TestPlanEnv, TestPlangymEnv
 
 
 def ray_cartpole():

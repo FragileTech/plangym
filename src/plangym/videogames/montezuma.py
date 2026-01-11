@@ -103,10 +103,9 @@ class CustomMontezuma:
         self._x_repeat = x_repeat
         self._death_room_8 = death_room_8
 
-        env = gym.make("MontezumaRevengeDeterministic-v4", render_mode=self.render_mode)
+        env = gym.make("ALE/MontezumaRevenge-v5", render_mode=self.render_mode, frameskip=1)
         self.env = remove_time_limit(env)
-        self.unwrapped.seed(0)
-        self.env.reset()
+        self.env.reset(seed=0)
         self.ram = None
         self.cur_steps = 0
         self.cur_score = 0

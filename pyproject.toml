@@ -31,6 +31,7 @@ dependencies = [
     "pyvirtualdisplay>=3.0",
     "imageio>=2.35.1",
     "flogging>=0.0.22",
+    "ray>=2.53.0",
 ]
 [project.optional-dependencies]
 atari = ["ale-py>=0.10", "gymnasium[atari]>=1.0"]

@@ -1,5 +1,3 @@
-import os
-
 import numpy
 import pytest
 
@@ -9,6 +7,7 @@ from src.plangym.api_tests import (
     batch_size,
     display,
     generate_test_cases,
+    skip_render,
     TestPlanEnv,
     TestPlangymEnv,
 )
@@ -60,8 +59,9 @@ class TestDMControl:
         assert hasattr(env, "render_mode")
         assert env.render_mode in {"human", "rgb_array", "coords", None}
 
-    @pytest.mark.skipif(os.getenv("SKIP_RENDER", None), reason="No display in CI.")
     def test_render(self, env):
+        if skip_render():
+            pytest.skip("No display available (WSL or CI).")
         env.reset()
         obs_rgb = env.render(mode="rgb_array")
         assert isinstance(obs_rgb, numpy.ndarray)

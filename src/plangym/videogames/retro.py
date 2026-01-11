@@ -113,6 +113,11 @@ class RetroEnv(VideogameEnv):
         """Forward getattr to self.gym_env."""
         return getattr(self.gym_env, item)
 
+    @property
+    def em(self):
+        """Access the retro emulator, unwrapping any gymnasium wrappers."""
+        return self.gym_env.unwrapped.em
+
     @staticmethod
     def get_win_condition(info: dict[str, Any]) -> bool:  # pragma: no cover
         """Get win condition for games that have the end of the screen available."""
@@ -147,13 +152,13 @@ class RetroEnv(VideogameEnv):
 
     def get_state(self) -> numpy.ndarray:
         """Get the state of the retro environment."""
-        state = self.gym_env.em.get_state()
+        state = self.em.get_state()
         return numpy.frombuffer(state, dtype=numpy.uint8)
 
     def set_state(self, state: numpy.ndarray):
         """Set the state of the retro environment."""
         raw_state = state.tobytes()
-        self.gym_env.em.set_state(raw_state)
+        self.em.set_state(raw_state)
         return state
 
     def close(self):

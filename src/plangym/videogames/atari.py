@@ -122,7 +122,7 @@ class AtariEnv(VideogameEnv):
 
             >>> env = AtariEnv(name="ALE/MsPacman-v5", difficulty=2, mode=1)
             >>> type(env.gym_env.unwrapped)
-            <class 'shimmy.atari_env.AtariEnv'>
+            <class 'ale_py.env.AtariEnv'>
             >>> state, obs, info = env.reset()
             >>> type(state)
             <class 'numpy.ndarray'>

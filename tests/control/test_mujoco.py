@@ -99,22 +99,30 @@ class TestMujocoParallel:
         """Test that state captures simulation time for proper restoration."""
         from plangym.control.mujoco import MujocoEnv
 
-        env = MujocoEnv("Ant-v4", render_mode="rgb_array")
+        env = MujocoEnv("Ant-v4", render_mode="rgb_array", autoreset=False)
         env.reset()
 
         # Take some steps to advance time
         for _ in range(10):
-            env.step(env.sample_action())
+            _, _, terminal, _, _ = env.step(env.sample_action())
+            if terminal:
+                env.reset()
 
         time_before = env.gym_env.unwrapped.data.time
         state = env.get_state()
 
-        # Take more steps
+        # Take more steps, tracking if we reset
+        reset_occurred = False
         for _ in range(10):
-            env.step(env.sample_action())
+            _, _, terminal, _, _ = env.step(env.sample_action())
+            if terminal:
+                reset_occurred = True
+                env.reset()
 
         time_after_steps = env.gym_env.unwrapped.data.time
-        assert time_after_steps > time_before, "Time should advance"
+        # Only check time advance if no reset occurred
+        if not reset_occurred:
+            assert time_after_steps > time_before, "Time should advance"
 
         # Restore state
         env.set_state(state)

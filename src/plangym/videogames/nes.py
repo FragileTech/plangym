@@ -104,7 +104,7 @@ class NESWrapper:
         return observation
 
 
-class JoypadSpace(gym.Wrapper):
+class JoypadSpace:
     """An environment wrapper to convert binary to discrete action space."""
 
     # a mapping of buttons to binary values
@@ -125,7 +125,7 @@ class JoypadSpace(gym.Wrapper):
         """Return the buttons that can be used as actions."""
         return list(cls._button_map.keys())
 
-    def __init__(self, env: gym.Env, actions: list):
+    def __init__(self, env, actions: list):
         """Initialize a new binary to discrete action space wrapper.
 
         Args:
@@ -137,7 +137,7 @@ class JoypadSpace(gym.Wrapper):
             None
 
         """
-        super().__init__(env)
+        self.env = env
         # create the new action space
         self.action_space = gym.spaces.Discrete(len(actions))
         # create the action map from the list of discrete actions
@@ -153,6 +153,15 @@ class JoypadSpace(gym.Wrapper):
             # set this action maps value to the byte action value
             self._action_map[action] = byte_action
             self._action_meanings[action] = " ".join(button_list)
+
+    def __getattr__(self, name):
+        """Forward attribute access to the wrapped environment."""
+        return getattr(self.env, name)
+
+    @property
+    def unwrapped(self):
+        """Return the unwrapped environment."""
+        return self.env.unwrapped
 
     def step(self, action):
         """Take a step using the given action.
