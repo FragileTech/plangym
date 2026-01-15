@@ -97,6 +97,10 @@ def batch_size() -> int:
 
 @pytest.fixture(scope="module")
 def display():
+    """Start a virtual display for rendering tests, or skip if not needed/available."""
+    if skip_render():
+        yield None
+        return
     os.environ["PYVIRTUALDISPLAY_DISPLAYFD"] = "0"
     display = Display(visible=False, size=(400, 400))
     display.start()
