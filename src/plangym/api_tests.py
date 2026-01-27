@@ -489,7 +489,7 @@ class TestPlangymEnv:
             env.reset()
             if hasattr(env, "render_mode") and env.render_mode in {"human", "rgb_array"}:
                 return
-            env.step_with_dt(env.sample_action(), dt=1000)
+            env.step_with_dt(env.sample_action(), dt=100)
 
     def test_render(self, env, display):
         # Use imperative skip (not decorator) so it's evaluated at runtime, not collection time

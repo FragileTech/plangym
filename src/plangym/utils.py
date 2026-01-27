@@ -197,6 +197,13 @@ class GrayScaleObservation(gym.ObservationWrapper, gym.utils.RecordConstructorAr
         else:
             self.observation_space = Box(low=0, high=255, shape=obs_shape, dtype=numpy.uint8)
 
+    def __getattr__(self, name):
+        """Forward attribute access to the wrapped environment."""
+        # Avoid infinite recursion by checking if 'env' exists
+        if name == "env":
+            raise AttributeError(f"'{type(self).__name__}' object has no attribute 'env'")
+        return getattr(self.env, name)
+
     def observation(self, observation):
         """Convert the colour observation to greyscale.
 

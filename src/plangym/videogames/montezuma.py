@@ -351,6 +351,7 @@ class MontezumaEnv(AtariEnv):
     """Plangym implementation of the MontezumaEnv environment optimized for planning."""
 
     AVAILABLE_OBS_TYPES = {"coords", "rgb", "grayscale", "ram", None}
+    AVAILABLE_RENDER_MODES = {"human", "rgb_array", None}
 
     def __init__(
         self,
