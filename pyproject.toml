@@ -26,6 +26,8 @@ dependencies = [
     "numpy",
     "pillow; sys_platform != 'darwin'",
     "fragile-gym",
+    "gymnasium>=1.0",
+    "stable-retro>=0.9.8,<1.0",
     "opencv-python>=4.10.0.84",
     "pyglet==1.5.11",
     "pyvirtualdisplay>=3.0",
@@ -45,8 +47,8 @@ ray = ["ray>=2.35.0"]
 dm_control = ["mujoco>=3.2.2", "dm-control>=1.0.36"]
 mujoco = ["gymnasium[mujoco]>=1.0", "mujoco>=3.2.2"]
 retro = [
-    "stable-retro>=0.9.2,<1.0; sys_platform != 'darwin' and python_version < '3.11'",
-    "stable-retro>=0.9.1,<1.0; sys_platform == 'darwin' and python_version < '3.11'"
+    "stable-retro>=0.9.8,<1.0; sys_platform != 'darwin'",
+    "stable-retro>=0.9.8,<1.0; sys_platform == 'darwin'"
 ]
 jupyter = ["jupyterlab>=3.2.0"]
 box_2d = ["box2d-py==2.3.5", "gymnasium[box2d]>=1.0"]

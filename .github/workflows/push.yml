@@ -73,7 +73,13 @@ jobs:
         set -x
         sudo apt-get install -y xvfb libglu1-mesa x11-utils
         uv sync --all-extras
-        ROM_PASSWORD=${{ secrets.ROM_PASSWORD }} uv run python -m plangym.scripts.import_retro_roms
+        unzip -o -P ${{ secrets.ROM_PASSWORD }} uncompressed_ROMs.zip
+        uv run python -m stable_retro.import "uncompressed ROMs"
+
+    - name: Verify ROM import success (Ubuntu)
+      if: ${{ matrix.os == 'ubuntu-latest' }}
+      run: |
+        uv run python -c "import stable_retro; games = stable_retro.data.list_games(); print(f'Total games: {len(games)}'); assert len(games) > 60, 'ROM import failed'"
 
     - name: Install MacOS test and package dependencies
       if: ${{ matrix.os == 'macos-latest' }}
@@ -89,7 +95,13 @@ jobs:
         if [ -d "$RETRO_DIR" ] && [ ! -f "$RETRO_DIR/VERSION.txt" ]; then
           echo "0.9.1" > "$RETRO_DIR/VERSION.txt"
         fi
-        ROM_PASSWORD=${{ secrets.ROM_PASSWORD }} uv run python -m plangym.scripts.import_retro_roms
+        unzip -o -P ${{ secrets.ROM_PASSWORD }} uncompressed_ROMs.zip
+        uv run python -m stable_retro.import "uncompressed ROMs"
+
+    - name: Verify ROM import success (macOS)
+      if: ${{ matrix.os == 'macos-latest' }}
+      run: |
+        uv run python -c "import stable_retro; games = stable_retro.data.list_games(); print(f'Total games: {len(games)}'); assert len(games) > 60, 'ROM import failed'"
 
     - name: Run Pytest on MacOS
       if: ${{ matrix.os == 'macos-latest' }}

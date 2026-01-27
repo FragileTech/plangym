@@ -10,7 +10,7 @@ try:
     import retro
 
     SKIP_RETRO_TESTS = False
-except ImportError:
+except Exception:
     SKIP_RETRO_TESTS = True
 
 try:

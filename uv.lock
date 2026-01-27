@@ -2420,6 +2420,7 @@ source = { editable = "." }
 dependencies = [
     { name = "flogging" },
     { name = "fragile-gym" },
+    { name = "gymnasium" },
     { name = "imageio" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.4.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
@@ -2428,6 +2429,7 @@ dependencies = [
     { name = "pyglet" },
     { name = "pyvirtualdisplay" },
     { name = "ray" },
+    { name = "stable-retro" },
 ]
 
 [package.optional-dependencies]
@@ -2482,8 +2484,7 @@ ray = [
     { name = "ray" },
 ]
 retro = [
-    { name = "stable-retro", version = "0.9.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11' and sys_platform == 'darwin'" },
-    { name = "stable-retro", version = "0.9.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11' and sys_platform != 'darwin'" },
+    { name = "stable-retro" },
 ]
 test = [
     { name = "hypothesis" },
@@ -2511,6 +2512,7 @@ requires-dist = [
     { name = "fragile-gym", extras = ["accept-rom-license"], marker = "sys_platform != 'darwin' and extra == 'nes'" },
     { name = "fragile-gym-super-mario-bros", marker = "sys_platform != 'darwin' and extra == 'nes'", specifier = ">=7.4.1" },
     { name = "fragile-nes-py", marker = "sys_platform != 'darwin' and extra == 'nes'", specifier = ">=10.0.1" },
+    { name = "gymnasium", specifier = ">=1.0" },
     { name = "gymnasium", extras = ["atari"], marker = "extra == 'atari'", specifier = ">=1.0" },
     { name = "gymnasium", extras = ["box2d"], marker = "extra == 'box-2d'", specifier = ">=1.0" },
     { name = "gymnasium", extras = ["classic-control"], marker = "extra == 'classic-control'", specifier = ">=1.0" },
@@ -2550,8 +2552,9 @@ requires-dist = [
     { name = "sphinxcontrib-bibtex", marker = "extra == 'docs'" },
     { name = "sphinxcontrib-mermaid", marker = "extra == 'docs'" },
     { name = "sphinxext-opengraph", marker = "extra == 'docs'" },
-    { name = "stable-retro", marker = "python_full_version < '3.11' and sys_platform == 'darwin' and extra == 'retro'", specifier = ">=0.9.1,<1.0" },
-    { name = "stable-retro", marker = "python_full_version < '3.11' and sys_platform != 'darwin' and extra == 'retro'", specifier = ">=0.9.2,<1.0" },
+    { name = "stable-retro", specifier = ">=0.9.8,<1.0" },
+    { name = "stable-retro", marker = "sys_platform == 'darwin' and extra == 'retro'", specifier = ">=0.9.8,<1.0" },
+    { name = "stable-retro", marker = "sys_platform != 'darwin' and extra == 'retro'", specifier = ">=0.9.8,<1.0" },
     { name = "tomli", marker = "extra == 'test'", specifier = ">=1.2.3" },
 ]
 provides-extras = ["atari", "box-2d", "classic-control", "dm-control", "docs", "jupyter", "mujoco", "nes", "ray", "retro", "test"]
@@ -3827,35 +3830,21 @@ wheels = [
 
 [[package]]
 name = "stable-retro"
-version = "0.9.1"
+version = "0.9.8"
 source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version < '3.11' and sys_platform == 'darwin'",
-]
 dependencies = [
-    { name = "gymnasium", marker = "python_full_version < '3.11' and sys_platform == 'darwin'" },
-    { name = "pyglet", marker = "python_full_version < '3.11' and sys_platform == 'darwin'" },
+    { name = "farama-notifications" },
+    { name = "gymnasium" },
+    { name = "pyglet" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/18/b6/cfd50226246146c67fe80be770939e892a63905fce81e76bb6d3e5b82366/stable-retro-0.9.1.tar.gz", hash = "sha256:9ad283acea4cb916f5ae42ee5219995898834103d9a0e6d3ac45360099aa2de4", size = 111412694 }
+sdist = { url = "https://files.pythonhosted.org/packages/2d/35/d733e877dcb5b1d3e75225034617377ed466aab71cd397b3d7514017de05/stable_retro-0.9.8.tar.gz", hash = "sha256:6a1c9e949bd17f97133c06c75d3555fd7793619f575a6df688a81f4ef05aa7f4", size = 153915602 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/dd/48/267a719a0cb3e669461aad69e08b91247b2e28417195717207045b541792/stable_retro-0.9.1-cp310-cp310-macosx_13_0_arm64.whl", hash = "sha256:aab2b9ad4ad9fe3ccf4221fcb4ad72fa3ff19f0877d120780d3c16b6c3b8ff82", size = 85092947 },
-]
-
-[[package]]
-name = "stable-retro"
-version = "0.9.2"
-source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version < '3.11' and platform_machine == 'aarch64' and sys_platform == 'linux'",
-    "(python_full_version < '3.11' and platform_machine != 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.11' and sys_platform != 'darwin' and sys_platform != 'linux')",
-]
-dependencies = [
-    { name = "gymnasium", marker = "python_full_version < '3.11' and sys_platform != 'darwin'" },
-    { name = "pyglet", marker = "python_full_version < '3.11' and sys_platform != 'darwin'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/39/b3/befcc36eca41c11b9491b8eb2ed22fa0a4b47810f053858455186ac530a0/stable-retro-0.9.2.tar.gz", hash = "sha256:240861fc4088fef00f0cee97c8d16d0ec1965827111429c4660d2405620a40f0", size = 111083972 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/ae/94/072b7776cf61dc92e45f220d5980687f7a3bfb36c71ae156d7a56de32d5a/stable_retro-0.9.2-cp310-cp310-manylinux_2_28_x86_64.whl", hash = "sha256:20ec47c45130e6eab28d0ee70a1823ca385ec1743b332759f688aed84129d391", size = 95263251 },
+    { url = "https://files.pythonhosted.org/packages/6a/e6/d0df0e354039f8d935725e8885ed22d02decbc4667b8c0c05fc009d64863/stable_retro-0.9.8-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:67b172c314b18c94a30000a87bc2a8e34562e69212518a27428ec9440c05c173", size = 89128747 },
+    { url = "https://files.pythonhosted.org/packages/1e/65/104047eb6c492f0891455399fbff3996138723a27e256416a44241343ab4/stable_retro-0.9.8-cp310-cp310-manylinux_2_28_x86_64.whl", hash = "sha256:39f91844fac3b6ea8ed50587d323f424ac1c266fa5d363f730d70d15c4a10e8f", size = 122573142 },
+    { url = "https://files.pythonhosted.org/packages/05/1a/cb43d67675b0b36d57bea0ad56f9fdb2cabe9b7e82f9b413bb9fc41c5d43/stable_retro-0.9.8-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:5ba8db3abeb397544a36838e1d361aeac908ed5d4916443f28ed564ab2591b91", size = 89130352 },
+    { url = "https://files.pythonhosted.org/packages/05/f2/09110d33f9a084a03f06e597a32c9917f492246bf667202a27b283ca78d5/stable_retro-0.9.8-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:c201a226654a1ca1cb3485f4b03457507d9cf45acf8d8452735173ada5cd1e09", size = 122594273 },
+    { url = "https://files.pythonhosted.org/packages/0a/d0/501a255e10582af502b07fe5a98c592f5cd644c6db8f8b6faf5ecc8e5d67/stable_retro-0.9.8-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:24ad2de4cda828d637c7ce9de8f088437b03f0da60d56c1d0d34a6747b937f6a", size = 89134540 },
+    { url = "https://files.pythonhosted.org/packages/35/9d/2c0264f0b5877a519a00eadfe7e14e4d33bfbd9ffccc582c9bb44893973c/stable_retro-0.9.8-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:b1e6ef1532368917bfbebd05d7f68a93dc98300273d9144d4b82ddc5790bdd8e", size = 122580930 },
 ]
 
 [[package]]
