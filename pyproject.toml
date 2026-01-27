@@ -42,7 +42,7 @@ nes = [
 ]
 classic-control = ["gymnasium[classic-control]>=1.0", "pygame>=2.6.0"]
 ray = ["ray>=2.35.0"]
-dm_control = ["mujoco>=3.2.2", "dm-control>=1.0.22"]
+dm_control = ["mujoco>=3.2.2", "dm-control>=1.0.36"]
 mujoco = ["gymnasium[mujoco]>=1.0", "mujoco>=3.2.2"]
 retro = [
     "stable-retro>=0.9.2,<1.0; sys_platform != 'darwin' and python_version < '3.11'",

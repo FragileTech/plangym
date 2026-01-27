@@ -735,7 +735,7 @@ wheels = [
 
 [[package]]
 name = "dm-control"
-version = "1.0.34"
+version = "1.0.36"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "absl-py" },
@@ -756,9 +756,9 @@ dependencies = [
     { name = "setuptools" },
     { name = "tqdm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/07/e2/29b2508ab37d1b8a6874c92de5baa82f279713c46f6b7500982b432cd1ec/dm_control-1.0.34.tar.gz", hash = "sha256:14604f5222edc7ba870e187241bf15dbd3c886748a27d2adb602f5e8b830049d", size = 56268091 }
+sdist = { url = "https://files.pythonhosted.org/packages/f3/70/417508ee970b6e401a82f128db75f6a292fd52d4dff215a7b5565e9e3f64/dm_control-1.0.36.tar.gz", hash = "sha256:a92e4c077856683b69773e389802f14a2910ec50a47f788776bc73118cec2ad6", size = 56272701 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/3c/21/bb76f83c0489a2fa2f4bac911e5ccaf66aac029e10b173aab70e3bf7379f/dm_control-1.0.34-py3-none-any.whl", hash = "sha256:0ecb93d28c43f7dd1b20182df2bcd3caea413d6e945669470649b49fc13cc1c5", size = 56439845 },
+    { url = "https://files.pythonhosted.org/packages/34/4c/0432475237dc999915f16dd8bb661d6ed43a87df35c521d1a10b04e5647a/dm_control-1.0.36-py3-none-any.whl", hash = "sha256:8c1dfdb49b02ca4585027f5d9275c4c25dcc30dec056bcd712d275a56bdeaff8", size = 56445422 },
 ]
 
 [[package]]
@@ -2505,7 +2505,7 @@ dev = [
 requires-dist = [
     { name = "ale-py", marker = "extra == 'atari'", specifier = ">=0.10" },
     { name = "box2d-py", marker = "extra == 'box-2d'", specifier = "==2.3.5" },
-    { name = "dm-control", marker = "extra == 'dm-control'", specifier = ">=1.0.22" },
+    { name = "dm-control", marker = "extra == 'dm-control'", specifier = ">=1.0.36" },
     { name = "flogging", specifier = ">=0.0.22" },
     { name = "fragile-gym" },
     { name = "fragile-gym", extras = ["accept-rom-license"], marker = "sys_platform != 'darwin' and extra == 'nes'" },
