@@ -19,6 +19,7 @@ from plangym.control.classic_control import ClassicControl
 from plangym.vectorization.ray import RayEnv, RemoteEnv
 from plangym.videogames.atari import AtariEnv
 from plangym.api_tests import batch_size, display, TestPlanEnv, TestPlangymEnv
+from tests import SKIP_RETRO_TESTS
 
 
 def ray_cartpole():
@@ -37,7 +38,9 @@ def ray_dm_control():
     return RayEnv(env_class=DMControlEnv, name="walker-walk", n_workers=2)
 
 
-environments = [(ray_cartpole, True), (ray_dm_control, True), (ray_retro, False)]
+environments = [(ray_cartpole, True), (ray_dm_control, True)]
+if not SKIP_RETRO_TESTS:
+    environments.append((ray_retro, False))
 
 
 @pytest.fixture(params=environments, scope="module")

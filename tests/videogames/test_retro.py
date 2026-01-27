@@ -5,9 +5,11 @@ import pytest
 
 from plangym.vectorization.parallel import ParallelEnv
 from plangym.videogames.retro import ActionDiscretizer, RetroEnv
+from tests import SKIP_RETRO_TESTS
 
 
-pytest.importorskip("retro")
+if SKIP_RETRO_TESTS:
+    pytest.skip("Retro not installed or ROMs missing", allow_module_level=True)
 
 from plangym import api_tests
 from plangym.api_tests import batch_size, display, TestPlanEnv

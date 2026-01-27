@@ -7,9 +7,17 @@ warnings.filterwarnings(
     action="ignore", category=pytest.PytestUnraisableExceptionWarning, module="pytest"
 )
 try:
-    import retro
+    import retro  # noqa: F401
+    from stable_retro import data as retro_data
 
+    _REQUIRED_RETRO_GAMES = ("Airstriker-Genesis", "SonicTheHedgehog-Genesis")
     SKIP_RETRO_TESTS = False
+    for _game in _REQUIRED_RETRO_GAMES:
+        try:
+            retro_data.get_romfile_path(_game)
+        except FileNotFoundError:
+            SKIP_RETRO_TESTS = True
+            break
 except Exception:
     SKIP_RETRO_TESTS = True
 
