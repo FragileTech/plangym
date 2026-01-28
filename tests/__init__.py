@@ -1,3 +1,4 @@
+import os
 import warnings
 
 import pytest
@@ -6,8 +7,12 @@ import pytest
 warnings.filterwarnings(
     action="ignore", category=pytest.PytestUnraisableExceptionWarning, module="pytest"
 )
+
+# Disable Ray's uv runtime_env hook early so it's effective before any ray import.
+os.environ.setdefault("RAY_ENABLE_UV_RUN_RUNTIME_ENV", "0")
+os.environ.setdefault("RAY_RUNTIME_ENV_CREATE_WORKING_DIR", "0")
 try:
-    import retro  # noqa: F401
+    import retro
     from stable_retro import data as retro_data
 
     _REQUIRED_RETRO_GAMES = ("Airstriker-Genesis", "SonicTheHedgehog-Genesis")

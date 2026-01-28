@@ -12,6 +12,9 @@ import numpy
 import pytest
 
 ray = pytest.importorskip("ray")
+from ray._private import ray_constants
+
+ray_constants.RAY_ENABLE_UV_RUN_RUNTIME_ENV = False
 if os.getenv("DISABLE_RAY") and str(os.getenv("DISABLE_RAY", "False")).lower() != "false":
     pytest.skip("Ray not installed or disabled", allow_module_level=True)
 
