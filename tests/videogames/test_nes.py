@@ -1,5 +1,10 @@
 import pytest
 
+from tests import SKIP_MARIO_TESTS
+
+if SKIP_MARIO_TESTS:
+    pytest.skip("gym_super_mario_bros not installed, skipping", allow_module_level=True)
+
 from plangym.api_tests import (
     batch_size,
     display,

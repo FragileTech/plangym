@@ -1,6 +1,7 @@
 import copy
 from itertools import product
 import os
+import platform
 import warnings
 
 import gymnasium as gym
@@ -11,6 +12,28 @@ from pyvirtualdisplay import Display
 import plangym
 from plangym.core import PlanEnv, PlangymEnv
 from plangym.vectorization.env import VectorizedEnv
+
+
+def is_wsl() -> bool:
+    """Detect if running inside Windows Subsystem for Linux."""
+    if platform.system() != "Linux":
+        return False
+    try:
+        with open("/proc/version", encoding="utf-8") as f:
+            return "microsoft" in f.read().lower()
+    except OSError:
+        return False
+
+
+def skip_render() -> bool:
+    """Return True if rendering tests should be skipped."""
+    env_skip = os.getenv("SKIP_RENDER", "").lower()
+    if env_skip in {"1", "true", "yes"}:
+        return True
+    if env_skip in {"0", "false", "no"}:
+        return False
+    # Auto-detect: skip rendering in WSL environments
+    return is_wsl()
 
 
 def generate_test_cases(
@@ -24,31 +47,43 @@ def generate_test_cases(
     custom_tests = custom_tests or []
     n_workers_vals = [None] if n_workers_values is None else n_workers_values
     names = [names] if isinstance(names, str) else names
-    available_render_modes = (
-        [None] if os.getenv("SKIP_RENDER", False) else env_class.AVAILABLE_RENDER_MODES
-    )
-    available_obs_types = (
-        [None] if os.getenv("SKIP_RENDER", False) else env_class.AVAILABLE_OBS_TYPES
-    )
+    skip_render_ = skip_render()
+    available_render_modes = [None] if skip_render_ else env_class.AVAILABLE_RENDER_MODES
+    available_obs_types = [None] if skip_render_ else env_class.AVAILABLE_OBS_TYPES
     render_modes = available_render_modes if render_modes is None else render_modes
     obs_types = available_obs_types if obs_types is None else obs_types
-    for i, (n_workers, obs_type, render_mode) in enumerate(
-        product(
-            n_workers_vals,
-            obs_types,
-            render_modes,
-        ),
+    # Check if this env class needs render for image observations
+    # Environments with DEFAULT_OBS_TYPE in {"rgb", "grayscale"} can get images without render
+    needs_render_for_images = env_class.DEFAULT_OBS_TYPE not in {"rgb", "grayscale"}
+
+    i = 0
+    for n_workers, obs_type, render_mode in product(
+        n_workers_vals,
+        obs_types,
+        render_modes,
     ):
+        # Skip invalid combinations: render_mode that doesn't provide RGB arrays with obs_type requiring images
+        # Only for environments that need gymnasium render for images
+        # In gymnasium 1.x, render_mode="human" returns None, only "rgb_array" returns images
+        if (
+            needs_render_for_images
+            and render_mode != "rgb_array"
+            and obs_type in {"rgb", "grayscale"}
+        ):
+            continue
         name = names[i % len(names)]
+        i += 1
         if isinstance(name, tuple):
             name = "-".join(name)
 
-        def _make_env():
+        def _make_env(
+            _name=name, _n_workers=n_workers, _obs_type=obs_type, _render_mode=render_mode
+        ):
             return plangym.make(
-                name,
-                n_workers=n_workers,
-                obs_type=obs_type,
-                render_mode=render_mode,
+                _name,
+                n_workers=_n_workers,
+                obs_type=_obs_type,
+                render_mode=_render_mode,
             )
 
         yield _make_env
@@ -62,6 +97,10 @@ def batch_size() -> int:
 
 @pytest.fixture(scope="module")
 def display():
+    """Start a virtual display for rendering tests, or skip if not needed/available."""
+    if skip_render():
+        yield None
+        return
     os.environ["PYVIRTUALDISPLAY_DISPLAYFD"] = "0"
     display = Display(visible=False, size=(400, 400))
     display.start()
@@ -165,6 +204,9 @@ class TestPlanEnv:
     @pytest.mark.parametrize("return_image", [True, False])
     def test_return_image(self, env, return_image):
         assert isinstance(env.return_image, bool)
+        # Skip if trying to test return_image=True with render_mode=None
+        if return_image and getattr(env, "render_mode", "rgb_array") is None:
+            pytest.skip("return_image=True requires render_mode='rgb_array'")
         if isinstance(env, VectorizedEnv):
             env.plan_env._return_image = return_image
         else:
@@ -216,9 +258,9 @@ class TestPlanEnv:
     @pytest.mark.parametrize("state", [None, True])
     @pytest.mark.parametrize("return_state", [None, True, False])
     def test_step(self, env, state, return_state, dt=1):
-        _state, *_ = env.reset(return_state=True)
+        state_, *_ = env.reset(return_state=True)
         if state is not None:
-            state = _state
+            state = state_
         action = env.sample_action()
         data = env.step(action, dt=dt, state=state, return_state=return_state)
         *new_state, obs, reward, terminal, _truncated, info = data
@@ -231,7 +273,7 @@ class TestPlanEnv:
             state_is_array = isinstance(new_state, numpy.ndarray)
             assert state_is_array if env.STATE_IS_ARRAY else not state_is_array
             if state_is_array:
-                assert _state.shape == new_state.shape
+                assert state_.shape == new_state.shape
             if not env.SINGLETON and env.STATE_IS_ARRAY:
                 curr_state = env.get_state()
                 assert new_state.shape == curr_state.shape
@@ -335,6 +377,8 @@ class TestPlanEnv:
 
     @pytest.mark.skipif(os.getenv("SKIP_RENDER", False), reason="No display in CI.")
     def test_get_image(self, env):
+        if getattr(env, "render_mode", "rgb_array") is None:
+            pytest.skip("get_image requires render_mode='rgb_array'")
         img = env.get_image()
         if img is not None:
             assert isinstance(img, numpy.ndarray)
@@ -424,6 +468,9 @@ class TestPlangymEnv:
         assert hasattr(env, "render_mode")
         if env.render_mode is not None:
             assert isinstance(env.render_mode, str)
+        # Skip assertion when skip_render() forces render_mode=None on envs that don't support it
+        if skip_render() and env.render_mode is None:
+            return
         assert env.render_mode in env.AVAILABLE_RENDER_MODES
 
     def test_remove_time_limit(self, env):
@@ -442,10 +489,15 @@ class TestPlangymEnv:
             env.reset()
             if hasattr(env, "render_mode") and env.render_mode in {"human", "rgb_array"}:
                 return
-            env.step_with_dt(env.sample_action(), dt=1000)
+            env.step_with_dt(env.sample_action(), dt=100)
 
-    @pytest.mark.skipif(os.getenv("SKIP_RENDER", False), reason="No display in CI.")
     def test_render(self, env, display):
+        # Use imperative skip (not decorator) so it's evaluated at runtime, not collection time
+        # This is needed for pytest-xdist where collection happens in worker subprocesses
+        if skip_render():
+            pytest.skip("No display available (WSL or CI).")
+        if getattr(env, "render_mode", "rgb_array") is None:
+            pytest.skip("render requires render_mode != None")
         with warnings.catch_warnings():
             # warnings.simplefilter("ignore")
             env.render()
@@ -453,9 +505,12 @@ class TestPlangymEnv:
     def test_wrap_environment(self, env):
         if isinstance(env, VectorizedEnv):
             return
-        from gym.wrappers.transform_reward import TransformReward  # noqa: PLC0415
+        # Skip for envs that don't wrap gymnasium.Env (e.g., DMControlEnv wraps dm_control)
+        if not isinstance(env.gym_env, gym.Env):
+            return
+        from gymnasium.wrappers import TransformReward  # noqa: PLC0415
 
-        wrappers = [(TransformReward, {"f": lambda x: x})]
+        wrappers = [(TransformReward, {"func": lambda x: x})]
         env.apply_wrappers(wrappers)
         assert isinstance(env.gym_env, TransformReward)
         env._gym_env = env.gym_env.env

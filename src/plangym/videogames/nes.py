@@ -50,45 +50,91 @@ ActType = TypeVar("ActType")
 RenderFrame = TypeVar("RenderFrame")
 
 
-class NESWrapper:
+class GymToGymnasiumWrapper(gym.Env):
+    """Compatibility wrapper to make old gym.Env compatible with gymnasium.Env.
+
+    This wrapper allows old gym environments (like gym-super-mario-bros) to be used
+    with gymnasium wrappers by providing the necessary interface compatibility.
+    """
+
+    def __init__(self, env):
+        """Initialize the compatibility wrapper.
+
+        Args:
+            env: The old gym.Env to wrap
+
+        """
+        self._env = env
+        # Copy essential attributes
+        self.action_space = env.action_space
+        self.observation_space = getattr(env, "observation_space", None)
+        self.metadata = getattr(env, "metadata", {})
+        self.render_mode = getattr(env, "render_mode", None)
+        self.spec = getattr(env, "spec", None)
+
+    def step(self, action):
+        """Step the environment."""
+        result = self._env.step(action)
+        # Handle both old (4-tuple) and new (5-tuple) return formats
+        if len(result) == 4:
+            obs, reward, terminated, info = result
+            truncated = False
+            return obs, reward, terminated, truncated, info
+        return result
+
+    def reset(self, *, seed=None, options=None):
+        """Reset the environment."""
+        result = self._env.reset()
+        # Handle both old (obs only) and new (obs, info) return formats
+        if isinstance(result, tuple) and len(result) == 2:
+            return result
+        return result, {}
+
+    def render(self):
+        """Render the environment."""
+        return self._env.render()
+
+    def close(self):
+        """Close the environment."""
+        return self._env.close()
+
+    def __getattr__(self, name):
+        """Forward attribute access to the wrapped environment."""
+        return getattr(self._env, name)
+
+    @property
+    def unwrapped(self):
+        """Return the unwrapped environment."""
+        return self._env.unwrapped if hasattr(self._env, "unwrapped") else self._env
+
+
+class NESWrapper(gym.ObservationWrapper):
     """A wrapper for the NES environment."""
 
     def __init__(self, wrapped):
         """Initialize the NESWrapper."""
-        self._wrapped = wrapped
+        super().__init__(wrapped)
 
     def __getattr__(self, name):
-        """Get an attribute from the wrapped object."""
-        return getattr(self._wrapped, name)
-
-    def __setattr__(self, name, value):
-        """Set an attribute on the wrapped object."""
-        if name == "_wrapped":
-            super().__setattr__(name, value)
-        else:
-            setattr(self._wrapped, name, value)  # pragma: no cover
-
-    def __delattr__(self, name):
-        """Delete an attribute from the wrapped object."""
-        delattr(self._wrapped, name)  # pragma: no cover
-
-    def step(
-        self, action: ActType
-    ) -> tuple[gym.core.WrapperObsType, gym.core.SupportsFloat, bool, bool, dict[str, Any]]:
-        """Modify the :attr:`env` after calling :meth:`step` using :meth:`self.observation`."""
-        observation, reward, terminated, info = self._wrapped.step(action)
-        truncated = False
-        return self.observation(observation), reward, terminated, truncated, info
+        """Forward attribute access to the wrapped environment."""
+        # Avoid infinite recursion by checking if 'env' exists
+        if name == "env":
+            raise AttributeError(f"'{type(self).__name__}' object has no attribute 'env'")
+        return getattr(self.env, name)
 
     def reset(
         self,
         *,
-        seed: int | None = None,  # noqa: ARG002
-        options: dict[str, Any] | None = None,  # noqa: ARG002
+        seed: int | None = None,
+        options: dict[str, Any] | None = None,
     ) -> tuple[gym.core.WrapperObsType, dict[str, Any]]:
         """Modify the :attr:`env` after calling :meth:`reset`, returning a modified observation."""
-        obs = self.env.reset()
-        info = {}
+        obs = self.env.reset(seed=seed, options=options)
+        # Handle both old (obs only) and new (obs, info) return formats
+        if isinstance(obs, tuple) and len(obs) == 2:
+            obs, info = obs
+        else:
+            info = {}
         return self.observation(obs), info
 
     def observation(self, observation: ObsType) -> gym.core.WrapperObsType:
@@ -104,7 +150,7 @@ class NESWrapper:
         return observation
 
 
-class JoypadSpace(gym.Wrapper):
+class JoypadSpace(gym.ActionWrapper):
     """An environment wrapper to convert binary to discrete action space."""
 
     # a mapping of buttons to binary values
@@ -125,7 +171,7 @@ class JoypadSpace(gym.Wrapper):
         """Return the buttons that can be used as actions."""
         return list(cls._button_map.keys())
 
-    def __init__(self, env: gym.Env, actions: list):
+    def __init__(self, env, actions: list):
         """Initialize a new binary to discrete action space wrapper.
 
         Args:
@@ -137,9 +183,12 @@ class JoypadSpace(gym.Wrapper):
             None
 
         """
+        # Call parent __init__ FIRST (sets self.env)
         super().__init__(env)
+
         # create the new action space
         self.action_space = gym.spaces.Discrete(len(actions))
+
         # create the action map from the list of discrete actions
         self._action_map = {}
         self._action_meanings = {}
@@ -154,26 +203,24 @@ class JoypadSpace(gym.Wrapper):
             self._action_map[action] = byte_action
             self._action_meanings[action] = " ".join(button_list)
 
-    def step(self, action):
-        """Take a step using the given action.
+    def __getattr__(self, name):
+        """Forward attribute access to the wrapped environment."""
+        # Avoid infinite recursion by checking if 'env' exists
+        if name == "env":
+            raise AttributeError(f"'{type(self).__name__}' object has no attribute 'env'")
+        return getattr(self.env, name)
+
+    def action(self, action):
+        """Convert the discrete action to the byte action.
 
         Args:
             action (int): the discrete action to perform
 
         Returns:
-            a tuple of:
-            - (numpy.ndarray) the state as a result of the action
-            - (float) the reward achieved by taking the action
-            - (bool) a flag denoting whether the episode has ended
-            - (dict) a dictionary of extra information
+            int: the byte action to send to the underlying environment
 
         """
-        # take the step and record the output
-        return self.env.step(self._action_map[action])
-
-    # def reset(self, *, seed=None, options=None):
-    #    """Reset the environment and return the initial observation."""
-    #    return self.env.reset(), {}
+        return self._action_map[action]
 
     def get_keys_to_action(self):
         """Return the dictionary of keyboard keys to actions."""
@@ -303,7 +350,10 @@ class MarioEnv(NesEnv):
         from gym_super_mario_bros.actions import COMPLEX_MOVEMENT  # noqa: PLC0415
 
         env = make(self.name)
-        gym_env = NESWrapper(JoypadSpace(env.unwrapped, COMPLEX_MOVEMENT))
+        # Wrap the old gym.Env in a compatibility wrapper to make it gymnasium-compatible
+        compat_env = GymToGymnasiumWrapper(env.unwrapped)
+        # Now we can apply gymnasium wrappers
+        gym_env = NESWrapper(JoypadSpace(compat_env, COMPLEX_MOVEMENT))
         gym_env.reset()
         return gym_env
 

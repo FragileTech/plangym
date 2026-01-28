@@ -1,3 +1,4 @@
+import os
 import warnings
 
 import pytest
@@ -6,11 +7,23 @@ import pytest
 warnings.filterwarnings(
     action="ignore", category=pytest.PytestUnraisableExceptionWarning, module="pytest"
 )
+
+# Disable Ray's uv runtime_env hook early so it's effective before any ray import.
+os.environ.setdefault("RAY_ENABLE_UV_RUN_RUNTIME_ENV", "0")
+os.environ.setdefault("RAY_RUNTIME_ENV_CREATE_WORKING_DIR", "0")
 try:
     import retro
+    from stable_retro import data as retro_data
 
+    _REQUIRED_RETRO_GAMES = ("Airstriker-Genesis", "SonicTheHedgehog-Genesis")
     SKIP_RETRO_TESTS = False
-except ImportError:
+    for _game in _REQUIRED_RETRO_GAMES:
+        try:
+            retro_data.get_romfile_path(_game)
+        except FileNotFoundError:
+            SKIP_RETRO_TESTS = True
+            break
+except Exception:
     SKIP_RETRO_TESTS = True
 
 try:
@@ -42,3 +55,11 @@ try:
     SKIP_BOX2D_TESTS = False
 except ImportError:
     SKIP_BOX2D_TESTS = True
+
+try:
+    import gym_super_mario_bros
+
+    SKIP_MARIO_TESTS = False
+except (ImportError, AttributeError):
+    # AttributeError: nes_py depends on old gym which fails on Python 3.12+
+    SKIP_MARIO_TESTS = True

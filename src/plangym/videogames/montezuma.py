@@ -103,10 +103,9 @@ class CustomMontezuma:
         self._x_repeat = x_repeat
         self._death_room_8 = death_room_8
 
-        env = gym.make("MontezumaRevengeDeterministic-v4", render_mode=self.render_mode)
+        env = gym.make("ALE/MontezumaRevenge-v5", render_mode=self.render_mode, frameskip=1)
         self.env = remove_time_limit(env)
-        self.unwrapped.seed(0)
-        self.env.reset()
+        self.env.reset(seed=0)
         self.ram = None
         self.cur_steps = 0
         self.cur_score = 0
@@ -208,9 +207,9 @@ class CustomMontezuma:
                     room = 1
                     level += 1
                 else:
-                    assert (
-                        direction_x == 0 or direction_y == 0
-                    ), f"Room change in more than two directions : ({direction_y}, {direction_x})"
+                    assert direction_x == 0 or direction_y == 0, (
+                        f"Room change in more than two directions : ({direction_y}, {direction_x})"
+                    )
                     room = PYRAMID[room_y + direction_y][room_x + direction_x]
                     assert room != -1, f"Impossible room change: ({direction_y}, {direction_x})"
 
@@ -352,6 +351,7 @@ class MontezumaEnv(AtariEnv):
     """Plangym implementation of the MontezumaEnv environment optimized for planning."""
 
     AVAILABLE_OBS_TYPES = {"coords", "rgb", "grayscale", "ram", None}
+    AVAILABLE_RENDER_MODES = {"human", "rgb_array", None}
 
     def __init__(
         self,

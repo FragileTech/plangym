@@ -1,19 +1,28 @@
 import os
 import warnings
 
+# Disable Ray's uv run runtime_env hook which causes:
+# 1. "not a valid URI" errors when passing working_dir to actors
+# 2. Python version mismatch when uv selects a different Python for workers
+# See: https://github.com/ray-project/ray/issues/59639
+os.environ["RAY_ENABLE_UV_RUN_RUNTIME_ENV"] = "0"
+os.environ["RAY_RUNTIME_ENV_CREATE_WORKING_DIR"] = "0"
+
 import numpy
 import pytest
-import ray
+
+ray = pytest.importorskip("ray")
+from ray._private import ray_constants
+
+ray_constants.RAY_ENABLE_UV_RUN_RUNTIME_ENV = False
+if os.getenv("DISABLE_RAY") and str(os.getenv("DISABLE_RAY", "False")).lower() != "false":
+    pytest.skip("Ray not installed or disabled", allow_module_level=True)
 
 from plangym.control.classic_control import ClassicControl
 from plangym.vectorization.ray import RayEnv, RemoteEnv
 from plangym.videogames.atari import AtariEnv
-
-
-pytest.importorskip("ray")
-if os.getenv("DISABLE_RAY") and str(os.getenv("DISABLE_RAY", "False")).lower() != "false":
-    pytest.skip("Ray not installed or disabled", allow_module_level=True)
-from src.plangym.api_tests import batch_size, display, TestPlanEnv, TestPlangymEnv
+from plangym.api_tests import batch_size, display, TestPlanEnv, TestPlangymEnv
+from tests import SKIP_RETRO_TESTS
 
 
 def ray_cartpole():
@@ -32,7 +41,9 @@ def ray_dm_control():
     return RayEnv(env_class=DMControlEnv, name="walker-walk", n_workers=2)
 
 
-environments = [(ray_cartpole, True), (ray_dm_control, True), (ray_retro, False)]
+environments = [(ray_cartpole, True), (ray_dm_control, True)]
+if not SKIP_RETRO_TESTS:
+    environments.append((ray_retro, False))
 
 
 @pytest.fixture(params=environments, scope="module")

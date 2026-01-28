@@ -72,3 +72,47 @@ class TestPrivateAPI:
         assert env.action_shape == numpy.array(action).shape
         data = env.step_with_dt(action, dt=dt)
         assert isinstance(data, tuple)
+
+
+class TestRenderModeValidation:
+    """Test that render_mode parameter is properly validated and respected."""
+
+    def test_render_mode_none_is_respected(self):
+        """Verify render_mode=None is stored correctly."""
+        from plangym.control.classic_control import ClassicControl
+
+        env = ClassicControl(name="CartPole-v1", render_mode=None)
+        assert env.render_mode is None
+        env.close()
+
+    def test_render_mode_rgb_array_is_respected(self):
+        """Verify render_mode='rgb_array' is stored correctly."""
+        from plangym.control.classic_control import ClassicControl
+
+        env = ClassicControl(name="CartPole-v1", render_mode="rgb_array")
+        assert env.render_mode == "rgb_array"
+        env.close()
+
+    def test_invalid_render_mode_raises_error(self):
+        """Verify invalid render_mode raises ValueError."""
+        from plangym.control.classic_control import ClassicControl
+
+        with pytest.raises(ValueError, match="Invalid render_mode"):
+            ClassicControl(name="CartPole-v1", render_mode="invalid_mode")
+
+    def test_return_image_with_render_mode_none_raises_error(self):
+        """Verify return_image=True with render_mode=None raises ValueError."""
+        from plangym.control.classic_control import ClassicControl
+
+        with pytest.raises(ValueError, match="return_image=True requires"):
+            ClassicControl(name="CartPole-v1", render_mode=None, return_image=True)
+
+    def test_get_image_with_render_mode_none_raises_error(self):
+        """Verify get_image() raises RuntimeError when render_mode=None."""
+        from plangym.control.classic_control import ClassicControl
+
+        env = ClassicControl(name="CartPole-v1", render_mode=None)
+        env.reset()
+        with pytest.raises(RuntimeError, match="Cannot get image when render_mode=None"):
+            env.get_image()
+        env.close()

@@ -12,7 +12,7 @@ def parallel_cartpole():
 
 
 def parallel_pacman():
-    return ParallelEnv(env_class=AtariEnv, name="MsPacman-ram-v0", n_workers=2)
+    return ParallelEnv(env_class=AtariEnv, name="ALE/MsPacman-v5", obs_type="ram", n_workers=2)
 
 
 environments = [parallel_cartpole, parallel_pacman]

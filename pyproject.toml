@@ -4,7 +4,8 @@ dynamic = ["version"]
 description = "Plangym is an interface to use gymnasium for planning problems. It extends the standard interface to allow setting and recovering the environment states."
 authors = [{ name = "Guillem Duran Ballester", email = "guillem@fragile.tech" }]
 maintainers = [{ name = "Guillem Duran Ballester", email = "guillem@fragile.tech" }]
-license = {file = "LICENSE"}
+license = "MIT"
+license-files = ["LICENSE"]
 readme = "README.md"
 requires-python = ">=3.10"
 packages = [{ include = "plangym", from = "src" }]
@@ -16,36 +17,41 @@ keywords = ["RL", "gymnasium",  "planning", "plangym"]
 classifiers = [
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
-        "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
         "Topic :: Software Development :: Libraries",
     ]
 dependencies = [
     "numpy",
     "pillow; sys_platform != 'darwin'",
     "fragile-gym",
+    "gymnasium>=1.0",
+    "stable-retro>=0.9.8,<1.0",
     "opencv-python>=4.10.0.84",
     "pyglet==1.5.11",
     "pyvirtualdisplay>=3.0",
     "imageio>=2.35.1",
     "flogging>=0.0.22",
+    "ray>=2.53.0",
 ]
 [project.optional-dependencies]
-atari = ["ale-py", "gymnasium[accept-rom-license,atari]>=0.29.1, == 0.*"]
+atari = ["ale-py>=0.10", "gymnasium[atari]>=1.0"]
 nes = [
-    "fragile-gym[accept-rom-license]",
-    "fragile-nes-py>=10.0.1",  # Requires clang, build-essential
-    "fragile-gym-super-mario-bros>=7.4.1",
+    "fragile-gym[accept-rom-license]; sys_platform != 'darwin'",
+    "fragile-nes-py>=10.0.1; sys_platform != 'darwin'",  # Doesn't build on macOS (Apple Silicon)
+    "fragile-gym-super-mario-bros>=7.4.1; sys_platform != 'darwin'",
 ]
-classic-control = ["gymnasium[classic_control]>=0.29.1, == 0.*", "pygame>=2.6.0"]
+classic-control = ["gymnasium[classic-control]>=1.0", "pygame>=2.6.0"]
 ray = ["ray>=2.35.0"]
-dm_control = ["mujoco>=3.2.2", "dm-control>=1.0.22"]
+dm_control = ["mujoco>=3.2.2", "dm-control>=1.0.36"]
+mujoco = ["gymnasium[mujoco]>=1.0", "mujoco>=3.2.2"]
 retro = [
-    "stable-retro==0.9.2; sys_platform != 'darwin'",
-    "stable-retro==0.9.1; sys_platform == 'darwin'"
+    "stable-retro>=0.9.8,<1.0; sys_platform != 'darwin'",
+    "stable-retro>=0.9.8,<1.0; sys_platform == 'darwin'"
 ]
 jupyter = ["jupyterlab>=3.2.0"]
-box_2d = ["box2d-py==2.3.5"]
+box_2d = ["box2d-py==2.3.5", "gymnasium[box2d]>=1.0"]
 test = [
     "psutil>=5.8.0",
     "pytest>=6.2.5",
@@ -83,29 +89,11 @@ allow-direct-references = true
 [tool.hatch.version]
 path = "src/plangym/version.py"
 
-[tool.rye]
-dev-dependencies = ["ruff"]
-#excluded-dependencies = ["gym"]
-universal = true
+[dependency-groups]
+dev = ["ruff"]
 
-[tool.rye.scripts]
-style = { chain = ["ruff check --fix-only  --unsafe-fixes tests src", "ruff format tests src"] }
-check = { chain = ["ruff check --diff tests src", "ruff format --diff tests src"]}  #,"mypy src tests" ] }
-test = { chain = ["test:doctest", "test:parallel", "test:singlecore"] }
-codecov = { chain = ["codecov:singlecore", "codecov:parallel"] }
-import-roms = { cmd = "python3 src/plangym/scripts/import_retro_roms.py" }
-"test:parallel" = { cmd = "pytest -n auto -s -o log_cli=true -o log_cli_level=info tests", env-file = ".multicore.env" }
-"test:singlecore" = { cmd = "pytest -s -o log_cli=true -o log_cli_level=info tests/control/test_classic_control.py", env-file = ".onecore.env" }
-"test:doctest" = { cmd = "pytest --doctest-modules -n 0 -s -o log_cli=true -o log_cli_level=info src", env-file = ".multicore.env" }
-"codecov:parallel" = { chain = ["codecov:parallel_1", "codecov:parallel_2", "codecov:parallel_3", "codecov:vectorization"] }
-"codecov:parallel_1" = { cmd = "pytest -n auto -s -o log_cli=true -o log_cli_level=info --cov=./ --cov-report=xml:coverage_parallel_1.xml --cov-config=pyproject.toml tests/test_core.py tests/test_registry.py tests/test_utils.py", env-file = ".multicore.env" }
-"codecov:parallel_2" = { cmd = "pytest -n auto -s -o log_cli=true -o log_cli_level=info --cov=./ --cov-report=xml:coverage_parallel_2.xml --cov-config=pyproject.toml tests/videogames", env-file = ".multicore.env" }
-"codecov:parallel_3" = { cmd = "pytest -n auto -s -o log_cli=true -o log_cli_level=info --cov=./ --cov-report=xml:coverage_parallel_3.xml --cov-config=pyproject.toml tests/control", env-file = ".multicore.env" }
-"codecov:vectorization" = { cmd = "pytest -n 0 -s -o log_cli=true -o log_cli_level=info --cov=./ --cov-report=xml:coverage_vectorization.xml --cov-config=pyproject.toml tests/vectorization", env-file = ".multicore.env" }
-"codecov:singlecore" = { cmd = "pytest --doctest-modules -s -o log_cli=true -o log_cli_level=info --cov=./ --cov-report=xml --cov-config=pyproject.toml tests/control/test_classic_control.py", env-file = ".onecore.env" }
-docs = {chain = ["build-docs", "serve-docs"]}
-build-docs = { cmd = "sphinx-build -b html docs/source docs/build"}
-serve-docs = { cmd = "python3 -m http.server --directory docs/build" }
+[tool.uv]
+default-groups = ["dev"]
 
 [tool.ruff]
 # Assume Python 3.10

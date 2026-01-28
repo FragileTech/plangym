@@ -4,7 +4,7 @@ import os
 
 import gymnasium as gym
 from gymnasium.spaces import Box
-from gymnasium.wrappers.time_limit import TimeLimit
+from gymnasium.wrappers import TimeLimit
 import numpy
 from pyvirtualdisplay import Display
 import cv2
@@ -156,14 +156,14 @@ class GrayScaleObservation(gym.ObservationWrapper, gym.utils.RecordConstructorAr
 
     Example:
         >>> import gymnasium as gym
-        >>> from gymnasium.wrappers import GrayScaleObservation
-        >>> env = gym.make("CarRacing-v2")
+        >>> from gymnasium.wrappers import GrayscaleObservation
+        >>> env = gym.make("CarRacing-v3")
         >>> env.observation_space
         Box(0, 255, (96, 96, 3), uint8)
-        >>> env = GrayScaleObservation(gym.make("CarRacing-v2"))
+        >>> env = GrayscaleObservation(gym.make("CarRacing-v3"))
         >>> env.observation_space
         Box(0, 255, (96, 96), uint8)
-        >>> env = GrayScaleObservation(gym.make("CarRacing-v2"), keep_dim=True)
+        >>> env = GrayscaleObservation(gym.make("CarRacing-v3"), keep_dim=True)
         >>> env.observation_space
         Box(0, 255, (96, 96, 1), uint8)
 
@@ -196,6 +196,13 @@ class GrayScaleObservation(gym.ObservationWrapper, gym.utils.RecordConstructorAr
             )
         else:
             self.observation_space = Box(low=0, high=255, shape=obs_shape, dtype=numpy.uint8)
+
+    def __getattr__(self, name):
+        """Forward attribute access to the wrapped environment."""
+        # Avoid infinite recursion by checking if 'env' exists
+        if name == "env":
+            raise AttributeError(f"'{type(self).__name__}' object has no attribute 'env'")
+        return getattr(self.env, name)
 
     def observation(self, observation):
         """Convert the colour observation to greyscale.

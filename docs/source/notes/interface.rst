@@ -61,6 +61,12 @@ Box2D
 .. autoclass:: plangym.control.lunar_lander.LunarLander
    :members:
 
+MuJoCo
+-----------------
+
+.. autoclass:: plangym.control.mujoco.MujocoEnv
+   :members:
+
 Vectorization
 ==============
 

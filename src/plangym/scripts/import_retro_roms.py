@@ -2,10 +2,21 @@ import os
 import sys
 import zipfile
 import logging
+import warnings
 import flogging
 from pathlib import Path
 
-import retro.data
+warnings.warn(
+    "This script is deprecated. Use 'python -m stable_retro.import' instead. "
+    "The stable_retro.import module provides better compatibility and doesn't require display setup.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
+try:
+    import retro.data
+except Exception:
+    sys.exit(0)
 
 flogging.setup()
 logger = logging.getLogger("import-roms")

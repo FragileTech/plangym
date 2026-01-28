@@ -1,4 +1,10 @@
-"""Implement the ``plangym`` API for retro environments."""
+"""Implement the ``plangym`` API for retro environments.
+
+.. note::
+    **Python Version Compatibility**: The ``stable-retro`` package is only
+    supported on Python 3.10 due to native extension build issues.
+    Retro environments will not be available on Python 3.11+.
+"""
 
 from typing import Any, Iterable
 
@@ -44,7 +50,16 @@ class ActionDiscretizer(gym.ActionWrapper):
 
 
 class RetroEnv(VideogameEnv):
-    """Environment for playing ``gym-retro`` games."""
+    """Environment for playing ``gym-retro`` games.
+
+    .. warning::
+        This environment requires the ``stable-retro`` package, which is only
+        available on Python 3.10. On Python 3.11+, this module cannot be imported
+        due to native extension build issues.
+
+    For more information about supported games and setup, see:
+    https://github.com/Farama-Foundation/stable-retro
+    """
 
     AVAILABLE_OBS_TYPES = {"coords", "rgb", "grayscale", "ram"}
     SINGLETON = True
@@ -98,6 +113,11 @@ class RetroEnv(VideogameEnv):
         """Forward getattr to self.gym_env."""
         return getattr(self.gym_env, item)
 
+    @property
+    def em(self):
+        """Access the retro emulator, unwrapping any gymnasium wrappers."""
+        return self.gym_env.unwrapped.em
+
     @staticmethod
     def get_win_condition(info: dict[str, Any]) -> bool:  # pragma: no cover
         """Get win condition for games that have the end of the screen available."""
@@ -132,13 +152,13 @@ class RetroEnv(VideogameEnv):
 
     def get_state(self) -> numpy.ndarray:
         """Get the state of the retro environment."""
-        state = self.gym_env.em.get_state()
+        state = self.em.get_state()
         return numpy.frombuffer(state, dtype=numpy.uint8)
 
     def set_state(self, state: numpy.ndarray):
         """Set the state of the retro environment."""
         raw_state = state.tobytes()
-        self.gym_env.em.set_state(raw_state)
+        self.em.set_state(raw_state)
         return state
 
     def close(self):
@@ -162,8 +182,8 @@ class RetroEnv(VideogameEnv):
             ``(state, obs)`` if ```return_state`` is ``True`` else return ``obs``.
 
         """
-        obs, _info = self.apply_reset()
+        obs, info_ = self.apply_reset()
         obs = self.process_obs(obs)
-        info = _info or {}
+        info = info_ or {}
         info = self.process_info(obs=obs, reward=0, terminal=False, info=info)
         return (self.get_state(), obs, info) if return_state else (obs, info)

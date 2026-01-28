@@ -10,12 +10,14 @@ import numpy
 from plangym.core import PlangymEnv, wrap_callable
 
 
-try:
-    from gym.envs.classic_control import rendering
+def _get_rendering():
+    """Lazily import gym rendering module to avoid pyglet initialization at import time."""
+    try:
+        from gym.envs.classic_control import rendering  # noqa: PLC0415
 
-    novideo_mode = False
-except Exception:  # pragma: no cover
-    novideo_mode = True
+        return rendering
+    except Exception:  # pragma: no cover
+        return None
 
 
 class DMControlEnv(PlangymEnv):
@@ -130,7 +132,7 @@ class DMControlEnv(PlangymEnv):
             visualize_reward=self._visualize_reward,
         )
         self.viewer = []
-        self._viewer = None if novideo_mode else rendering.SimpleImageViewer()
+        self._viewer = None  # Lazy init in show_game() to avoid display issues in headless envs
         return env
 
     def setup(self):
@@ -204,6 +206,9 @@ class DMControlEnv(PlangymEnv):
         attribute. This method calls the latter to visualize the collected
         images.
         """
+        rendering = _get_rendering()
+        if rendering is None:
+            return
         if self._viewer is None:
             self._viewer = rendering.SimpleImageViewer()
         for img in self.viewer:
@@ -258,8 +263,8 @@ class DMControlEnv(PlangymEnv):
         time_step = self.gym_env.step(action)
         obs = time_step
         terminal = time_step.last()
-        _reward = time_step.reward if time_step.reward is not None else 0.0
-        reward = _reward + self._reward_step
+        reward_ = time_step.reward if time_step.reward is not None else 0.0
+        reward = reward_ + self._reward_step
         truncated = False
         return obs, reward, terminal, truncated, info
 

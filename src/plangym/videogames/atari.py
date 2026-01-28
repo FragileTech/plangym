@@ -9,6 +9,14 @@ import numpy
 from plangym.core import wrap_callable
 from plangym.videogames.env import VideogameEnv
 
+# Register ALE environments with gymnasium (required for gymnasium >= 1.0)
+try:
+    import ale_py
+
+    gym.register_envs(ale_py)
+except ImportError:
+    pass  # ale-py not installed, Atari environments won't be available
+
 
 def ale_to_ram(ale) -> numpy.ndarray:
     """Return the ram of the ale emulator."""
@@ -60,6 +68,7 @@ class AtariEnv(VideogameEnv):
     """
 
     STATE_IS_ARRAY = True
+    AVAILABLE_RENDER_MODES = {"human", "rgb_array"}  # Atari doesn't support render_mode=None
 
     def __init__(
         self,
@@ -113,7 +122,7 @@ class AtariEnv(VideogameEnv):
 
             >>> env = AtariEnv(name="ALE/MsPacman-v5", difficulty=2, mode=1)
             >>> type(env.gym_env.unwrapped)
-            <class 'shimmy.atari_env.AtariEnv'>
+            <class 'ale_py.env.AtariEnv'>
             >>> state, obs, info = env.reset()
             >>> type(state)
             <class 'numpy.ndarray'>
@@ -205,7 +214,7 @@ class AtariEnv(VideogameEnv):
             >>> img.shape
             (210, 160, 3)
         """
-        return self.gym_env.ale.getScreenRGB()
+        return self.ale.getScreenRGB()
 
     def get_ram(self) -> numpy.ndarray:
         """Return a numpy array containing the content of the emulator's RAM.
