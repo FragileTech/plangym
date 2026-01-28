@@ -95,11 +95,15 @@ jobs:
         if [ -d "$RETRO_DIR" ] && [ ! -f "$RETRO_DIR/VERSION.txt" ]; then
           echo "0.9.1" > "$RETRO_DIR/VERSION.txt"
         fi
+    - name: Import Retro ROMs (macOS Intel)
+      if: ${{ matrix.os == 'macos-latest' && runner.arch == 'X64' }}
+      run: |
+        set -x
         unzip -o -P ${{ secrets.ROM_PASSWORD }} uncompressed_ROMs.zip
         uv run python -m stable_retro.import "uncompressed ROMs"
 
-    - name: Verify ROM import success (macOS)
-      if: ${{ matrix.os == 'macos-latest' }}
+    - name: Verify ROM import success (macOS Intel)
+      if: ${{ matrix.os == 'macos-latest' && runner.arch == 'X64' }}
       run: |
         uv run python -c "import stable_retro; games = stable_retro.data.list_games(); print(f'Total games: {len(games)}'); assert len(games) > 60, 'ROM import failed'"
 
