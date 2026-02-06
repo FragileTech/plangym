@@ -4,6 +4,7 @@ FROM ubuntu:22.04
 RUN apt-get update && \
 	apt-get install -y --no-install-suggests --no-install-recommends \
     make cmake git xvfb build-essential curl ssh wget ca-certificates swig \
+    libegl1-mesa-dev libglu1-mesa libgl1-mesa-glx \
     python3 python3-dev && \
     wget -O - https://bootstrap.pypa.io/get-pip.py | python3
 

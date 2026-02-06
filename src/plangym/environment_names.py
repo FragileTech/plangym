@@ -43,19 +43,40 @@ MUJOCO = [
     "Walker2d-v5",
 ]
 
-try:
-    import retro.data
+_RETRO = None
+_DM_CONTROL = None
 
-    RETRO = retro.data.list_games()
-except Exception:  # pragma: no cover
-    RETRO = []
 
-try:
-    from dm_control import suite
+def _load_retro():
+    global _RETRO
+    if _RETRO is None:
+        try:
+            import retro.data
 
-    DM_CONTROL = list(suite.ALL_TASKS)
-except (ImportError, OSError, AttributeError):  # pragma: no cover
-    DM_CONTROL = []
+            _RETRO = retro.data.list_games()
+        except Exception:  # pragma: no cover
+            _RETRO = []
+    return _RETRO
+
+
+def _load_dm_control():
+    global _DM_CONTROL
+    if _DM_CONTROL is None:
+        try:
+            from dm_control import suite
+
+            _DM_CONTROL = list(suite.ALL_TASKS)
+        except (ImportError, OSError, AttributeError):  # pragma: no cover
+            _DM_CONTROL = []
+    return _DM_CONTROL
+
+
+def __getattr__(name: str):
+    if name == "RETRO":
+        return _load_retro()
+    if name == "DM_CONTROL":
+        return _load_dm_control()
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 ATARI = [

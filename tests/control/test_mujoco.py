@@ -1,4 +1,5 @@
 import operator
+import os
 import sys
 
 import numpy
@@ -64,6 +65,41 @@ class TestMujoco(TestPlangymEnv):
         assert hasattr(unwrapped, "data")
         assert unwrapped.model.nq > 0  # Has position coordinates
         assert unwrapped.model.nv > 0  # Has velocity coordinates
+
+
+class TestMujocoImageExtraction:
+    """Test that RGB images can be extracted with non-image obs_type."""
+
+    @pytest.mark.skipif(os.getenv("SKIP_RENDER", False), reason="No display in CI.")
+    def test_coords_obs_with_image_extraction(self):
+        """Verify get_image() returns RGB when using obs_type='coords' (default)."""
+        env = MujocoEnv("Ant-v4", render_mode="rgb_array", autoreset=False)
+        _state, obs, _info = env.reset()
+        # Coords observation should be a 1D float array
+        assert obs.ndim == 1
+        assert numpy.issubdtype(obs.dtype, numpy.floating)
+        # get_image() should return a valid RGB image
+        img = env.get_image()
+        assert img.ndim == 3
+        assert img.shape[2] == 3
+        assert img.dtype == numpy.uint8
+        env.close()
+
+    @pytest.mark.skipif(os.getenv("SKIP_RENDER", False), reason="No display in CI.")
+    def test_coords_obs_return_image(self):
+        """Verify return_image=True populates info['rgb'] with obs_type='coords'."""
+        env = MujocoEnv("Ant-v4", render_mode="rgb_array", return_image=True, autoreset=False)
+        _state, obs, info = env.reset()
+        assert "rgb" in info
+        assert info["rgb"].ndim == 3
+        assert info["rgb"].shape[2] == 3
+        # Also check step
+        obs, _reward, _term, _trunc, info = env.step(env.sample_action())
+        assert obs.ndim == 1
+        assert "rgb" in info
+        assert info["rgb"].ndim == 3
+        assert info["rgb"].shape[2] == 3
+        env.close()
 
 
 class TestMujocoParallel:

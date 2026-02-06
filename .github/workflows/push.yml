@@ -71,7 +71,8 @@ jobs:
       if: ${{ matrix.os == 'ubuntu-latest' }}
       run: |
         set -x
-        sudo apt-get install -y xvfb libglu1-mesa x11-utils
+        sudo apt-get update
+        sudo apt-get install -y xvfb libglu1-mesa libegl1-mesa-dev x11-utils
         uv sync --all-extras
         unzip -o -P ${{ secrets.ROM_PASSWORD }} uncompressed_ROMs.zip
         uv run python -m stable_retro.import "uncompressed ROMs"
@@ -202,7 +203,8 @@ jobs:
           UV_SYSTEM_PYTHON: 1
         run: |
           set -x
-          sudo apt-get install -y xvfb libglu1-mesa x11-utils
+          sudo apt-get update
+          sudo apt-get install -y xvfb libglu1-mesa libegl1-mesa-dev x11-utils
           uv lock
           uv pip install -r pyproject.toml --all-extras
           uv pip install dist/*.whl
