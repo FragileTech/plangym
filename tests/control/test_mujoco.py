@@ -75,7 +75,7 @@ class TestMujocoImageExtraction:
         _state, obs, _info = env.reset()
         # Coords observation should be a 1D float array
         assert obs.ndim == 1
-        assert obs.dtype in (numpy.float32, numpy.float64)
+        assert obs.dtype in {numpy.float32, numpy.float64}
         # get_image() should return a valid RGB image
         img = env.get_image()
         assert img.ndim == 3

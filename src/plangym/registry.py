@@ -1,10 +1,12 @@
 """Functionality for instantiating the environment by passing the environment id."""
 
-from plangym.environment_names import ATARI, BOX_2D, CLASSIC_CONTROL, DM_CONTROL, MUJOCO, RETRO
+from plangym.environment_names import ATARI, BOX_2D, CLASSIC_CONTROL, MUJOCO
 
 
 def get_planenv_class(name, domain_name, state):
     """Return the class corresponding to the environment name."""
+    from plangym.environment_names import DM_CONTROL, RETRO
+
     # if name == "MinimalPacman-v0":
     #    return MinimalPacman
     # elif name == "MinimalPong-v0":

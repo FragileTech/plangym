@@ -9,6 +9,11 @@ ROM_PASSWORD ?= "NO_PASSWORD"
 VERSION ?= latest
 MUJOCO_PATH?=~/.mujoco
 
+.PHONY: install-system-deps
+install-system-deps:
+	sudo apt-get update
+	sudo apt-get install -y xvfb libglu1-mesa libegl1-mesa-dev libgl1-mesa-glx x11-utils
+
 .PHONY: install-mujoco
 install-mujoco:
 	mkdir ${MUJOCO_PATH}

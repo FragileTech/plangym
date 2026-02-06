@@ -59,8 +59,12 @@
 <summary><strong>Ubuntu / Debian</strong></summary>
 
 ```bash
+# Install all system dependencies for headless rendering (EGL, GLU, X11)
+make install-system-deps
+
+# Or manually:
 sudo apt-get update
-sudo apt-get install -y xvfb libglu1-mesa x11-utils
+sudo apt-get install -y xvfb libglu1-mesa libegl1-mesa-dev libgl1-mesa-glx x11-utils
 ```
 
 For NES environments (nes-py):
@@ -91,8 +95,12 @@ fi
 <summary><strong>WSL2 (Windows)</strong></summary>
 
 ```bash
+# Install all system dependencies for headless rendering (EGL, GLU, X11)
+make install-system-deps
+
+# Or manually:
 sudo apt-get update
-sudo apt-get install -y xvfb libglu1-mesa x11-utils
+sudo apt-get install -y xvfb libglu1-mesa libegl1-mesa-dev libgl1-mesa-glx x11-utils
 ```
 
 For GUI rendering, install an X server on Windows (e.g., VcXsrv) or use headless mode.

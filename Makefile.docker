@@ -82,5 +82,5 @@ install-python-libs:
 install-env-deps:
 	apt-get update
 	apt-get install -y --no-install-suggests --no-install-recommends \
-		libglfw3 libglew-dev libgl1-mesa-glx libosmesa6 xvfb swig
+		libglfw3 libglew-dev libgl1-mesa-glx libegl1-mesa-dev libosmesa6 xvfb swig
 

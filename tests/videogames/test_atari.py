@@ -65,8 +65,11 @@ class TestAtariEnv:
     def test_ram_obs_return_image(self):
         """Verify return_image=True populates info['rgb'] with obs_type='ram'."""
         env = AtariEnv(
-            name="ALE/Qbert-v5", obs_type="ram", return_image=True,
-            clone_seeds=False, autoreset=False,
+            name="ALE/Qbert-v5",
+            obs_type="ram",
+            return_image=True,
+            clone_seeds=False,
+            autoreset=False,
         )
         _state, obs, info = env.reset()
         assert "rgb" in info
