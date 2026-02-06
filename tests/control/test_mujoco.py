@@ -1,4 +1,5 @@
 import operator
+import os
 import sys
 
 import numpy
@@ -69,13 +70,14 @@ class TestMujoco(TestPlangymEnv):
 class TestMujocoImageExtraction:
     """Test that RGB images can be extracted with non-image obs_type."""
 
+    @pytest.mark.skipif(os.getenv("SKIP_RENDER", False), reason="No display in CI.")
     def test_coords_obs_with_image_extraction(self):
         """Verify get_image() returns RGB when using obs_type='coords' (default)."""
         env = MujocoEnv("Ant-v4", render_mode="rgb_array", autoreset=False)
         _state, obs, _info = env.reset()
         # Coords observation should be a 1D float array
         assert obs.ndim == 1
-        assert obs.dtype in {numpy.float32, numpy.float64}
+        assert numpy.issubdtype(obs.dtype, numpy.floating)
         # get_image() should return a valid RGB image
         img = env.get_image()
         assert img.ndim == 3
@@ -83,6 +85,7 @@ class TestMujocoImageExtraction:
         assert img.dtype == numpy.uint8
         env.close()
 
+    @pytest.mark.skipif(os.getenv("SKIP_RENDER", False), reason="No display in CI.")
     def test_coords_obs_return_image(self):
         """Verify return_image=True populates info['rgb'] with obs_type='coords'."""
         env = MujocoEnv("Ant-v4", render_mode="rgb_array", return_image=True, autoreset=False)
