@@ -73,24 +73,24 @@ test: test-doctest test-parallel test-singlecore test-ray
 
 .PHONY: test-parallel
 test-parallel:
-	PYVIRTUALDISPLAY_DISPLAYFD=0 SKIP_CLASSIC_CONTROL=1 SKIP_RENDER=True \
+	DISPLAY= MUJOCO_GL=egl PYVIRTUALDISPLAY_DISPLAYFD=0 SKIP_CLASSIC_CONTROL=1 SKIP_RENDER=True \
 	RAY_ENABLE_UV_RUN_RUNTIME_ENV=0 RAY_RUNTIME_ENV_CREATE_WORKING_DIR=0 \
 	uv run pytest -n $n -s -o log_cli=true -o log_cli_level=info \
 	--ignore=tests/vectorization/test_ray.py tests
 
 .PHONY: test-ray
 test-ray:
-	RAY_ENABLE_UV_RUN_RUNTIME_ENV=0 RAY_RUNTIME_ENV_CREATE_WORKING_DIR=0 MUJOCO_GL=egl \
+	DISPLAY= RAY_ENABLE_UV_RUN_RUNTIME_ENV=0 RAY_RUNTIME_ENV_CREATE_WORKING_DIR=0 MUJOCO_GL=egl \
 	uv run pytest -s -o log_cli=true -o log_cli_level=info tests/vectorization/test_ray.py
 
 .PHONY: test-singlecore
 test-singlecore:
-	PYTEST_XDIST_AUTO_NUM_WORKERS=1 PYVIRTUALDISPLAY_DISPLAYFD=0 \
+	DISPLAY= MUJOCO_GL=egl PYTEST_XDIST_AUTO_NUM_WORKERS=1 PYVIRTUALDISPLAY_DISPLAYFD=0 \
 	uv run pytest -s -o log_cli=true -o log_cli_level=info tests/control/test_classic_control.py
 
 .PHONY: test-doctest
 test-doctest:
-	PYVIRTUALDISPLAY_DISPLAYFD=0 SKIP_CLASSIC_CONTROL=1 \
+	DISPLAY= MUJOCO_GL=egl PYVIRTUALDISPLAY_DISPLAYFD=0 SKIP_CLASSIC_CONTROL=1 \
 	uv run pytest --doctest-modules -n $n -s -o log_cli=true -o log_cli_level=info src
 
 # ============ Code Coverage ============
@@ -103,35 +103,35 @@ codecov-parallel: codecov-parallel-1 codecov-parallel-2 codecov-parallel-3 codec
 
 .PHONY: codecov-parallel-1
 codecov-parallel-1:
-	PYVIRTUALDISPLAY_DISPLAYFD=0 SKIP_CLASSIC_CONTROL=1 SKIP_RENDER=True \
+	DISPLAY= MUJOCO_GL=egl PYVIRTUALDISPLAY_DISPLAYFD=0 SKIP_CLASSIC_CONTROL=1 SKIP_RENDER=True \
 	uv run pytest -n $n -s -o log_cli=true -o log_cli_level=info \
 	--cov=./ --cov-report=xml:coverage_parallel_1.xml --cov-config=pyproject.toml \
 	tests/test_core.py tests/test_registry.py tests/test_utils.py
 
 .PHONY: codecov-parallel-2
 codecov-parallel-2:
-	PYVIRTUALDISPLAY_DISPLAYFD=0 SKIP_CLASSIC_CONTROL=1 SKIP_RENDER=True \
+	DISPLAY= MUJOCO_GL=egl PYVIRTUALDISPLAY_DISPLAYFD=0 SKIP_CLASSIC_CONTROL=1 SKIP_RENDER=True \
 	uv run pytest -n $n -s -o log_cli=true -o log_cli_level=info \
 	--cov=./ --cov-report=xml:coverage_parallel_2.xml --cov-config=pyproject.toml \
 	tests/videogames
 
 .PHONY: codecov-parallel-3
 codecov-parallel-3:
-	PYVIRTUALDISPLAY_DISPLAYFD=0 SKIP_CLASSIC_CONTROL=1 SKIP_RENDER=True \
+	DISPLAY= MUJOCO_GL=egl PYVIRTUALDISPLAY_DISPLAYFD=0 SKIP_CLASSIC_CONTROL=1 SKIP_RENDER=True \
 	uv run pytest -n $n -s -o log_cli=true -o log_cli_level=info \
 	--cov=./ --cov-report=xml:coverage_parallel_3.xml --cov-config=pyproject.toml \
 	tests/control
 
 .PHONY: codecov-vectorization
 codecov-vectorization:
-	PYVIRTUALDISPLAY_DISPLAYFD=0 SKIP_CLASSIC_CONTROL=1 SKIP_RENDER=True \
+	DISPLAY= MUJOCO_GL=egl PYVIRTUALDISPLAY_DISPLAYFD=0 SKIP_CLASSIC_CONTROL=1 SKIP_RENDER=True \
 	uv run pytest -n 0 -s -o log_cli=true -o log_cli_level=info \
 	--cov=./ --cov-report=xml:coverage_vectorization.xml --cov-config=pyproject.toml \
 	tests/vectorization
 
 .PHONY: codecov-singlecore
 codecov-singlecore:
-	PYTEST_XDIST_AUTO_NUM_WORKERS=1 PYVIRTUALDISPLAY_DISPLAYFD=0 SKIP_RENDER=True \
+	DISPLAY= MUJOCO_GL=egl PYTEST_XDIST_AUTO_NUM_WORKERS=1 PYVIRTUALDISPLAY_DISPLAYFD=0 SKIP_RENDER=True \
 	uv run pytest --doctest-modules -s -o log_cli=true -o log_cli_level=info \
 	--cov=./ --cov-report=xml --cov-config=pyproject.toml \
 	tests/control/test_classic_control.py

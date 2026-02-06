@@ -16,7 +16,7 @@ warnings.warn(
 try:
     import retro.data
 except Exception:
-    sys.exit(0)
+    retro = None
 
 flogging.setup()
 logger = logging.getLogger("import-roms")
